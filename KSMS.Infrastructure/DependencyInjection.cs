@@ -1,6 +1,6 @@
 ﻿using Autofac;
 using KSMS.Application.Repositories;
-using KSMS.Infrastucture.Repositories;
+using KSMS.Infrastructure.Repositories;
 using Mapster;
 using MapsterMapper;
 using Microsoft.Extensions.Configuration;
@@ -11,7 +11,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace KSMS.Infrastucture
+namespace KSMS.Infrastructure
 {
     public static class DependencyInjection
     {

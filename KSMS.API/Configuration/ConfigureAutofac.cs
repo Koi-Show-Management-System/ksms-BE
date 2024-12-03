@@ -1,6 +1,6 @@
 ﻿using Autofac.Extensions.DependencyInjection;
 using Autofac;
-using KSMS.Infrastucture;
+using KSMS.Infrastructure;
 
 namespace KSMS.API.Configuration
 {

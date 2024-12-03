@@ -9,7 +9,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace KSMS.Infrastucture.Repositories
+namespace KSMS.Infrastructure.Repositories
 {
     public class UnitOfWork<TContext> : IUnitOfWork<TContext> where TContext : DbContext
     {
