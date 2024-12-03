@@ -9,7 +9,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KSMS.Application", "KSMS.Ap
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KSMS.Domain", "KSMS.Domain\KSMS.Domain.csproj", "{44DBD3A2-646E-4714-BB11-D274B8523F89}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KSMS.Infrastucture", "KSMS.Infrastucture\KSMS.Infrastucture.csproj", "{C2382790-CA60-4988-9BA3-072E4969F490}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KSMS.Infrastructure", "KSMS.Infrastructure\KSMS.Infrastructure.csproj", "{C2382790-CA60-4988-9BA3-072E4969F490}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

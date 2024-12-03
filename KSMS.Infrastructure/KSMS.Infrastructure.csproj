@@ -4,6 +4,8 @@
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <AssemblyName>KSMS.Infrastructure</AssemblyName>
+    <RootNamespace>KSMS.Infrastructure</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>

@@ -16,7 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\KSMS.Infrastucture\KSMS.Infrastucture.csproj" />
+    <ProjectReference Include="..\KSMS.Infrastructure\KSMS.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>
