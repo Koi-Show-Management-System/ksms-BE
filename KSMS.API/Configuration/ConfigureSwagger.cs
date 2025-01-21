@@ -20,9 +20,9 @@ namespace KSMS.API.Configuration
                     ValidateAudience = true,
                     ValidateLifetime = true,
                     ValidateIssuerSigningKey = true,
-                    ValidIssuer = configuration[AppConfig.JwtSetting.Issuer!],
-                    ValidAudience = configuration[AppConfig.JwtSetting.Audience!],
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration[AppConfig.JwtSetting.Key!]!)),
+                    ValidIssuer = AppConfig.JwtSetting.Issuer,
+                    ValidAudience = AppConfig.JwtSetting.Audience,
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(AppConfig.JwtSetting.Key)),
                     CryptoProviderFactory = new CryptoProviderFactory { CacheSignatureProviders = false }
                 };
             });
