@@ -10,6 +10,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using Google.Cloud.Storage.V1;
 
 namespace KSMS.Infrastructure
 {
@@ -22,6 +23,11 @@ namespace KSMS.Infrastructure
                 .Where(t => t.Name.EndsWith("Service"))
                 .AsImplementedInterfaces()
                 .InstancePerLifetimeScope();
+            builder.Register(ctx =>
+            {
+                var storageClient = StorageClient.Create();
+                return storageClient;
+            }).SingleInstance();
         }
         public static void RegisterRepository(this ContainerBuilder builder)
         {

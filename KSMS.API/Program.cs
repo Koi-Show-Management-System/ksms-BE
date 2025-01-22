@@ -29,6 +29,7 @@ builder.Services.AddSwaggerConfigurations();
 builder.Services.AddDbContext();
 builder.Services.AddMvc()
                 .AddJsonOptions(x => x.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles);
+ConfigureFireBase.AddFirebase();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
