@@ -6,7 +6,6 @@ namespace KSMS.Domain.Entities;
 
 public partial class Category : BaseEntity
 {
-
     public Guid ShowId { get; set; }
 
     public string Name { get; set; } = null!;
@@ -26,7 +25,6 @@ public partial class Category : BaseEntity
     public DateTime? EndTime { get; set; }
 
     public string? Status { get; set; }
-    
 
     public virtual ICollection<Award> Awards { get; set; } = new List<Award>();
 

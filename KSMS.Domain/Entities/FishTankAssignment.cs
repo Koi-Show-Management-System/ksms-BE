@@ -6,7 +6,6 @@ namespace KSMS.Domain.Entities;
 
 public partial class FishTankAssignment : BaseEntity
 {
-
     public Guid RegistrationId { get; set; }
 
     public Guid? TankId { get; set; }
@@ -18,7 +17,6 @@ public partial class FishTankAssignment : BaseEntity
     public string? Status { get; set; }
 
     public string? Notes { get; set; }
-    
 
     public virtual Registration Registration { get; set; } = null!;
 

@@ -25,6 +25,8 @@ CREATE TABLE [dbo].[Accounts](
     [Avatar] nvarchar(255) NULL,
     [RoleId] UNIQUEIDENTIFIER NULL,
     [Status] varchar(20) DEFAULT 'active',
+    [ConfirmationToken] NVARCHAR(255)  NULL,
+    [IsConfirmed]  BIT NOT NULL DEFAULT '0',
     [CreatedAt] datetime NOT NULL,
     [UpdatedAt] datetime NULL,
     FOREIGN KEY ([RoleId]) REFERENCES [Roles]([Id])

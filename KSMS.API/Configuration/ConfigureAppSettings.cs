@@ -9,10 +9,12 @@ namespace KSMS.API.Configuration
             AppConfig.ConnectionString = new ConnectionString();
             AppConfig.JwtSetting = new JwtSetting();
             AppConfig.GoogleImage = new GoogleImage();
+            AppConfig.MailSetting = new MailSetting();
 
             configuration.Bind("ConnectionStrings", AppConfig.ConnectionString);
             configuration.Bind("JwtSettings", AppConfig.JwtSetting);
             configuration.Bind("GoogleImages", AppConfig.GoogleImage);
+            configuration.Bind("MailSettings", AppConfig.MailSetting);
         }
     }
 }

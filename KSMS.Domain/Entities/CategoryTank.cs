@@ -6,7 +6,6 @@ namespace KSMS.Domain.Entities;
 
 public partial class CategoryTank : BaseEntity
 {
-
     public Guid CategoryId { get; set; }
 
     public string Name { get; set; } = null!;

@@ -26,11 +26,17 @@ public class AuthenticationService : BaseService<AuthenticationService>, IAuthen
         {
             throw new BadRequestException("Email is already existed");
         }
-
         var account = registerRequest.Adapt<Account>();
         account.RoleId =(await _unitOfWork.GetRepository<Role>().SingleOrDefaultAsync(predicate: x => x.Name == RoleName.Member.ToString())).Id;
         account.HashedPassword = PasswordUtil.HashPassword(registerRequest.Password);
+        account.ConfirmationToken = Guid.NewGuid().ToString();
         await _unitOfWork.GetRepository<Account>().InsertAsync(account);
+        var confirmationLink = $"https://localhost:7042/swagger/confirm?token={account.ConfirmationToken}";
+        if (!MailUtil.SendEmail(registerRequest.Email, MailUtil.ContentMailUtil.Title_ThankingForRegisAccount,
+                MailUtil.ContentMailUtil.ThankingForRegistration(registerRequest.FullName, confirmationLink), ""))
+        {
+            throw new BadRequestException("Error sending confirmation email.");
+        }
         await _unitOfWork.CommitAsync();
     }
 
@@ -43,7 +49,7 @@ public class AuthenticationService : BaseService<AuthenticationService>, IAuthen
         {
             throw new NotFoundException("Wrong email or password!!!");
         }
-
+    
         if (account.Status == AccountStatus.Deleted.ToString().ToLower())
         {
             throw new BadRequestException("Account is not existed");
@@ -51,6 +57,11 @@ public class AuthenticationService : BaseService<AuthenticationService>, IAuthen
         if (account.Status == AccountStatus.Blocked.ToString().ToLower())
         {
             throw new BadRequestException("Account is blocked");
+        }
+
+        if (account.IsConfirmed == false)
+        {
+            throw new BadRequestException("Please confirm via link in your email box. If you don't see please check the folder Spam in Mail");
         }
         return new LoginResponse()
         {
