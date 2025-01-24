@@ -19,7 +19,6 @@ public partial class Score : BaseEntity
     public string? Comments { get; set; }
 
     public string? Status { get; set; }
-    
 
     public virtual Criterion Criteria { get; set; } = null!;
 

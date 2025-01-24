@@ -42,6 +42,8 @@ app.UseCors("AllowAll");
 
 app.UseMiddleware<GlobalExceptionMiddleware>();
 
+app.UseMiddleware<ConfirmationTokenMiddleware>();
+
 app.UseHttpsRedirection();
 
 app.UseAuthentication();

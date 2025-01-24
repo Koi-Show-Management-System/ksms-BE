@@ -6,7 +6,6 @@ namespace KSMS.Domain.Entities;
 
 public partial class Round : BaseEntity
 {
-
     public Guid? CategoryId { get; set; }
 
     public string? Name { get; set; }
@@ -22,7 +21,6 @@ public partial class Round : BaseEntity
     public decimal? MinScoreToAdvance { get; set; }
 
     public string? Status { get; set; }
-    
 
     public virtual Category? Category { get; set; }
 

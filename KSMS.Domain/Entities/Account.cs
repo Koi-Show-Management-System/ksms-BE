@@ -6,7 +6,6 @@ namespace KSMS.Domain.Entities;
 
 public partial class Account : BaseEntity
 {
-
     public string? Email { get; set; }
 
     public string HashedPassword { get; set; } = null!;
@@ -23,6 +22,10 @@ public partial class Account : BaseEntity
 
     public string? Status { get; set; }
 
+    public string? ConfirmationToken { get; set; }
+
+    public bool? IsConfirmed { get; set; }
+    
     public virtual ICollection<BlogsNews> BlogsNews { get; set; } = new List<BlogsNews>();
 
     public virtual ICollection<CheckInLog> CheckInLogs { get; set; } = new List<CheckInLog>();

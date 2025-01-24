@@ -6,7 +6,6 @@ namespace KSMS.Domain.Entities;
 
 public partial class Registration : BaseEntity
 {
-
     public string? RegistrationNumber { get; set; }
 
     public Guid VarietyId { get; set; }
@@ -36,7 +35,7 @@ public partial class Registration : BaseEntity
     public string? Notes { get; set; }
 
     public DateTime? ApprovedAt { get; set; }
-
+    
     public virtual Account Account { get; set; } = null!;
 
     public virtual Category Category { get; set; } = null!;
