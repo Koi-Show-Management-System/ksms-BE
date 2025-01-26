@@ -27,5 +27,6 @@ namespace KSMS.API.Controllers
         {
             return Created(nameof(Login), await _authenticationService.Login(loginRequest));
         }
+        
     }
 }
