@@ -62,6 +62,6 @@ namespace KSMS.Domain.Dtos.Responses.Show
 
         public virtual ICollection<TicketResponse> Tickets { get; set; } = new List<TicketResponse>();
 
-        public virtual ICollection<RoundResponse> Round { get; set; } = new List<RoundResponse>();
+        
     }
 }

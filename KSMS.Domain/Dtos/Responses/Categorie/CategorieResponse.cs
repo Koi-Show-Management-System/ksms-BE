@@ -1,4 +1,9 @@
-﻿using KSMS.Domain.Dtos.Responses.Award;
+﻿using KSMS.Domain.Dtos.Requests.RefereeAssignment;
+using KSMS.Domain.Dtos.Requests.Round;
+using KSMS.Domain.Dtos.Responses.Award;
+using KSMS.Domain.Dtos.Responses.CriteriaGroupRequest;
+using KSMS.Domain.Dtos.Responses.RefereeAssignment;
+using KSMS.Domain.Dtos.Responses.Round;
 using KSMS.Domain.Entities;
 using System;
 using System.Collections.Generic;
@@ -30,6 +35,12 @@ namespace KSMS.Domain.Dtos.Responses.Categorie
 
         public string? Status { get; set; }
 
+        public virtual ICollection<RoundResponse> Rounds { get; set; } = new List<RoundResponse>();
+
         public virtual ICollection<AwardResponse> Awards { get; set; } = new List<AwardResponse>();
+
+        public virtual ICollection<CriteriaGroupResponse> CriteriaGroups { get; set; } = new List<CriteriaGroupResponse>();
+
+        public virtual ICollection<RefereeAssignmentResponse> RefereeAssignments { get; set; } = new List<RefereeAssignmentResponse>();
     }
 }
