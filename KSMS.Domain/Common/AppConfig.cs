@@ -12,6 +12,8 @@ namespace KSMS.Domain.Common
         public static ConnectionString ConnectionString { get; set; } = null!;
         public static GoogleImage GoogleImage { get; set; } = null!;
         public static MailSetting MailSetting { get; set; } = null!;
+        public static PayOs PayOs { get; set; } = null!;
+
     }
     public class ConnectionString
     {
@@ -38,5 +40,12 @@ namespace KSMS.Domain.Common
         public int PortEmail { get; set; }
         public string EmailSender { get; set; }
         public string PasswordSender { get; set; }
+    }
+
+    public class PayOs
+    {
+        public string? ClientId { get; set; }
+        public string? ApiKey { get; set; }
+        public string? ChecksumKey { get; set; }
     }
 }

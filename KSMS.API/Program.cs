@@ -1,11 +1,14 @@
 using KSMS.API.Configuration;
 using KSMS.API.Middlewares;
 using System.Text.Json.Serialization;
+using KSMS.Domain.Common;
+using Net.payOS;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-
+var payOs = new PayOS(AppConfig.PayOs.ClientId!, AppConfig.PayOs.ApiKey!, AppConfig.PayOs.ChecksumKey!);
+builder.Services.AddSingleton(payOs);
 builder.Services.AddControllers().AddJsonOptions(options =>
         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle

@@ -94,11 +94,11 @@ public partial class KoiShowManagementSystemContext : DbContext
     {
         modelBuilder.Entity<Account>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Accounts__3214EC07B311CDA7");
+            entity.HasKey(e => e.Id).HasName("PK__Accounts__3214EC079EE51622");
 
-            entity.HasIndex(e => e.Username, "UQ__Accounts__536C85E4E0098569").IsUnique();
+            entity.HasIndex(e => e.Username, "UQ__Accounts__536C85E45A4AA83B").IsUnique();
 
-            entity.HasIndex(e => e.Email, "UQ__Accounts__A9D10534AD7DD074").IsUnique();
+            entity.HasIndex(e => e.Email, "UQ__Accounts__A9D1053423485F82").IsUnique();
 
             entity.Property(e => e.Id).HasDefaultValueSql("(newid())");
             entity.Property(e => e.Avatar).HasMaxLength(255);
@@ -133,7 +133,7 @@ public partial class KoiShowManagementSystemContext : DbContext
 
         modelBuilder.Entity<Award>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Awards__3214EC078E2D0839");
+            entity.HasKey(e => e.Id).HasName("PK__Awards__3214EC0789C57B06");
 
             entity.Property(e => e.Id).HasDefaultValueSql("(newid())");
             entity.Property(e => e.AwardType)
@@ -152,7 +152,7 @@ public partial class KoiShowManagementSystemContext : DbContext
 
         modelBuilder.Entity<BlogCategory>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__BlogCate__3214EC079A3FFC00");
+            entity.HasKey(e => e.Id).HasName("PK__BlogCate__3214EC0748AC6397");
 
             entity.Property(e => e.Id).HasDefaultValueSql("(newid())");
             entity.Property(e => e.Description).HasMaxLength(500);
@@ -161,7 +161,7 @@ public partial class KoiShowManagementSystemContext : DbContext
 
         modelBuilder.Entity<BlogsNews>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__BlogsNew__3214EC07A2290291");
+            entity.HasKey(e => e.Id).HasName("PK__BlogsNew__3214EC07DE720662");
 
             entity.Property(e => e.Id).HasDefaultValueSql("(newid())");
             entity.Property(e => e.CreatedAt).HasColumnType("datetime");
@@ -174,17 +174,17 @@ public partial class KoiShowManagementSystemContext : DbContext
             entity.HasOne(d => d.Account).WithMany(p => p.BlogsNews)
                 .HasForeignKey(d => d.AccountId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__BlogsNews__Accou__282DF8C2");
+                .HasConstraintName("FK__BlogsNews__Accou__29221CFB");
 
             entity.HasOne(d => d.BlogCategory).WithMany(p => p.BlogsNews)
                 .HasForeignKey(d => d.BlogCategoryId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__BlogsNews__BlogC__29221CFB");
+                .HasConstraintName("FK__BlogsNews__BlogC__2A164134");
         });
 
         modelBuilder.Entity<Category>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Categori__3214EC07EB2E6CC1");
+            entity.HasKey(e => e.Id).HasName("PK__Categori__3214EC07202BBDF0");
 
             entity.Property(e => e.Id).HasDefaultValueSql("(newid())");
             entity.Property(e => e.CreatedAt).HasColumnType("datetime");
@@ -210,7 +210,7 @@ public partial class KoiShowManagementSystemContext : DbContext
 
         modelBuilder.Entity<CategoryTank>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Category__3214EC0787383378");
+            entity.HasKey(e => e.Id).HasName("PK__Category__3214EC073E4701C5");
 
             entity.Property(e => e.Id).HasDefaultValueSql("(newid())");
             entity.Property(e => e.Capacity).HasColumnType("decimal(10, 2)");
@@ -230,12 +230,12 @@ public partial class KoiShowManagementSystemContext : DbContext
             entity.HasOne(d => d.Category).WithMany(p => p.CategoryTanks)
                 .HasForeignKey(d => d.CategoryId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__CategoryT__Categ__797309D9");
+                .HasConstraintName("FK__CategoryT__Categ__7A672E12");
         });
 
         modelBuilder.Entity<CheckInLog>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__CheckInL__3214EC0700DC1491");
+            entity.HasKey(e => e.Id).HasName("PK__CheckInL__3214EC07D4C963FB");
 
             entity.Property(e => e.Id).HasDefaultValueSql("(newid())");
             entity.Property(e => e.CheckInLocation).HasMaxLength(100);
@@ -250,17 +250,17 @@ public partial class KoiShowManagementSystemContext : DbContext
 
             entity.HasOne(d => d.CheckedInByNavigation).WithMany(p => p.CheckInLogs)
                 .HasForeignKey(d => d.CheckedInBy)
-                .HasConstraintName("FK__CheckInLo__Check__40F9A68C");
+                .HasConstraintName("FK__CheckInLo__Check__41EDCAC5");
 
             entity.HasOne(d => d.Qrcode).WithMany(p => p.CheckInLogs)
                 .HasForeignKey(d => d.QrcodeId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__CheckInLo__QRCod__40058253");
+                .HasConstraintName("FK__CheckInLo__QRCod__40F9A68C");
         });
 
         modelBuilder.Entity<CriteriaGroup>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Criteria__3214EC07A04B6EB9");
+            entity.HasKey(e => e.Id).HasName("PK__Criteria__3214EC072F6A3A52");
 
             entity.Property(e => e.Id).HasDefaultValueSql("(newid())");
             entity.Property(e => e.CreatedAt).HasColumnType("datetime");
@@ -278,7 +278,7 @@ public partial class KoiShowManagementSystemContext : DbContext
 
         modelBuilder.Entity<Criterion>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Criteria__3214EC07C4692854");
+            entity.HasKey(e => e.Id).HasName("PK__Criteria__3214EC072D528F4D");
 
             entity.Property(e => e.Id).HasDefaultValueSql("(newid())");
             entity.Property(e => e.CreatedAt).HasColumnType("datetime");
@@ -294,7 +294,7 @@ public partial class KoiShowManagementSystemContext : DbContext
 
         modelBuilder.Entity<Feedback>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Feedback__3214EC079A5E4190");
+            entity.HasKey(e => e.Id).HasName("PK__Feedback__3214EC076A961F62");
 
             entity.Property(e => e.Id).HasDefaultValueSql("(newid())");
             entity.Property(e => e.CreatedAt).HasColumnType("datetime");
@@ -303,17 +303,17 @@ public partial class KoiShowManagementSystemContext : DbContext
             entity.HasOne(d => d.Account).WithMany(p => p.Feedbacks)
                 .HasForeignKey(d => d.AccountId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Feedbacks__Accou__0B91BA14");
+                .HasConstraintName("FK__Feedbacks__Accou__0C85DE4D");
 
             entity.HasOne(d => d.Show).WithMany(p => p.Feedbacks)
                 .HasForeignKey(d => d.ShowId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Feedbacks__ShowI__0C85DE4D");
+                .HasConstraintName("FK__Feedbacks__ShowI__0D7A0286");
         });
 
         modelBuilder.Entity<FishTankAssignment>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__FishTank__3214EC07A3BD3FD1");
+            entity.HasKey(e => e.Id).HasName("PK__FishTank__3214EC07CF81CF3F");
 
             entity.Property(e => e.Id).HasDefaultValueSql("(newid())");
             entity.Property(e => e.CheckInTime).HasColumnType("datetime");
@@ -327,16 +327,16 @@ public partial class KoiShowManagementSystemContext : DbContext
             entity.HasOne(d => d.Registration).WithMany(p => p.FishTankAssignments)
                 .HasForeignKey(d => d.RegistrationId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__FishTankA__Regis__7D439ABD");
+                .HasConstraintName("FK__FishTankA__Regis__7E37BEF6");
 
             entity.HasOne(d => d.Tank).WithMany(p => p.FishTankAssignments)
                 .HasForeignKey(d => d.TankId)
-                .HasConstraintName("FK__FishTankA__TankI__7E37BEF6");
+                .HasConstraintName("FK__FishTankA__TankI__7F2BE32F");
         });
 
         modelBuilder.Entity<GrandChampionContender>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__GrandCha__3214EC072432579E");
+            entity.HasKey(e => e.Id).HasName("PK__GrandCha__3214EC07E308CC40");
 
             entity.Property(e => e.Id).HasDefaultValueSql("(newid())");
             entity.Property(e => e.CreatedAt).HasColumnType("datetime");
@@ -348,17 +348,17 @@ public partial class KoiShowManagementSystemContext : DbContext
             entity.HasOne(d => d.Registration).WithMany(p => p.GrandChampionContenders)
                 .HasForeignKey(d => d.RegistrationId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__GrandCham__Regis__02FC7413");
+                .HasConstraintName("FK__GrandCham__Regis__03F0984C");
 
             entity.HasOne(d => d.Round).WithMany(p => p.GrandChampionContenders)
                 .HasForeignKey(d => d.RoundId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__GrandCham__Round__02084FDA");
+                .HasConstraintName("FK__GrandCham__Round__02FC7413");
         });
 
         modelBuilder.Entity<KoiProfile>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__KoiProfi__3214EC073FBFD609");
+            entity.HasKey(e => e.Id).HasName("PK__KoiProfi__3214EC07DCFF2F64");
 
             entity.Property(e => e.Id).HasDefaultValueSql("(newid())");
             entity.Property(e => e.Bloodline).HasMaxLength(100);
@@ -392,7 +392,7 @@ public partial class KoiShowManagementSystemContext : DbContext
 
         modelBuilder.Entity<Livestream>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Livestre__3214EC07E33983EE");
+            entity.HasKey(e => e.Id).HasName("PK__Livestre__3214EC07FA4D33CD");
 
             entity.Property(e => e.Id).HasDefaultValueSql("(newid())");
             entity.Property(e => e.EndTime).HasColumnType("datetime");
@@ -402,12 +402,12 @@ public partial class KoiShowManagementSystemContext : DbContext
             entity.HasOne(d => d.Show).WithMany(p => p.Livestreams)
                 .HasForeignKey(d => d.ShowId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Livestrea__ShowI__1CBC4616");
+                .HasConstraintName("FK__Livestrea__ShowI__1DB06A4F");
         });
 
         modelBuilder.Entity<Notification>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Notifica__3214EC07BD24DFBB");
+            entity.HasKey(e => e.Id).HasName("PK__Notifica__3214EC079579BD98");
 
             entity.Property(e => e.Id).HasDefaultValueSql("(newid())");
             entity.Property(e => e.SentDate)
@@ -416,12 +416,12 @@ public partial class KoiShowManagementSystemContext : DbContext
 
             entity.HasOne(d => d.Account).WithMany(p => p.Notifications)
                 .HasForeignKey(d => d.AccountId)
-                .HasConstraintName("FK__Notificat__Accou__07C12930");
+                .HasConstraintName("FK__Notificat__Accou__08B54D69");
         });
 
         modelBuilder.Entity<PaymentType>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__PaymentT__3214EC07258E3600");
+            entity.HasKey(e => e.Id).HasName("PK__PaymentT__3214EC07EEFCDDF2");
 
             entity.Property(e => e.Id).HasDefaultValueSql("(newid())");
             entity.Property(e => e.Description).HasMaxLength(1000);
@@ -430,7 +430,7 @@ public partial class KoiShowManagementSystemContext : DbContext
 
         modelBuilder.Entity<Qrcode>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__QRCodes__3214EC07178CEA0F");
+            entity.HasKey(e => e.Id).HasName("PK__QRCodes__3214EC07C7F2FDF4");
 
             entity.ToTable("QRCodes");
 
@@ -446,16 +446,16 @@ public partial class KoiShowManagementSystemContext : DbContext
 
             entity.HasOne(d => d.RegistrationPayment).WithMany(p => p.Qrcodes)
                 .HasForeignKey(d => d.RegistrationPaymentId)
-                .HasConstraintName("FK__QRCodes__Registr__3493CFA7");
+                .HasConstraintName("FK__QRCodes__Registr__3587F3E0");
 
             entity.HasOne(d => d.TicketOrderDetail).WithMany(p => p.Qrcodes)
                 .HasForeignKey(d => d.TicketOrderDetailId)
-                .HasConstraintName("FK__QRCodes__TicketO__339FAB6E");
+                .HasConstraintName("FK__QRCodes__TicketO__3493CFA7");
         });
 
         modelBuilder.Entity<RefereeAssignment>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__RefereeA__3214EC07457BF9DE");
+            entity.HasKey(e => e.Id).HasName("PK__RefereeA__3214EC07F4EB633F");
 
             entity.Property(e => e.Id).HasDefaultValueSql("(newid())");
             entity.Property(e => e.AssignedAt)
@@ -465,22 +465,22 @@ public partial class KoiShowManagementSystemContext : DbContext
             entity.HasOne(d => d.AssignedByNavigation).WithMany(p => p.RefereeAssignmentAssignedByNavigations)
                 .HasForeignKey(d => d.AssignedBy)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__RefereeAs__Assig__3A4CA8FD");
+                .HasConstraintName("FK__RefereeAs__Assig__3B40CD36");
 
             entity.HasOne(d => d.Category).WithMany(p => p.RefereeAssignments)
                 .HasForeignKey(d => d.CategoryId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__RefereeAs__Categ__3B40CD36");
+                .HasConstraintName("FK__RefereeAs__Categ__3C34F16F");
 
             entity.HasOne(d => d.RefereeAccount).WithMany(p => p.RefereeAssignmentRefereeAccounts)
                 .HasForeignKey(d => d.RefereeAccountId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__RefereeAs__Refer__395884C4");
+                .HasConstraintName("FK__RefereeAs__Refer__3A4CA8FD");
         });
 
         modelBuilder.Entity<Registration>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Registra__3214EC076E6909EE");
+            entity.HasKey(e => e.Id).HasName("PK__Registra__3214EC070EAEE863");
 
             entity.Property(e => e.Id).HasDefaultValueSql("(newid())");
             entity.Property(e => e.ApprovedAt).HasColumnType("datetime");
@@ -507,17 +507,22 @@ public partial class KoiShowManagementSystemContext : DbContext
             entity.HasOne(d => d.Account).WithMany(p => p.Registrations)
                 .HasForeignKey(d => d.AccountId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Registrat__Accou__5165187F");
+                .HasConstraintName("FK__Registrat__Accou__52593CB8");
 
             entity.HasOne(d => d.Category).WithMany(p => p.Registrations)
                 .HasForeignKey(d => d.CategoryId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Registrat__Categ__52593CB8");
+                .HasConstraintName("FK__Registrat__Categ__534D60F1");
+
+            entity.HasOne(d => d.Variety).WithMany(p => p.Registrations)
+                .HasForeignKey(d => d.VarietyId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__Registrat__Varie__5165187F");
         });
 
         modelBuilder.Entity<RegistrationPayment>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Registra__3214EC07D4B09860");
+            entity.HasKey(e => e.Id).HasName("PK__Registra__3214EC0722A62560");
 
             entity.Property(e => e.Id).HasDefaultValueSql("(newid())");
             entity.Property(e => e.PaidAmount).HasColumnType("decimal(18, 2)");
@@ -532,17 +537,17 @@ public partial class KoiShowManagementSystemContext : DbContext
             entity.HasOne(d => d.PaymentType).WithMany(p => p.RegistrationPayments)
                 .HasForeignKey(d => d.PaymentTypeId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Registrat__Payme__2EDAF651");
+                .HasConstraintName("FK__Registrat__Payme__2FCF1A8A");
 
             entity.HasOne(d => d.Registration).WithMany(p => p.RegistrationPayments)
                 .HasForeignKey(d => d.RegistrationId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Registrat__Regis__2DE6D218");
+                .HasConstraintName("FK__Registrat__Regis__2EDAF651");
         });
 
         modelBuilder.Entity<Result>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Results__3214EC074CABD36C");
+            entity.HasKey(e => e.Id).HasName("PK__Results__3214EC07D2993D9E");
 
             entity.Property(e => e.Id).HasDefaultValueSql("(newid())");
             entity.Property(e => e.CreatedAt).HasColumnType("datetime");
@@ -552,19 +557,19 @@ public partial class KoiShowManagementSystemContext : DbContext
             entity.HasOne(d => d.Award).WithMany(p => p.Results)
                 .HasForeignKey(d => d.AwardId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Results__AwardId__5DCAEF64");
+                .HasConstraintName("FK__Results__AwardId__5EBF139D");
 
             entity.HasOne(d => d.Registration).WithMany(p => p.Results)
                 .HasForeignKey(d => d.RegistrationId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Results__Registr__5CD6CB2B");
+                .HasConstraintName("FK__Results__Registr__5DCAEF64");
         });
 
         modelBuilder.Entity<Role>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Roles__3214EC079791214D");
+            entity.HasKey(e => e.Id).HasName("PK__Roles__3214EC07FC86B6ED");
 
-            entity.HasIndex(e => e.Name, "UQ__Roles__737584F6DB15685E").IsUnique();
+            entity.HasIndex(e => e.Name, "UQ__Roles__737584F6BDC3E80C").IsUnique();
 
             entity.Property(e => e.Id).HasDefaultValueSql("(newid())");
             entity.Property(e => e.Description).HasMaxLength(255);
@@ -573,7 +578,7 @@ public partial class KoiShowManagementSystemContext : DbContext
 
         modelBuilder.Entity<Round>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Rounds__3214EC077F279C29");
+            entity.HasKey(e => e.Id).HasName("PK__Rounds__3214EC07895F0C6B");
 
             entity.Property(e => e.Id).HasDefaultValueSql("(newid())");
             entity.Property(e => e.CreatedAt).HasColumnType("datetime");
@@ -596,7 +601,7 @@ public partial class KoiShowManagementSystemContext : DbContext
 
         modelBuilder.Entity<Score>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Scores__3214EC07BD2B65C2");
+            entity.HasKey(e => e.Id).HasName("PK__Scores__3214EC075E1D2EF6");
 
             entity.Property(e => e.Id).HasDefaultValueSql("(newid())");
             entity.Property(e => e.CreatedAt).HasColumnType("datetime");
@@ -611,27 +616,27 @@ public partial class KoiShowManagementSystemContext : DbContext
             entity.HasOne(d => d.Criteria).WithMany(p => p.Scores)
                 .HasForeignKey(d => d.CriteriaId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Scores__Criteria__59063A47");
+                .HasConstraintName("FK__Scores__Criteria__59FA5E80");
 
             entity.HasOne(d => d.RefereeAccount).WithMany(p => p.Scores)
                 .HasForeignKey(d => d.RefereeAccountId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Scores__RefereeA__5812160E");
+                .HasConstraintName("FK__Scores__RefereeA__59063A47");
 
             entity.HasOne(d => d.Registration).WithMany(p => p.Scores)
                 .HasForeignKey(d => d.RegistrationId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Scores__Registra__5629CD9C");
+                .HasConstraintName("FK__Scores__Registra__571DF1D5");
 
             entity.HasOne(d => d.Round).WithMany(p => p.Scores)
                 .HasForeignKey(d => d.RoundId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Scores__RoundId__571DF1D5");
+                .HasConstraintName("FK__Scores__RoundId__5812160E");
         });
 
         modelBuilder.Entity<Show>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Shows__3214EC070B6EA477");
+            entity.HasKey(e => e.Id).HasName("PK__Shows__3214EC07F6EAAB7C");
 
             entity.Property(e => e.Id).HasDefaultValueSql("(newid())");
             entity.Property(e => e.CreatedAt).HasColumnType("datetime");
@@ -655,7 +660,7 @@ public partial class KoiShowManagementSystemContext : DbContext
 
         modelBuilder.Entity<ShowRule>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__ShowRule__3214EC07C2BAB219");
+            entity.HasKey(e => e.Id).HasName("PK__ShowRule__3214EC0700DE06B0");
 
             entity.Property(e => e.Id).HasDefaultValueSql("(newid())");
             entity.Property(e => e.CreatedAt).HasColumnType("datetime");
@@ -665,12 +670,12 @@ public partial class KoiShowManagementSystemContext : DbContext
             entity.HasOne(d => d.Show).WithMany(p => p.ShowRules)
                 .HasForeignKey(d => d.ShowId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__ShowRules__ShowI__44CA3770");
+                .HasConstraintName("FK__ShowRules__ShowI__45BE5BA9");
         });
 
         modelBuilder.Entity<ShowStaff>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__ShowStaf__3214EC07C0493D80");
+            entity.HasKey(e => e.Id).HasName("PK__ShowStaf__3214EC075DCBA600");
 
             entity.ToTable("ShowStaff");
 
@@ -682,22 +687,22 @@ public partial class KoiShowManagementSystemContext : DbContext
             entity.HasOne(d => d.Account).WithMany(p => p.ShowStaffAccounts)
                 .HasForeignKey(d => d.AccountId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__ShowStaff__Accou__6383C8BA");
+                .HasConstraintName("FK__ShowStaff__Accou__6477ECF3");
 
             entity.HasOne(d => d.AssignedByNavigation).WithMany(p => p.ShowStaffAssignedByNavigations)
                 .HasForeignKey(d => d.AssignedBy)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__ShowStaff__Assig__6477ECF3");
+                .HasConstraintName("FK__ShowStaff__Assig__656C112C");
 
             entity.HasOne(d => d.Show).WithMany(p => p.ShowStaffs)
                 .HasForeignKey(d => d.ShowId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__ShowStaff__ShowI__628FA481");
+                .HasConstraintName("FK__ShowStaff__ShowI__6383C8BA");
         });
 
         modelBuilder.Entity<ShowStatistic>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__ShowStat__3214EC075717EB88");
+            entity.HasKey(e => e.Id).HasName("PK__ShowStat__3214EC07CE9E702D");
 
             entity.Property(e => e.Id).HasDefaultValueSql("(newid())");
             entity.Property(e => e.MetricName).HasMaxLength(255);
@@ -705,12 +710,12 @@ public partial class KoiShowManagementSystemContext : DbContext
 
             entity.HasOne(d => d.Show).WithMany(p => p.ShowStatistics)
                 .HasForeignKey(d => d.ShowId)
-                .HasConstraintName("FK__ShowStati__ShowI__14270015");
+                .HasConstraintName("FK__ShowStati__ShowI__151B244E");
         });
 
         modelBuilder.Entity<ShowStatus>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__ShowStat__3214EC070D9DB9E0");
+            entity.HasKey(e => e.Id).HasName("PK__ShowStat__3214EC073AD3A3D4");
 
             entity.ToTable("ShowStatus");
 
@@ -723,12 +728,12 @@ public partial class KoiShowManagementSystemContext : DbContext
             entity.HasOne(d => d.Show).WithMany(p => p.ShowStatuses)
                 .HasForeignKey(d => d.ShowId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__ShowStatu__ShowI__18EBB532");
+                .HasConstraintName("FK__ShowStatu__ShowI__19DFD96B");
         });
 
         modelBuilder.Entity<Sponsor>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Sponsors__3214EC07311E64BC");
+            entity.HasKey(e => e.Id).HasName("PK__Sponsors__3214EC077CC09E90");
 
             entity.Property(e => e.Id).HasDefaultValueSql("(newid())");
             entity.Property(e => e.LogoUrl).HasMaxLength(500);
@@ -737,12 +742,12 @@ public partial class KoiShowManagementSystemContext : DbContext
             entity.HasOne(d => d.Show).WithMany(p => p.Sponsors)
                 .HasForeignKey(d => d.ShowId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Sponsors__ShowId__10566F31");
+                .HasConstraintName("FK__Sponsors__ShowId__114A936A");
         });
 
         modelBuilder.Entity<Ticket>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Tickets__3214EC07FEFD36B9");
+            entity.HasKey(e => e.Id).HasName("PK__Tickets__3214EC07660EC63F");
 
             entity.Property(e => e.Id).HasDefaultValueSql("(newid())");
             entity.Property(e => e.Price).HasColumnType("decimal(10, 2)");
@@ -751,12 +756,12 @@ public partial class KoiShowManagementSystemContext : DbContext
             entity.HasOne(d => d.Show).WithMany(p => p.Tickets)
                 .HasForeignKey(d => d.ShowId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Tickets__ShowId__6B24EA82");
+                .HasConstraintName("FK__Tickets__ShowId__6C190EBB");
         });
 
         modelBuilder.Entity<TicketOrder>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__TicketOr__3214EC075E5CA860");
+            entity.HasKey(e => e.Id).HasName("PK__TicketOr__3214EC07F6ADF3B8");
 
             entity.Property(e => e.Id).HasDefaultValueSql("(newid())");
             entity.Property(e => e.OrderDate)
@@ -769,17 +774,17 @@ public partial class KoiShowManagementSystemContext : DbContext
             entity.HasOne(d => d.Account).WithMany(p => p.TicketOrders)
                 .HasForeignKey(d => d.AccountId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__TicketOrd__Accou__6FE99F9F");
+                .HasConstraintName("FK__TicketOrd__Accou__70DDC3D8");
 
             entity.HasOne(d => d.PaymentType).WithMany(p => p.TicketOrders)
                 .HasForeignKey(d => d.PaymentTypeId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__TicketOrd__Payme__70DDC3D8");
+                .HasConstraintName("FK__TicketOrd__Payme__71D1E811");
         });
 
         modelBuilder.Entity<TicketOrderDetail>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__TicketOr__3214EC0798A6E458");
+            entity.HasKey(e => e.Id).HasName("PK__TicketOr__3214EC0765841D1C");
 
             entity.Property(e => e.Id).HasDefaultValueSql("(newid())");
             entity.Property(e => e.Amount).HasColumnType("decimal(18, 2)");
@@ -787,17 +792,17 @@ public partial class KoiShowManagementSystemContext : DbContext
 
             entity.HasOne(d => d.Ticket).WithMany(p => p.TicketOrderDetails)
                 .HasForeignKey(d => d.TicketId)
-                .HasConstraintName("FK__TicketOrd__Ticke__75A278F5");
+                .HasConstraintName("FK__TicketOrd__Ticke__76969D2E");
 
             entity.HasOne(d => d.TicketOrder).WithMany(p => p.TicketOrderDetails)
                 .HasForeignKey(d => d.TicketOrderId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__TicketOrd__Ticke__74AE54BC");
+                .HasConstraintName("FK__TicketOrd__Ticke__75A278F5");
         });
 
         modelBuilder.Entity<Variety>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Varietie__3214EC070684F111");
+            entity.HasKey(e => e.Id).HasName("PK__Varietie__3214EC079BA41973");
 
             entity.Property(e => e.Id).HasDefaultValueSql("(newid())");
             entity.Property(e => e.CreatedAt).HasColumnType("datetime");
@@ -807,7 +812,7 @@ public partial class KoiShowManagementSystemContext : DbContext
 
         modelBuilder.Entity<Vote>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Votes__3214EC07345CFAAF");
+            entity.HasKey(e => e.Id).HasName("PK__Votes__3214EC07AF4CBA57");
 
             entity.Property(e => e.Id).HasDefaultValueSql("(newid())");
             entity.Property(e => e.CreatedAt).HasColumnType("datetime");
@@ -816,12 +821,12 @@ public partial class KoiShowManagementSystemContext : DbContext
             entity.HasOne(d => d.Account).WithMany(p => p.Votes)
                 .HasForeignKey(d => d.AccountId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Votes__AccountId__208CD6FA");
+                .HasConstraintName("FK__Votes__AccountId__2180FB33");
 
             entity.HasOne(d => d.Registration).WithMany(p => p.Votes)
                 .HasForeignKey(d => d.RegistrationId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Votes__Registrat__2180FB33");
+                .HasConstraintName("FK__Votes__Registrat__22751F6C");
         });
 
         OnModelCreatingPartial(modelBuilder);

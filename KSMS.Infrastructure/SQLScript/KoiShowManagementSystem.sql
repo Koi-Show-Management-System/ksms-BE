@@ -186,6 +186,7 @@ CREATE TABLE [dbo].[Registrations](
     [ApprovedAt] datetime NULL,
     [CreatedAt] datetime NOT NULL,
     [UpdatedAt] datetime NULL,
+    FOREIGN KEY ([VarietyId]) REFERENCES [Varieties]([Id]),
     FOREIGN KEY ([AccountId]) REFERENCES [Accounts]([Id]),
     FOREIGN KEY ([CategoryId]) REFERENCES [Categories]([Id])
 )

@@ -6,7 +6,6 @@ namespace KSMS.Domain.Entities;
 
 public partial class BlogsNews : BaseEntity
 {
-
     public string Title { get; set; } = null!;
 
     public string Content { get; set; } = null!;
