@@ -40,6 +40,8 @@ public static class MailUtil
     {
       public readonly static string Title_ThankingForRegisAccount =
         "[KOI SHOW SYSTEM] Xác nhận đăng kí tài khoản thành công";
+      public readonly static string Title_ThankingForRegisterSh =
+          "[KOI SHOW SYSTEM] Xác nhận đăng kí tham gia giải cá koi thành công";
 
       public static string ThankingForRegistration(string fullname, string confirmationLink)
       {
