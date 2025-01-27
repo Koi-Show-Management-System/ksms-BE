@@ -9,4 +9,7 @@ public interface IAccountService
     Task UpdateAccount(Guid id, UpdateAccountRequest updateAccountRequest);
 
     Task<IPaginate<UserResponse>> GetPagedUsersAsync(int page, int pageSize);
+    Task<UserResponse> GetUserByIdAsync(Guid id);
+    Task<UserResponse> CreateUserAsync(CreateAccountRequest createAccountRequest);
+    Task<UserResponse> DeleteUserAsync(Guid id);
 }

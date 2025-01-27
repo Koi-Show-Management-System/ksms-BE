@@ -10,6 +10,8 @@ using KSMS.Infrastructure.Database;
 using Mapster;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+ 
+using BCrypt.Net;
 
 namespace KSMS.Infrastructure.Services;
 
@@ -34,7 +36,9 @@ public class AccountService : BaseService<AccountService>, IAccountService
                 FullName = account.FullName,
                 Phone = account.Phone,
                 Role = account.Role != null ? account.Role.Name : RoleName.Member.ToString(),
-                Status = account.Status ?? "active"
+                Status = account.Status ?? "active",
+                RoleId = account.RoleId,
+                Avatar = account.Avatar
             },
             predicate: null,  
             orderBy: query => query.OrderBy(a => a.Username),  
@@ -45,6 +49,134 @@ public class AccountService : BaseService<AccountService>, IAccountService
 
         return pagedUsers;
     }
+    public async Task<UserResponse> GetUserByIdAsync(Guid id)
+    {
+        var user = await _unitOfWork.GetRepository<Account>()
+            .SingleOrDefaultAsync(
+                predicate: u => u.Id == id,
+                include: query => query.Include(u => u.Role) 
+            );
+
+        if (user == null)
+        {
+            throw new KeyNotFoundException("User not found");
+        }
+
+        
+        return new UserResponse
+        {
+            Id = user.Id,
+            Email = user.Email,
+            FullName = user.FullName,
+            Phone = user.Phone,
+            Role = user.Role != null ? user.Role.Name : "N/A",
+            RoleId = user.RoleId,
+            Status = user.Status ?? "active",
+            Avatar = user.Avatar,
+            ConfirmationToken = user.ConfirmationToken,
+            IsConfirmed = user.IsConfirmed
+        };
+    }
+
+    public async Task<UserResponse> CreateUserAsync(CreateAccountRequest createAccountRequest)
+    {
+         
+        var userRepository = _unitOfWork.GetRepository<Account>();
+        var roleRepository = _unitOfWork.GetRepository<Role>();
+
+       
+        var role = await roleRepository.SingleOrDefaultAsync(
+            predicate: r => r.Id == createAccountRequest.RoleId
+        );
+        if (role == null)
+        {
+            throw new KeyNotFoundException($"Role with ID '{createAccountRequest.RoleId}' not found");
+        }
+
+         
+        var emailExists = await userRepository.SingleOrDefaultAsync(
+            predicate: u => u.Email == createAccountRequest.Email
+        ) != null;
+        if (emailExists)
+        {
+            throw new InvalidOperationException($"Email '{createAccountRequest.Email}' is already in use");
+        }
+
+     
+        var usernameExists = await userRepository.SingleOrDefaultAsync(
+            predicate: u => u.Username == createAccountRequest.Username
+        ) != null;
+        if (usernameExists)
+        {
+            throw new InvalidOperationException($"Username '{createAccountRequest.Username}' is already in use");
+        }
+         
+        var user = createAccountRequest.Adapt<Account>();
+         
+        user.RoleId = role.Id;
+        
+        user.Status = "active";
+       
+        user.CreatedAt = DateTime.UtcNow;
+        
+        try
+        {
+            
+            var createdUser = await userRepository.InsertAsync(user);
+            await _unitOfWork.CommitAsync();
+
+            
+            return createdUser.Adapt<UserResponse>();
+        }
+        catch (Exception ex)
+        {
+             
+            throw new InvalidOperationException("An error occurred while creating the user.", ex);
+        }
+    }
+
+
+
+
+    public async Task<UserResponse> DeleteUserAsync(Guid id)
+    {
+        var userRepository = _unitOfWork.GetRepository<Account>();
+
+         
+        var user = await userRepository.SingleOrDefaultAsync(
+            predicate: u => u.Id == id,
+            include: query => query.Include(u => u.Role)  
+        );
+
+        if (user == null)
+            throw new KeyNotFoundException("User not found");
+
+        
+        user.Status = user.Status == "active" ? "block" : "active";
+
+        
+        userRepository.UpdateAsync(user);
+        await _unitOfWork.CommitAsync();
+
+         
+        var userResponse = new UserResponse
+        {
+            Id = user.Id,
+            Email = user.Email,
+            FullName = user.FullName,
+            Phone = user.Phone,
+            Role = user.Role?.Name ?? "N/A", 
+            RoleId = user.RoleId,
+            Status = user.Status,
+            Avatar = user.Avatar,
+            ConfirmationToken = user.ConfirmationToken,
+            IsConfirmed = user.IsConfirmed
+        };
+
+        return userResponse;
+    }
+
+
 
     public async Task UpdateAccount(Guid id, UpdateAccountRequest updateAccountRequest)
     {
@@ -63,4 +195,6 @@ public class AccountService : BaseService<AccountService>, IAccountService
         _unitOfWork.GetRepository<Account>().UpdateAsync(account);
         await _unitOfWork.CommitAsync();
     }
+
+  
 }

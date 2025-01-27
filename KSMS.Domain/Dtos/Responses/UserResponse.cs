@@ -14,5 +14,11 @@ namespace KSMS.Domain.Dtos.Responses
         public string? Phone { get; set; }
         public string Role { get; set; } = string.Empty;
         public string Status { get; set; } = "active";
+        public Guid? RoleId { get; set; }
+        public string? Avatar { get; set; }
+
+        public string? ConfirmationToken { get; set; }
+
+        public bool? IsConfirmed { get; set; }
     }
 }
