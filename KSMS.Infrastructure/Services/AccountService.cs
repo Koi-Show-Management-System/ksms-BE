@@ -85,7 +85,7 @@ public class AccountService : BaseService<AccountService>, IAccountService
         }
          
         var user = createAccountRequest.Adapt<Account>();
-        user.HashedPassword = PasswordUtil.HashPassword(createAccountRequest.Password);
+        user.HashedPassword = PasswordUtil.HashPassword(createAccountRequest.HashedPassword);
         user.IsConfirmed = true;
         var createdUser = await userRepository.InsertAsync(user);
         await _unitOfWork.CommitAsync();

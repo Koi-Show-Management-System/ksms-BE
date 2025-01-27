@@ -8,6 +8,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace KSMS.Infrastructure.Repositories
 {
@@ -85,6 +86,11 @@ namespace KSMS.Infrastructure.Repositories
                         .CurrentValue = DateTime.UtcNow;
                 }
             }
+        }
+
+        public async Task<IDbContextTransaction> BeginTransactionAsync()
+        {
+            return await Context.Database.BeginTransactionAsync();
         }
     }
 }

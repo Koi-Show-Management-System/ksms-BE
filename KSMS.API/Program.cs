@@ -7,8 +7,9 @@ using Net.payOS;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-var payOs = new PayOS(AppConfig.PayOs.ClientId!, AppConfig.PayOs.ApiKey!, AppConfig.PayOs.ChecksumKey!);
-builder.Services.AddSingleton(payOs);
+var payOs = new PayOS(builder.Configuration["PayOs:ClientId"]!,
+    builder.Configuration["PayOs:ApiKey"]!,
+    builder.Configuration["PayOs:ChecksumKey"]!); builder.Services.AddSingleton(payOs);
 builder.Services.AddControllers().AddJsonOptions(options =>
         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle

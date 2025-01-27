@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,5 +18,6 @@ namespace KSMS.Application.Repositories
     public interface IUnitOfWork<TContext> : IUnitOfWork where TContext : DbContext
     {
         TContext Context { get; }
+        Task<IDbContextTransaction> BeginTransactionAsync();
     }
 }
