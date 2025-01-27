@@ -12,6 +12,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
  
 using BCrypt.Net;
+using KSMS.Domain.Dtos.Responses.Account;
+using KSMS.Domain.Exceptions;
+using KSMS.Infrastructure.Utils;
 
 namespace KSMS.Infrastructure.Services;
 
@@ -22,34 +25,20 @@ public class AccountService : BaseService<AccountService>, IAccountService
     {
         _firebaseService = firebaseService;
     }
-    public async Task<IPaginate<UserResponse>> GetPagedUsersAsync(int page, int size)
-    {
-        
+    public async Task<Paginate<AccountResponse>> GetPagedUsersAsync(int page, int size)
+    { 
         var userRepository = _unitOfWork.GetRepository<Account>();
 
-       
-        var pagedUsers = await userRepository.GetPagingListAsync(
-            selector: account => new UserResponse
-            {
-                Id = account.Id,
-                Email = account.Email,
-                FullName = account.FullName,
-                Phone = account.Phone,
-                Role = account.Role != null ? account.Role.Name : RoleName.Member.ToString(),
-                Status = account.Status ?? "active",
-                RoleId = account.RoleId,
-                Avatar = account.Avatar
-            },
-            predicate: null,  
+        
+       var pagedUsers = await userRepository.GetPagingListAsync(
             orderBy: query => query.OrderBy(a => a.Username),  
             include: query => query.Include(a => a.Role),  
             page: page,  
             size: size   
         );
-
-        return pagedUsers;
+        return pagedUsers.Adapt<Paginate<AccountResponse>>();
     }
-    public async Task<UserResponse> GetUserByIdAsync(Guid id)
+    public async Task<AccountResponse> GetUserByIdAsync(Guid id)
     {
         var user = await _unitOfWork.GetRepository<Account>()
             .SingleOrDefaultAsync(
@@ -59,26 +48,14 @@ public class AccountService : BaseService<AccountService>, IAccountService
 
         if (user == null)
         {
-            throw new KeyNotFoundException("User not found");
+            throw new NotFoundException("User not found");
         }
 
+        return user.Adapt<AccountResponse>();
         
-        return new UserResponse
-        {
-            Id = user.Id,
-            Email = user.Email,
-            FullName = user.FullName,
-            Phone = user.Phone,
-            Role = user.Role != null ? user.Role.Name : "N/A",
-            RoleId = user.RoleId,
-            Status = user.Status ?? "active",
-            Avatar = user.Avatar,
-            ConfirmationToken = user.ConfirmationToken,
-            IsConfirmed = user.IsConfirmed
-        };
     }
 
-    public async Task<UserResponse> CreateUserAsync(CreateAccountRequest createAccountRequest)
+    public async Task<AccountResponse> CreateUserAsync(CreateAccountRequest createAccountRequest)
     {
          
         var userRepository = _unitOfWork.GetRepository<Account>();
@@ -90,55 +67,35 @@ public class AccountService : BaseService<AccountService>, IAccountService
         );
         if (role == null)
         {
-            throw new KeyNotFoundException($"Role with ID '{createAccountRequest.RoleId}' not found");
+            throw new NotFoundException($"Role with ID '{createAccountRequest.RoleId}' not found");
         }
-
-         
         var emailExists = await userRepository.SingleOrDefaultAsync(
             predicate: u => u.Email == createAccountRequest.Email
         ) != null;
         if (emailExists)
         {
-            throw new InvalidOperationException($"Email '{createAccountRequest.Email}' is already in use");
+            throw new BadRequestException($"Email '{createAccountRequest.Email}' is already in use");
         }
-
-     
         var usernameExists = await userRepository.SingleOrDefaultAsync(
             predicate: u => u.Username == createAccountRequest.Username
         ) != null;
         if (usernameExists)
         {
-            throw new InvalidOperationException($"Username '{createAccountRequest.Username}' is already in use");
+            throw new BadRequestException($"Username '{createAccountRequest.Username}' is already in use");
         }
          
         var user = createAccountRequest.Adapt<Account>();
-         
-        user.RoleId = role.Id;
-        
-        user.Status = "active";
-       
-        user.CreatedAt = DateTime.UtcNow;
-        
-        try
-        {
-            
-            var createdUser = await userRepository.InsertAsync(user);
-            await _unitOfWork.CommitAsync();
-
-            
-            return createdUser.Adapt<UserResponse>();
-        }
-        catch (Exception ex)
-        {
-             
-            throw new InvalidOperationException("An error occurred while creating the user.", ex);
-        }
+        user.HashedPassword = PasswordUtil.HashPassword(createAccountRequest.Password);
+        user.IsConfirmed = true;
+        var createdUser = await userRepository.InsertAsync(user);
+        await _unitOfWork.CommitAsync();
+        return createdUser.Adapt<AccountResponse>();
     }
 
 
 
 
-    public async Task<UserResponse> DeleteUserAsync(Guid id)
+    public async Task<AccountResponse> UpdateStatus(Guid id, AccountStatus status)
     {
         var userRepository = _unitOfWork.GetRepository<Account>();
 
@@ -149,31 +106,19 @@ public class AccountService : BaseService<AccountService>, IAccountService
         );
 
         if (user == null)
-            throw new KeyNotFoundException("User not found");
-
+            throw new NotFoundException("User not found");
         
-        user.Status = user.Status == "active" ? "block" : "active";
-
         
+        user.Status = status switch
+        {
+            AccountStatus.Blocked => AccountStatus.Blocked.ToString().ToLower(),
+            AccountStatus.Deleted => AccountStatus.Deleted.ToString().ToLower(),
+            AccountStatus.Active => AccountStatus.Active.ToString().ToLower(),
+            _ => user.Status
+        };
         userRepository.UpdateAsync(user);
         await _unitOfWork.CommitAsync();
-
-         
-        var userResponse = new UserResponse
-        {
-            Id = user.Id,
-            Email = user.Email,
-            FullName = user.FullName,
-            Phone = user.Phone,
-            Role = user.Role?.Name ?? "N/A", 
-            RoleId = user.RoleId,
-            Status = user.Status,
-            Avatar = user.Avatar,
-            ConfirmationToken = user.ConfirmationToken,
-            IsConfirmed = user.IsConfirmed
-        };
-
-        return userResponse;
+        return user.Adapt<AccountResponse>();
     }
 
 

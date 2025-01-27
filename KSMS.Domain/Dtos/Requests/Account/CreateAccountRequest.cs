@@ -29,13 +29,12 @@ using System.Threading.Tasks;
 
             [Required]
             [MinLength(8, ErrorMessage = "Password must be at least 8 characters long")]
-            public string HashedPassword { get; set; } = string.Empty;
+            public string Password { get; set; } = string.Empty;
 
             [Required]
             public Guid RoleId { get; set; }
 
             public string? Avatar { get; set; }
-            public bool? IsConfirmed { get; set; }
     }
     }
 

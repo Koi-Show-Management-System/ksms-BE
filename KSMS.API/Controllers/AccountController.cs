@@ -1,5 +1,6 @@
 ﻿using KSMS.Application.Services;
 using KSMS.Domain.Dtos.Requests.Account;
+using KSMS.Domain.Enums;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -15,62 +16,32 @@ namespace KSMS.API.Controllers
         {
             _accountService = accountService;
         }
-        [HttpDelete("{id:guid}")]
-        public async Task<IActionResult> ToggleUserStatus(Guid id)
+        [HttpPatch("{id:guid}")]
+        public async Task<IActionResult> ToggleUserStatus(Guid id, AccountStatus status)
         {
-            try
-            {
-                var updatedUser = await _accountService.DeleteUserAsync(id);  
-                var statusMessage = updatedUser.Status == "block" ? "blocked" : "activated";
-                return Ok(new { Message = $"User has been {statusMessage}.", User = updatedUser });
-            }
-            catch (KeyNotFoundException ex)
-            {
-                return NotFound(new { Error = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { Error = "An unexpected error occurred.", Details = ex.Message });
-            }
+            var updatedUser = await _accountService.UpdateStatus(id, status);
+            var statusMessage = status.ToString().ToLower();
+            return Ok(new { Message = $"User has been {statusMessage}.", User = updatedUser });
+
         }
 
         [HttpPost("create")]
         public async Task<IActionResult> CreateUser([FromBody] CreateAccountRequest createAccountRequest)
         {
-            try
-            {
-                var newUser = await _accountService.CreateUserAsync(createAccountRequest);
-                return CreatedAtAction(nameof(GetAccUsersByAdmin), new { id = newUser.Id }, newUser);
-            }
-            catch (KeyNotFoundException ex)
-            {
-                return BadRequest(new { Error = ex.Message });
-            }
+            var newUser = await _accountService.CreateUserAsync(createAccountRequest);
+            return CreatedAtAction(nameof(GetAccUsersByAdmin), new { id = newUser.Id }, newUser);
         }
         [HttpGet("{id:guid}")]
         public async Task<IActionResult> GetUserById(Guid id)
         {
-            try
-            {
-                var user = await _accountService.GetUserByIdAsync(id);
-                return Ok(user);
-            }
-            catch (KeyNotFoundException ex)
-            {
-                return NotFound(new { Error = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { Error = "An unexpected error occurred.", Details = ex.Message });
-            }
+            var user = await _accountService.GetUserByIdAsync(id);
+            return Ok(user);
         }
 
         [Route("admin/GetAllUseraccount")]
         [HttpGet]
         public async Task<IActionResult> GetAccUsersByAdmin([FromQuery] int page = 1, [FromQuery] int size = 10)
         {
-            if (page <= 0 || size <= 0)
-                return BadRequest("Page and size must be greater than 0.");
 
             
             var pagedUsers = await _accountService.GetPagedUsersAsync(page, size);
