@@ -35,7 +35,7 @@ public partial class Registration : BaseEntity
     public string? Notes { get; set; }
 
     public DateTime? ApprovedAt { get; set; }
-    
+
     public virtual Account Account { get; set; } = null!;
 
     public virtual Category Category { get; set; } = null!;
@@ -49,6 +49,8 @@ public partial class Registration : BaseEntity
     public virtual ICollection<Result> Results { get; set; } = new List<Result>();
 
     public virtual ICollection<Score> Scores { get; set; } = new List<Score>();
+
+    public virtual Variety Variety { get; set; } = null!;
 
     public virtual ICollection<Vote> Votes { get; set; } = new List<Vote>();
 }

@@ -25,7 +25,7 @@ public partial class Account : BaseEntity
     public string? ConfirmationToken { get; set; }
 
     public bool? IsConfirmed { get; set; }
-    
+
     public virtual ICollection<BlogsNews> BlogsNews { get; set; } = new List<BlogsNews>();
 
     public virtual ICollection<CheckInLog> CheckInLogs { get; set; } = new List<CheckInLog>();

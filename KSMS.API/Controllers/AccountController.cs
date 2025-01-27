@@ -1,6 +1,8 @@
-﻿using KSMS.Application.Services;
+﻿using KSMS.Application.GoogleServices;
+using KSMS.Application.Services;
 using KSMS.Domain.Dtos.Requests.Account;
 using KSMS.Domain.Enums;
+using KSMS.Infrastructure.Utils;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -10,11 +12,13 @@ namespace KSMS.API.Controllers
     [ApiController]
     public class AccountController : ControllerBase
     {
+        private readonly IFirebaseService _firebaseService;
         private readonly IAccountService _accountService;
 
-        public AccountController(IAccountService accountService)
+        public AccountController(IAccountService accountService, IFirebaseService firebaseService)
         {
             _accountService = accountService;
+            _firebaseService = firebaseService;
         }
         [HttpPatch("{id:guid}")]
         public async Task<IActionResult> ToggleUserStatus(Guid id, AccountStatus status)
@@ -54,6 +58,13 @@ namespace KSMS.API.Controllers
         {
             await _accountService.UpdateAccount(id, updateAccountRequest);
             return NoContent();
+        }
+        [HttpPost()]
+        public async Task<IActionResult> Test()
+        {
+            var qrCode = QrcodeUtil.GenerateQrCode(Guid.NewGuid());
+            await _firebaseService.UploadImageAsync(FileUtils.ConvertBase64ToFile(qrCode), "qrcode/");
+            return Ok();
         }
     }
 }

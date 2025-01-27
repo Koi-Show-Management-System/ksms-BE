@@ -1,0 +1,116 @@
+﻿using System.Security.Claims;
+using KSMS.Application.Extensions;
+using KSMS.Application.GoogleServices;
+using KSMS.Application.Repositories;
+using KSMS.Application.Services;
+using KSMS.Domain.Dtos.Requests.Registration;
+using KSMS.Domain.Dtos.Responses.Registration;
+using KSMS.Domain.Entities;
+using KSMS.Domain.Enums;
+using KSMS.Domain.Exceptions;
+using KSMS.Infrastructure.Database;
+using Mapster;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Net.payOS;
+using Net.payOS.Types;
+using PaymentType = KSMS.Domain.Entities.PaymentType;
+
+namespace KSMS.Infrastructure.Services;
+
+public class RegistrationService : BaseService<RegistrationService>, IRegistrationService
+{
+    private readonly PayOS _payOs;
+    private readonly IFirebaseService _firebaseService;
+    public RegistrationService(IUnitOfWork<KoiShowManagementSystemContext> unitOfWork, ILogger<RegistrationService> logger, IFirebaseService firebaseService, PayOS payOs) : base(unitOfWork, logger)
+    {
+        _firebaseService = firebaseService;
+        _payOs = payOs;
+    }
+
+    public async Task<RegistrationResponse> CreateRegistrationWithPayOs(ClaimsPrincipal claims, CreateRegistrationRequest createRegistrationRequest)
+    {
+        var accountId = claims.GetAccountId();
+        
+        var variety = await _unitOfWork.GetRepository<Variety>()
+            .SingleOrDefaultAsync(predicate:v => v.Id == createRegistrationRequest.VarietyId);
+        var category = await _unitOfWork.GetRepository<Category>().SingleOrDefaultAsync(
+            predicate: c => c.Id == createRegistrationRequest.CategoryId,
+            include: query => query.Include(c => c.Show));
+        var registrationCount =
+            await _unitOfWork.GetRepository<Registration>().GetListAsync(predicate: x => x.CategoryId == category.Id);
+        if (registrationCount.Count > category.MaxEntries)
+        {
+            throw new NotFoundException("");
+        }
+        if (variety is null)
+        {
+            throw new NotFoundException("Variety is not found");
+        }
+        if (category is null)
+        {
+            throw new NotFoundException("Category is not found");
+        }
+        if (category.VarietyId is not null)
+        {
+            if (variety.Id != category.VarietyId)
+            {
+                throw new BadRequestException(
+                    "Variety of Koi for your registration is not match with Variety of this category");
+            }
+        }
+        if (createRegistrationRequest.Size < category.SizeMin || createRegistrationRequest.Size > category.SizeMax)
+        {
+            throw new BadRequestException("Your size of koi is not in range of category");
+        }
+        var registration = createRegistrationRequest.Adapt<Registration>();
+        registration.RegistrationFee = category.Show.RegistrationFee;
+        registration.ImgUrl = await _firebaseService.UploadImageAsync(createRegistrationRequest.Img, "koi");
+        registration.VideoUrl = await _firebaseService.UploadImageAsync(createRegistrationRequest.Video, "koi");
+        registration.AccountId = accountId;
+        registration.Status = RegistrationStatus.Pending.ToString().ToLower();
+        await _unitOfWork.GetRepository<Registration>().InsertAsync(registration);
+        await _unitOfWork.CommitAsync();
+        var registrationPayment = new RegistrationPayment
+        {
+            RegistrationId = registration.Id,
+            Status = RegistrationPaymentStatus.Pending.ToString().ToLower(),
+            PaymentMethod = PaymentMethod.PayOs.ToString(),
+            PaymentTypeId = (await _unitOfWork.GetRepository<PaymentType>()
+                .SingleOrDefaultAsync(predicate: x => x.Name == PaymentTypes.Registration.ToString())).Id,
+            PaidAmount = category.Show.RegistrationFee,
+            PaymentDate = DateTime.Now
+        };
+        await _unitOfWork.GetRepository<RegistrationPayment>().InsertAsync(registrationPayment);
+        await _unitOfWork.CommitAsync();
+        var registrationCode = int.Parse(DateTimeOffset.Now.ToString("ffffff"));
+        var items = new List<ItemData>();
+        var item = new ItemData("Registration for " + registration.Name, 1, (int)category.Show.RegistrationFee);
+        items.Add(item);
+        const string baseUrl = "http://localhost:5234/api/orders" + "/success";
+        var url = $"{baseUrl}?registrationPaymentId={registrationPayment.Id}";
+        var paymentData = new PaymentData(registrationCode, (int)category.Show.RegistrationFee, "Registration", items,
+            url, url);
+        var createPayment = await _payOs.createPaymentLink(paymentData);
+        return new RegistrationResponse()
+        {
+            Message = "Register Successfully",
+            Url = createPayment.checkoutUrl
+        };
+    }
+
+    public async Task UpdateRegistrationPaymentStatusForPayOs(Guid registrationPaymentId, RegistrationPaymentStatus status)
+    {
+        var registrationPayment = await _unitOfWork.GetRepository<RegistrationPayment>()
+            .SingleOrDefaultAsync(predicate: r => r.Id == registrationPaymentId);
+        registrationPayment.Status = status switch
+        {
+            RegistrationPaymentStatus.Cancelled => RegistrationPaymentStatus.Cancelled.ToString().ToLower(),
+            RegistrationPaymentStatus.Paid => RegistrationPaymentStatus.Paid.ToString().ToLower(),
+            _ => registrationPayment.Status
+        };
+        _unitOfWork.GetRepository<RegistrationPayment>().UpdateAsync(registrationPayment);
+        
+    }
+    
+}
