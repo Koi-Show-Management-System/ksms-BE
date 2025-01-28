@@ -42,7 +42,8 @@ public static class MailUtil
         "[KOI SHOW SYSTEM] Xác nhận đăng kí tài khoản thành công";
       public readonly static string Title_ThankingForRegisterSh =
           "[KOI SHOW SYSTEM] Xác nhận đăng kí tham gia giải cá koi thành công";
-
+      public readonly static string Title_ApproveForRegisterSh =
+          "[KOI SHOW SYSTEM] Xác nhận duyệt đơn đăng kí cá koi thành công";
       public static string ThankingForRegistration(string fullname, string confirmationLink)
       {
           return @"
@@ -141,6 +142,62 @@ public static class MailUtil
                                 <li>Quý khách vui lòng kiểm tra email thường xuyên để nhận thông báo mới nhất.</li>
                             </ul>
                             <p>Nếu bạn cần hỗ trợ hoặc có bất kỳ thắc mắc nào, vui lòng liên hệ với chúng tôi qua email hoặc hotline.</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td align='center' style='padding: 20px;'>
+                            <p style='font-size: 14px; color: #666; border-top: 1px solid #ddd; padding-top: 10px;'>Trân trọng,</p>
+                            <p style='font-family: Arial, sans-serif; font-size: 18px; font-weight: bold; color: #1a2a6c;'>Đội ngũ Koi Show</p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>";
+}
+public static string SendApprovalEmail(Registration registration, string qrCodeUrl, DateTime? expiryDate)
+{
+    return $@"
+<!DOCTYPE html>
+<html lang='vi'>
+<head>
+    <meta charset='UTF-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <title>KOI SHOW - Xác nhận duyệt đơn đăng ký</title>
+</head>
+<body style='margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4;'>
+    <table border='0' cellpadding='0' cellspacing='0' width='100%' style='background-color: #f4f4f4;'>
+        <tr>
+            <td align='center' style='padding: 20px 0;'>
+                <table border='0' cellpadding='0' cellspacing='0' width='600' style='background-color: #ffffff; border-radius: 10px; padding: 20px;'>
+                    <tr>
+                        <td align='center' style='font-family: Arial, sans-serif; color: #1a2a6c;'>
+                            <h1 style='font-size: 36px; margin: 20px 0;'>KOI SHOW</h1>
+                            <hr style='border: none; border-top: 3px solid #b21f1f; width: 60px; margin: 10px auto;'>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style='font-family: Arial, sans-serif; font-size: 16px; line-height: 1.8; padding: 20px; color: #333;'>
+                            <p>Thân gửi <span style='font-weight: bold; color: #b21f1f;'>{registration.Account.FullName}</span>,</p>
+                            <p>Chúng tôi rất vui thông báo rằng đơn đăng ký tham gia sự kiện <span style='font-weight: bold; color: #b21f1f;'>{registration.Category.Show.Name}</span> và hạng mục <span style='font-weight: bold; color: #b21f1f;'>{registration.Category.Name}</span> của bạn đã được <span style='font-weight: bold; color: #1a2a6c;'>duyệt thành công</span>.</p>
+                            <p>Vui lòng xuất trình mã QR dưới đây khi check-in tại sự kiện:</p>
+                            <div style='text-align: center; margin: 20px 0;'>
+                                <img src='{qrCodeUrl}' alt='QR Code' style='width: 200px; height: 200px; border: 1px solid #ddd;'>
+                            </div>
+                            <p><strong>Thông tin mã QR:</strong></p>
+                            <ul style='margin: 10px 0; padding-left: 20px;'>
+                                <li><strong>Thời gian hiệu lực:</strong> đến <span style='color: #b21f1f;'>{expiryDate:HH:mm dd/MM/yyyy}</span></li>
+                                <li><strong>Lưu ý:</strong> Mã QR chỉ có hiệu lực trong vòng 30 phút. Vui lòng đến đúng giờ.</li>
+                            </ul>
+                            <p>Chúng tôi rất mong được gặp bạn tại sự kiện và chúc bạn có một trải nghiệm tuyệt vời.</p>
+                            <p style='font-weight: bold; color: #b21f1f;'>Thông tin quan trọng:</p>
+                            <ul style='margin: 10px 0; padding-left: 20px;'>
+                                <li style='margin-bottom: 10px;'>Đảm bảo xuất trình mã QR này để hoàn tất check-in.</li>
+                                <li style='margin-bottom: 10px;'>Nếu có bất kỳ thắc mắc nào, vui lòng liên hệ đội ngũ hỗ trợ qua email hoặc hotline.</li>
+                                <li>Kiểm tra email thường xuyên để cập nhật thông tin sự kiện.</li>
+                            </ul>
                         </td>
                     </tr>
                     <tr>

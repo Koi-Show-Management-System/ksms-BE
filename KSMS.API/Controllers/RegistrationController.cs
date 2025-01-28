@@ -36,5 +36,12 @@ namespace KSMS.API.Controllers
             await _registrationService.UpdateRegistrationPaymentStatusForPayOs(registrationPaymentId, RegistrationPaymentStatus.Paid); 
             return Redirect("http://localhost:5173/success");
         }
+        [HttpPut("{id:guid}")]
+        public async Task<IActionResult> ToggleUserStatus(Guid id, RegistrationStatus status)
+        {
+            await _registrationService.UpdateStatusForRegistration(id, status);
+            return NoContent();
+
+        }
     }
 }
