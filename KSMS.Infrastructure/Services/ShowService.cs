@@ -2,6 +2,7 @@
 using KSMS.Application.Services;
 using KSMS.Domain.Dtos.Requests.Show;
 using KSMS.Domain.Dtos.Responses.Show;
+using KSMS.Domain.Dtos.Responses.ShowStatus;
 using KSMS.Domain.Entities;
 using KSMS.Domain.Exceptions;
 using KSMS.Infrastructure.Database;
@@ -11,6 +12,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 
 namespace KSMS.Infrastructure.Services
 {
@@ -215,9 +217,23 @@ namespace KSMS.Infrastructure.Services
             throw new NotImplementedException();
         }
 
-        public Task<ShowResponse> GetShowByIdAsync(Guid id)
+        public async Task<ShowResponse> GetShowByIdAsync(Guid id)
         {
-            throw new NotImplementedException();
+            await UpdateShowStatusAsync(id); // Cập nhật trạng thái trước khi trả về Show
+
+            var showRepository = _unitOfWork.GetRepository<Show>();
+
+            var show = await showRepository.SingleOrDefaultAsync(
+                predicate: s => s.Id == id,
+                include: s => s.Include(s => s.ShowStatuses)
+            );
+
+            if (show == null)
+            {
+                throw new NotFoundException("Show not found.");
+            }
+
+            return show.Adapt<ShowResponse>();
         }
 
         public Task PatchShowStatusAsync(Guid id, string statusName)
@@ -229,5 +245,49 @@ namespace KSMS.Infrastructure.Services
         {
             throw new NotImplementedException();
         }
+        /// <summary>
+        /// Cập nhật trạng thái của ShowStatus theo thời gian
+        /// </summary>
+        private async Task UpdateShowStatusAsync(Guid showId)
+        {
+            var showStatusRepository = _unitOfWork.GetRepository<ShowStatus>();
+
+            var currentTime = DateTime.UtcNow;
+
+            // Lấy danh sách các ShowStatus liên quan đến showId
+            var showStatuses = await showStatusRepository.GetListAsync(
+                predicate: s => s.ShowId == showId,
+                orderBy: q => q.OrderBy(s => s.StartDate) // Đảm bảo xử lý theo thứ tự thời gian
+            );
+
+            if (showStatuses.Any())
+            {
+                bool hasChanges = false;
+
+                foreach (var status in showStatuses)
+                {
+                    if (status.StartDate <= currentTime && status.EndDate > currentTime)
+                    {
+                        status.StatusName = "Ongoing"; // Đang diễn ra
+                        status.IsActive = true;
+                        hasChanges = true;
+                    }
+                    else if (status.EndDate <= currentTime)
+                    {
+                        status.StatusName = "Completed"; // Đã kết thúc
+                        status.IsActive = false;
+                        hasChanges = true;
+                    }
+                }
+
+                // Nếu có thay đổi thì update vào database
+                if (hasChanges)
+                {
+                    showStatusRepository.UpdateRange(showStatuses);
+                    await _unitOfWork.CommitAsync();
+                }
+            }
+        }
+
     }
 }

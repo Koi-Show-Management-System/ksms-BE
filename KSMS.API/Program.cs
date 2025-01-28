@@ -3,6 +3,10 @@ using KSMS.API.Middlewares;
 using System.Text.Json.Serialization;
 using KSMS.Domain.Common;
 using Net.payOS;
+using KSMS.Application.Repositories;
+using KSMS.Infrastructure.Database;
+using KSMS.Infrastructure.Repositories;
+using KSMS.Infrastructure.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -15,6 +19,7 @@ builder.Services.AddControllers().AddJsonOptions(options =>
         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddHostedService<ShowStatusBackgroundService>();
 builder.Services.AddSwaggerGen();
 builder.Services.AddHttpContextAccessor();
 builder.ConfigureAutofacContainer();
@@ -28,6 +33,7 @@ builder.Services.AddCors(options =>
             .AllowAnyHeader();
     });
 });
+builder.Services.AddScoped<IUnitOfWork<KoiShowManagementSystemContext>, UnitOfWork<KoiShowManagementSystemContext>>();
 builder.Configuration.SettingsBinding();
 builder.Services.AddAuthenticationServicesConfigurations(builder.Configuration);
 builder.Services.AddSwaggerConfigurations();
