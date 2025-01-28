@@ -219,13 +219,38 @@ namespace KSMS.Infrastructure.Services
 
         public async Task<ShowResponse> GetShowByIdAsync(Guid id)
         {
-            await UpdateShowStatusAsync(id); // Cập nhật trạng thái trước khi trả về Show
+            //await UpdateShowStatusAsync(id); // Cập nhật trạng thái trước khi trả về Show
 
             var showRepository = _unitOfWork.GetRepository<Show>();
 
             var show = await showRepository.SingleOrDefaultAsync(
                 predicate: s => s.Id == id,
-                include: s => s.Include(s => s.ShowStatuses)
+                include: query => query.Include(s => s.ShowStatuses)
+                    .Include(s => s.Categories)
+                        .ThenInclude(s => s.Rounds)
+                    .Include(s => s.Categories)
+                        .ThenInclude(s => s.Awards)
+                    .Include(s => s.Categories)
+                        .ThenInclude(s => s.CriteriaGroups)
+                            .ThenInclude(s => s.Criteria)
+                    .Include(s => s.Categories)
+                        .ThenInclude(s => s.RefereeAssignments)
+                            .ThenInclude(s => s.RefereeAccount)
+                                .ThenInclude(s => s.Role)
+                    .Include(s => s.Categories)
+                        .ThenInclude(s => s.RefereeAssignments)
+                            .ThenInclude(s => s.AssignedByNavigation)
+                                .ThenInclude(s => s.Role)
+                    .Include(s => s.ShowStaffs)
+                        .ThenInclude(s => s.AssignedByNavigation)
+                            .ThenInclude(s => s.Role)
+                    .Include(s => s.ShowStaffs)
+                        .ThenInclude(s => s.Account)
+                            .ThenInclude(s => s.Role)
+                    .Include(s => s.ShowRules)
+                    .Include(s => s.ShowStatistics)
+                    .Include(s => s.Sponsors)
+                    .Include(s => s.Tickets)
             );
 
             if (show == null)

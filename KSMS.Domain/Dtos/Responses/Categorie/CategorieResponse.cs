@@ -15,6 +15,7 @@ namespace KSMS.Domain.Dtos.Responses.Categorie
 {
     public class CategorieResponse
     {
+        public Guid Id { get; set; }
         public Guid ShowId { get; set; }
 
         public string Name { get; set; } = null!;

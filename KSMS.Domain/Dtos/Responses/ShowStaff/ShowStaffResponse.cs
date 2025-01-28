@@ -13,10 +13,6 @@ namespace KSMS.Domain.Dtos.Responses.ShowStaff
 
         public Guid ShowId { get; set; }
 
-        public Guid AccountId { get; set; }
-
-        public Guid AssignedBy { get; set; }
-
         public DateTime AssignedAt { get; set; }
 
         public virtual AccountResponse Account { get; set; } = null!;

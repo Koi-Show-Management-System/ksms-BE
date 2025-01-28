@@ -9,4 +9,5 @@ public interface IRegistrationService
 {
     Task<RegistrationResponse> CreateRegistrationWithPayOs(ClaimsPrincipal claims, CreateRegistrationRequest createRegistrationRequest);
     Task UpdateRegistrationPaymentStatusForPayOs(Guid registrationPaymentId, RegistrationPaymentStatus status);
+    Task UpdateStatusForRegistration(Guid registrationId, RegistrationStatus status);
 }
