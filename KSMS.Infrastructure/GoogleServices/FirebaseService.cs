@@ -92,12 +92,12 @@ public class FirebaseService : IFirebaseService
     public async Task<string> UploadImageAsync(IFormFile imageFile, string imagePath)
     {
         // Đặt giới hạn kích thước file (ví dụ 5MB = 5 * 1024 * 1024 bytes)
-        long fileSizeLimit = 5 * 1024 * 1024;
-
-        if (imageFile.Length > fileSizeLimit)
-        {
-            throw new Exception("Kích thước file vượt quá giới hạn cho phép (5MB).");
-        }
+        // long fileSizeLimit = 5 * 1024 * 1024;
+        //
+        // if (imageFile.Length > fileSizeLimit)
+        // {
+        //     throw new Exception("Kích thước file vượt quá giới hạn cho phép (5MB).");
+        // }
 
         using var stream = new MemoryStream();
         await imageFile.CopyToAsync(stream);

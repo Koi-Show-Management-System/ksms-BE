@@ -9,6 +9,7 @@ using KSMS.Domain.Entities;
 using KSMS.Domain.Enums;
 using KSMS.Domain.Exceptions;
 using KSMS.Infrastructure.Database;
+using KSMS.Infrastructure.Utils;
 using Mapster;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -65,8 +66,8 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
         }
         var registration = createRegistrationRequest.Adapt<Registration>();
         registration.RegistrationFee = category.Show.RegistrationFee;
-        registration.ImgUrl = await _firebaseService.UploadImageAsync(createRegistrationRequest.Img, "koi");
-        registration.VideoUrl = await _firebaseService.UploadImageAsync(createRegistrationRequest.Video, "koi");
+        registration.ImgUrl = await _firebaseService.UploadImageAsync(createRegistrationRequest.Img, "koi/");
+        registration.VideoUrl = await _firebaseService.UploadImageAsync(createRegistrationRequest.Video, "koi/");
         registration.AccountId = accountId;
         registration.Status = RegistrationStatus.Pending.ToString().ToLower();
         await _unitOfWork.GetRepository<Registration>().InsertAsync(registration);
@@ -87,7 +88,7 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
         var items = new List<ItemData>();
         var item = new ItemData("Registration for " + registration.Name, 1, (int)category.Show.RegistrationFee);
         items.Add(item);
-        const string baseUrl = "http://localhost:5234/api/orders" + "/success";
+        const string baseUrl = "https://localhost:7042/api/Registration" + "/success";
         var url = $"{baseUrl}?registrationPaymentId={registrationPayment.Id}";
         var paymentData = new PaymentData(registrationCode, (int)category.Show.RegistrationFee, "Registration", items,
             url, url);
@@ -102,7 +103,10 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
     public async Task UpdateRegistrationPaymentStatusForPayOs(Guid registrationPaymentId, RegistrationPaymentStatus status)
     {
         var registrationPayment = await _unitOfWork.GetRepository<RegistrationPayment>()
-            .SingleOrDefaultAsync(predicate: r => r.Id == registrationPaymentId);
+            .SingleOrDefaultAsync(predicate: r => r.Id == registrationPaymentId,
+                include: query => query.Include(r => r.Registration).ThenInclude(r => r.Account)
+                    .Include(r => r.Registration).ThenInclude(r => r.Variety)
+                    .Include(r => r.Registration).ThenInclude(r => r.Category).ThenInclude(r => r.Show));
         registrationPayment.Status = status switch
         {
             RegistrationPaymentStatus.Cancelled => RegistrationPaymentStatus.Cancelled.ToString().ToLower(),
@@ -110,7 +114,17 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
             _ => registrationPayment.Status
         };
         _unitOfWork.GetRepository<RegistrationPayment>().UpdateAsync(registrationPayment);
-        
+        await _unitOfWork.CommitAsync();
+        if (registrationPayment.Status == RegistrationPaymentStatus.Paid.ToString().ToLower())
+        {
+            var sendMail = MailUtil.SendEmail(registrationPayment.Registration.Account.Email,
+                MailUtil.ContentMailUtil.Title_ThankingForRegisterSh,
+                MailUtil.ContentMailUtil.ConfirmingRegistration(registrationPayment), "");
+            if (!sendMail)
+            {
+                throw new BadRequestException("Error sending confirmation email.");
+            }
+        }
     }
     
 }
