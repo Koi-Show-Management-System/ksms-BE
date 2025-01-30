@@ -10,7 +10,9 @@ namespace KSMS.Domain.Dtos.Responses.CriteriaGroupRequest
 {
     public class CriteriaGroupResponse
     {
+
         public Guid Id { get; set; }
+ 
         public Guid CategoryId { get; set; }
 
         public string Name { get; set; } = null!;
@@ -19,6 +21,6 @@ namespace KSMS.Domain.Dtos.Responses.CriteriaGroupRequest
 
         public string? Description { get; set; }
 
-        public virtual ICollection<CriterionResponse> Criterias { get; set; } = new List<CriterionResponse>();
+        public virtual ICollection<CriterionResponse> Criteria { get; set; } = new List<CriterionResponse>();
     }
 }

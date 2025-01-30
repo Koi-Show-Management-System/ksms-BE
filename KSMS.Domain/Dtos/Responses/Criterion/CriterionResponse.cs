@@ -8,7 +8,12 @@ namespace KSMS.Domain.Dtos.Responses.Criterion
 {
     public class CriterionResponse
     {
+ 
+       
+        public Guid? CriteriaGroupId { get; set; }
+
         public Guid Id { get; set; }
+
 
         public string Name { get; set; } = null!;
 
