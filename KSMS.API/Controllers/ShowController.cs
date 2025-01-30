@@ -60,22 +60,17 @@ namespace KSMS.API.Controllers
             }
         }
 
-        /// <summary>
-        /// Get a paginated list of shows.
-        /// </summary>
-        //[HttpGet("list")]
-        //public async Task<IActionResult> GetShows([FromQuery] int page = 1, [FromQuery] int size = 10)
-        //{
-        //    try
-        //    {
-        //        var shows = await _showService.GetPagedShowsAsync(page, size);
-        //        return Ok(shows);
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        return StatusCode(500, new { Error = "An unexpected error occurred.", Details = ex.Message });
-        //    }
-        //}
+        // <summary>
+        // Get a paginated list of shows.
+        // </summary>
+        [HttpGet("listShow")]
+        public async Task<IActionResult> GetShows()
+        {
+           
+                var shows = await _showService.GetAllShowsAsync();
+                return Ok(shows);
+           
+        }
 
         /// <summary>
         /// Update the status of a show.

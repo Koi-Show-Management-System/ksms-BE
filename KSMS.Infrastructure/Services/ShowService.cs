@@ -212,9 +212,48 @@ namespace KSMS.Infrastructure.Services
             }
         }
 
-        public Task<IEnumerable<ShowResponse>> GetAllShowsAsync()
+        public async Task<IEnumerable<ShowResponse>> GetAllShowsAsync()
         {
-            throw new NotImplementedException();
+         
+            var showRepository = _unitOfWork.GetRepository<Show>();
+
+             
+            var shows = await showRepository.GetListAsync(
+                predicate: null,  
+                orderBy: q => q.OrderBy(s => s.Name),
+             include: query => query.Include(s => s.ShowStatuses)
+                    .Include(s => s.Categories)
+                        .ThenInclude(s => s.Rounds)
+                    .Include(s => s.Categories)
+                        .ThenInclude(s => s.Awards)
+                    .Include(s => s.Categories)
+                        .ThenInclude(s => s.CriteriaGroups)
+                            .ThenInclude(s => s.Criteria)
+                    .Include(s => s.Categories)
+                        .ThenInclude(s => s.RefereeAssignments)
+                            .ThenInclude(s => s.RefereeAccount)
+                                .ThenInclude(s => s.Role)
+                    .Include(s => s.Categories)
+                        .ThenInclude(s => s.RefereeAssignments)
+                            .ThenInclude(s => s.AssignedByNavigation)
+                                .ThenInclude(s => s.Role)
+                    .Include(s => s.ShowStaffs)
+                        .ThenInclude(s => s.AssignedByNavigation)
+                            .ThenInclude(s => s.Role)
+                    .Include(s => s.ShowStaffs)
+                        .ThenInclude(s => s.Account)
+                            .ThenInclude(s => s.Role)
+                    .Include(s => s.ShowRules)
+                    .Include(s => s.ShowStatistics)
+                    .Include(s => s.Sponsors)
+                    .Include(s => s.Tickets)
+            );
+
+          
+            var showResponses = shows.Select(show => show.Adapt<ShowResponse>());
+
+            
+            return showResponses;
         }
 
         public async Task<ShowResponse> GetShowByIdAsync(Guid id)
