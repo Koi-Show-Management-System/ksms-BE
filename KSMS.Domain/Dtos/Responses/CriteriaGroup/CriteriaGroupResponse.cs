@@ -10,7 +10,9 @@ namespace KSMS.Domain.Dtos.Responses.CriteriaGroupRequest
 {
     public class CriteriaGroupResponse
     {
-          
+
+        public Guid Id { get; set; }
+ 
         public Guid CategoryId { get; set; }
 
         public string Name { get; set; } = null!;

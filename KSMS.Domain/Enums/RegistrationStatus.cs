@@ -2,5 +2,6 @@
 
 public enum RegistrationStatus
 {
-    Pending
+    Pending,
+    Confirm
 }

@@ -104,9 +104,11 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
     {
         var registrationPayment = await _unitOfWork.GetRepository<RegistrationPayment>()
             .SingleOrDefaultAsync(predicate: r => r.Id == registrationPaymentId,
-                include: query => query.Include(r => r.Registration).ThenInclude(r => r.Account)
+                include: query => query
+                    .Include(r => r.Registration).ThenInclude(r => r.Account)
                     .Include(r => r.Registration).ThenInclude(r => r.Variety)
-                    .Include(r => r.Registration).ThenInclude(r => r.Category).ThenInclude(r => r.Show));
+                    .Include(r => r.Registration).ThenInclude(r => r.Category)
+                    .ThenInclude(r => r.Show));
         registrationPayment.Status = status switch
         {
             RegistrationPaymentStatus.Cancelled => RegistrationPaymentStatus.Cancelled.ToString().ToLower(),
@@ -126,5 +128,53 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
             }
         }
     }
-    
+    public async Task UpdateStatusForRegistration(Guid registrationId, RegistrationStatus status)
+    {
+        DateTime? expireDate = null;
+        string qrCodeUrl = null;
+        var registration = await _unitOfWork.GetRepository<Registration>()
+            .SingleOrDefaultAsync(predicate: r => r.Id == registrationId,
+                include: query => query.Include(r => r.RegistrationPayments)
+                    .Include(r => r.Category).ThenInclude(r => r.Show)
+                    .Include(r => r.Account));
+        registration.Status = status switch
+        {
+            RegistrationStatus.Pending => RegistrationStatus.Pending.ToString().ToLower(),
+            RegistrationStatus.Confirm => RegistrationStatus.Confirm.ToString().ToLower(),
+            _ => registration.Status
+        };
+        _unitOfWork.GetRepository<Registration>().UpdateAsync(registration);
+        var qrCodes = new List<Qrcode>();
+        if (registration.Status == RegistrationStatus.Confirm.ToString().ToLower())
+        {
+            foreach (var registrationPayment in registration.RegistrationPayments)
+            {
+                qrCodes.Add(new Qrcode()
+                {
+                    RegistrationPaymentId = registrationPayment.Id,
+                    QrcodeData = "",
+                    ExpiryDate = registration.Category.Show.StartDate?.AddMinutes(30) ?? DateTime.Now.AddMinutes(30),
+                    IsActive = true
+                });
+            }
+            await _unitOfWork.GetRepository<Qrcode>().InsertRangeAsync(qrCodes);
+        }
+        await _unitOfWork.CommitAsync();
+        foreach (var qrCode in qrCodes)
+        {
+            qrCode.QrcodeData = await _firebaseService.UploadImageAsync(
+                    FileUtils.ConvertBase64ToFile(QrcodeUtil.GenerateQrCode(qrCode.Id)), "qrCode/");
+            qrCodeUrl = qrCode.QrcodeData;
+            expireDate = qrCode.ExpiryDate;
+        }
+        _unitOfWork.GetRepository<Qrcode>().UpdateRange(qrCodes);
+        await _unitOfWork.CommitAsync();
+        var sendMail = MailUtil.SendEmail(registration.Account.Email,
+            MailUtil.ContentMailUtil.Title_ApproveForRegisterSh,
+            MailUtil.ContentMailUtil.SendApprovalEmail(registration, qrCodeUrl, expireDate), "");
+        if (!sendMail)
+        {
+            throw new BadRequestException("Error sending confirmation email.");
+        }
+    }
 }

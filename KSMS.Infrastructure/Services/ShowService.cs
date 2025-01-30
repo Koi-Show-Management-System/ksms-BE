@@ -219,65 +219,46 @@ namespace KSMS.Infrastructure.Services
 
         public async Task<ShowResponse> GetShowByIdAsync(Guid id)
         {
-           
+            //await UpdateShowStatusAsync(id); // Cập nhật trạng thái trước khi trả về Show
+
             var showRepository = _unitOfWork.GetRepository<Show>();
 
-           
             var show = await showRepository.SingleOrDefaultAsync(
                 predicate: s => s.Id == id,
-                include: s => s.Include(s => s.ShowStatuses) 
-                              .Include(s => s.ShowStaffs) 
-                              .Include(s => s.ShowRules) 
-                              .Include(s => s.ShowStatistics) 
-                              .Include(s => s.Sponsors) 
-                              .Include(s => s.Tickets) 
+                include: query => query.Include(s => s.ShowStatuses)
+                    .Include(s => s.Categories)
+                        .ThenInclude(s => s.Rounds)
+                    .Include(s => s.Categories)
+                        .ThenInclude(s => s.Awards)
+                    .Include(s => s.Categories)
+                        .ThenInclude(s => s.CriteriaGroups)
+                            .ThenInclude(s => s.Criteria)
+                    .Include(s => s.Categories)
+                        .ThenInclude(s => s.RefereeAssignments)
+                            .ThenInclude(s => s.RefereeAccount)
+                                .ThenInclude(s => s.Role)
+                    .Include(s => s.Categories)
+                        .ThenInclude(s => s.RefereeAssignments)
+                            .ThenInclude(s => s.AssignedByNavigation)
+                                .ThenInclude(s => s.Role)
+                    .Include(s => s.ShowStaffs)
+                        .ThenInclude(s => s.AssignedByNavigation)
+                            .ThenInclude(s => s.Role)
+                    .Include(s => s.ShowStaffs)
+                        .ThenInclude(s => s.Account)
+                            .ThenInclude(s => s.Role)
+                    .Include(s => s.ShowRules)
+                    .Include(s => s.ShowStatistics)
+                    .Include(s => s.Sponsors)
+                    .Include(s => s.Tickets)
             );
 
-          
             if (show == null)
             {
                 throw new NotFoundException("Show not found.");
             }
 
-          
-            var categories = await _unitOfWork.GetRepository<Category>().GetListAsync(
-                c => c.ShowId == id,  
-                null,  
-                c => c.Include(c => c.Rounds)  
-                     .Include(c => c.Awards)  
-                     .Include(c => c.CriteriaGroups)  
-                     .Include(c => c.RefereeAssignments) 
-            );
-
-            
-            foreach (var category in categories)
-            {
-                foreach (var criteriaGroup in category.CriteriaGroups)
-                {
-                   
-                    if (criteriaGroup.Criteria == null)
-                    {
-                        criteriaGroup.Criteria = new List<Criterion>();
-                    }
-
-                  
-                    var criterias = await _unitOfWork.GetRepository<Criterion>().GetListAsync(
-                        c => c.CriteriaGroupId == criteriaGroup.Id, null, null
-                    );
-
-                    
-                    criteriaGroup.Criteria = criterias.ToList(); 
-                }
-            }
-
-            
-            show.Categories = categories.ToList();
-
-            
-            var showResponse = show.Adapt<ShowResponse>();
-
-            
-            return showResponse;
+            return show.Adapt<ShowResponse>();
         }
 
         public Task PatchShowStatusAsync(Guid id, string statusName)
