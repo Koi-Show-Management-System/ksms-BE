@@ -8,6 +8,7 @@ namespace KSMS.Domain.Dtos.Responses.RefereeAssignment
 {
     public class RefereeAssignmentResponse
     {
+         
         public Guid CategoryId { get; set; }
 
         public Guid RefereeAccountId { get; set; }

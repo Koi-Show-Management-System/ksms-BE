@@ -219,21 +219,65 @@ namespace KSMS.Infrastructure.Services
 
         public async Task<ShowResponse> GetShowByIdAsync(Guid id)
         {
-            await UpdateShowStatusAsync(id); // Cập nhật trạng thái trước khi trả về Show
-
+           
             var showRepository = _unitOfWork.GetRepository<Show>();
 
+           
             var show = await showRepository.SingleOrDefaultAsync(
                 predicate: s => s.Id == id,
-                include: s => s.Include(s => s.ShowStatuses)
+                include: s => s.Include(s => s.ShowStatuses) 
+                              .Include(s => s.ShowStaffs) 
+                              .Include(s => s.ShowRules) 
+                              .Include(s => s.ShowStatistics) 
+                              .Include(s => s.Sponsors) 
+                              .Include(s => s.Tickets) 
             );
 
+          
             if (show == null)
             {
                 throw new NotFoundException("Show not found.");
             }
 
-            return show.Adapt<ShowResponse>();
+          
+            var categories = await _unitOfWork.GetRepository<Category>().GetListAsync(
+                c => c.ShowId == id,  
+                null,  
+                c => c.Include(c => c.Rounds)  
+                     .Include(c => c.Awards)  
+                     .Include(c => c.CriteriaGroups)  
+                     .Include(c => c.RefereeAssignments) 
+            );
+
+            
+            foreach (var category in categories)
+            {
+                foreach (var criteriaGroup in category.CriteriaGroups)
+                {
+                   
+                    if (criteriaGroup.Criteria == null)
+                    {
+                        criteriaGroup.Criteria = new List<Criterion>();
+                    }
+
+                  
+                    var criterias = await _unitOfWork.GetRepository<Criterion>().GetListAsync(
+                        c => c.CriteriaGroupId == criteriaGroup.Id, null, null
+                    );
+
+                    
+                    criteriaGroup.Criteria = criterias.ToList(); 
+                }
+            }
+
+            
+            show.Categories = categories.ToList();
+
+            
+            var showResponse = show.Adapt<ShowResponse>();
+
+            
+            return showResponse;
         }
 
         public Task PatchShowStatusAsync(Guid id, string statusName)
