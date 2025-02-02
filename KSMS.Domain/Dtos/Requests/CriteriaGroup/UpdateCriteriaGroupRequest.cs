@@ -7,18 +7,14 @@ using System.Threading.Tasks;
 
 namespace KSMS.Domain.Dtos.Requests.CriteriaGroup
 {
-    public class CriteriaGroupRequest
+    public class UpdateCriteriaGroupRequest
     {
-        public Guid Id {  get; set; }
+        public Guid Id { get; set; }
         public Guid CategoryId { get; set; }
-
         public string Name { get; set; } = null!;
-
         public string? RoundType { get; set; }
-
         public string? Description { get; set; }
-
-        public virtual ICollection<CriterionRequest> Criterias { get; set; } = new List<CriterionRequest>();
-
+        public virtual ICollection<UpdateCriterionRequest> Criterias { get; set; } = new List<UpdateCriterionRequest>();
     }
 }
+
