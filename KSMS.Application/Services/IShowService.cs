@@ -13,7 +13,7 @@ namespace KSMS.Application.Services
         Task<IEnumerable<ShowResponse>> GetAllShowsAsync();
         Task<ShowResponse> GetShowByIdAsync(Guid id);
         Task<ShowResponse> CreateShowAsync(CreateShowRequest request);
-        Task UpdateShowAsync(Guid id, CreateShowRequest request);
+        Task UpdateShowAsync(Guid id, UpdateShowRequest request);
         Task PatchShowStatusAsync(Guid id, string statusName);
     }
 

@@ -1,6 +1,7 @@
 ﻿using KSMS.Application.Services;
 using KSMS.Domain.Dtos.Requests.Show;
 using KSMS.Domain.Dtos.Responses.Show;
+using KSMS.Domain.Exceptions;
 using Microsoft.AspNetCore.Mvc;
 
 namespace KSMS.API.Controllers
@@ -72,26 +73,31 @@ namespace KSMS.API.Controllers
            
         }
 
-        /// <summary>
-        /// Update the status of a show.
-        /// </summary>
-     //   [HttpPatch("{id:guid}/status")]
-        //public async Task<IActionResult> UpdateShowStatus(Guid id, [FromBody] UpdateShowStatusRequest updateRequest)
-        //{
-        //    try
-        //    {
-        //        var updatedShow = await _showService.UpdateShowStatusAsync(id, updateRequest);
-        //        return Ok(updatedShow);
-        //    }
-        //    catch (KeyNotFoundException ex)
-        //    {
-        //        return NotFound(new { Error = ex.Message });
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        return StatusCode(500, new { Error = "An unexpected error occurred.", Details = ex.Message });
-        //    }
-        //}
+        [HttpPut("{id:guid}")]
+        public async Task<IActionResult> UpdateShow(Guid id, [FromBody] UpdateShowRequest updateRequest)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    return BadRequest(ModelState);
+                }
+
+                await _showService.UpdateShowAsync(id, updateRequest);
+
+                return Ok(new { Message = "Show updated successfully." });
+            }
+            catch (NotFoundException ex)
+            {
+                return NotFound(new { Error = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Error = "An unexpected error occurred.", Details = ex.Message });
+            }
+        }
+
+
 
         /// <summary>
         /// Delete a show (soft delete).
