@@ -19,10 +19,10 @@ namespace KSMS.Domain.Dtos.Requests.Categorie
         public DateTime? StartTime { get; set; }
         public DateTime? EndTime { get; set; }
         public string? Status { get; set; }
-        //public virtual ICollection<UpdateRoundRequest> Rounds { get; set; } = new List<UpdateRoundRequest>();
-        //public virtual UpdateVarietyRequest? Variety { get; set; }
-        //public virtual ICollection<UpdateAwardCateShowRequest> Awards { get; set; } = new List<UpdateAwardCateShowRequest>();
-        //public virtual ICollection<UpdateCriteriaGroupRequest> CriteriaGroups { get; set; } = new List<UpdateCriteriaGroupRequest>();
-        //public virtual ICollection<UpdateRefereeAssignmentRequest> RefereeAssignments { get; set; } = new List<UpdateRefereeAssignmentRequest>();
+        public virtual ICollection<UpdateRoundRequest> Rounds { get; set; } = new List<UpdateRoundRequest>();
+        public virtual UpdateVarietyRequest? Variety { get; set; }
+        public virtual ICollection<UpdateAwardCateShowRequest> Awards { get; set; } = new List<UpdateAwardCateShowRequest>();
+        public virtual ICollection<UpdateCriteriaGroupRequest> CriteriaGroups { get; set; } = new List<UpdateCriteriaGroupRequest>();
+        public virtual ICollection<UpdateRefereeAssignmentRequest> RefereeAssignments { get; set; } = new List<UpdateRefereeAssignmentRequest>();
     }
 }

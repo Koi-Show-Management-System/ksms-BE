@@ -19,5 +19,7 @@ namespace KSMS.Application.Repositories
     {
         TContext Context { get; }
         Task<IDbContextTransaction> BeginTransactionAsync();
+        void Detach<T>(T entity) where T : class;
+
     }
 }
