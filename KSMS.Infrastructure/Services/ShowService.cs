@@ -310,295 +310,374 @@ namespace KSMS.Infrastructure.Services
         {
             var showRepository = _unitOfWork.GetRepository<Show>();
             var categoryRepository = _unitOfWork.GetRepository<Category>();
+            var roundRepository = _unitOfWork.GetRepository<Round>();
+            var criteriaGroupRepository = _unitOfWork.GetRepository<CriteriaGroup>();
+            var criteriaRepository = _unitOfWork.GetRepository<Criterion>();
+            var refereeAssignmentRepository = _unitOfWork.GetRepository<RefereeAssignment>();
+            var showStaffRepository = _unitOfWork.GetRepository<ShowStaff>();
+            var showRuleRepository = _unitOfWork.GetRepository<ShowRule>();
+            var showStatisticRepository = _unitOfWork.GetRepository<ShowStatistic>();
+            var showStatusRepository = _unitOfWork.GetRepository<ShowStatus>();
+            var sponsorRepository = _unitOfWork.GetRepository<Sponsor>();
+            var ticketRepository = _unitOfWork.GetRepository<Ticket>();
+            var awardRepository = _unitOfWork.GetRepository<Award>();
+            var varietyRepository = _unitOfWork.GetRepository<Variety>();
 
-            // Lấy đối tượng Show từ cơ sở dữ liệu
+            // Fetch the show from the repository
             var show = await showRepository.SingleOrDefaultAsync(
                 predicate: s => s.Id == id,
-                include: query => query.Include(s => s.Categories)  // Lấy Show cùng với Categories
+                include: null // Include related entities if needed
             );
 
-            // Kiểm tra nếu Show không tồn tại
             if (show == null)
             {
                 throw new NotFoundException("Show not found.");
             }
 
-            // Hàm kiểm tra và gán giá trị hợp lệ cho DateTime
+            // Validation for DateTime
             DateTime? ValidateDate(DateTime? date)
             {
                 if (date.HasValue && date.Value >= new DateTime(1753, 1, 1) && date.Value <= new DateTime(9999, 12, 31))
                 {
                     return date;
                 }
-                return null;  // Trả về null nếu ngày không hợp lệ
+                return null;
             }
 
-            // Kiểm tra và gán các giá trị ngày tháng hợp lệ cho Show
+            // Update properties of Show
             show.StartDate = ValidateDate(updateShowRequest.StartDate) ?? show.StartDate;
             show.EndDate = ValidateDate(updateShowRequest.EndDate) ?? show.EndDate;
             show.StartExhibitionDate = ValidateDate(updateShowRequest.StartExhibitionDate) ?? show.StartExhibitionDate;
             show.EndExhibitionDate = ValidateDate(updateShowRequest.EndExhibitionDate) ?? show.EndExhibitionDate;
-
-            // Cập nhật thông tin từ updateShowRequest vào show
-            updateShowRequest.Adapt(show);
+            show.Location = updateShowRequest.Location;
+            show.Description = updateShowRequest.Description;
+            show.RegistrationDeadline = updateShowRequest.RegistrationDeadline;
+            show.MinParticipants = updateShowRequest.MinParticipants;
+            show.MaxParticipants = updateShowRequest.MaxParticipants;
+            show.HasGrandChampion = updateShowRequest.HasGrandChampion;
+            show.HasBestInShow = updateShowRequest.HasBestInShow;
+            show.ImgUrl = updateShowRequest.ImgUrl;
+            show.RegistrationFee = updateShowRequest.RegistrationFee;
+            show.Name = updateShowRequest.Name;
+            show.Status = updateShowRequest.Status;
             show.UpdatedAt = DateTime.Now;
 
-            // Cập nhật các Category liên quan
+            // Update Show
+             showRepository.UpdateAsync(show);
+
+            // Update Categories and related entities
             if (updateShowRequest.Categories != null && updateShowRequest.Categories.Any())
             {
                 foreach (var categoryRequest in updateShowRequest.Categories)
                 {
                     var category = await categoryRepository.SingleOrDefaultAsync(c => c.Id == categoryRequest.Id && c.ShowId == id, null, null);
+
                     if (category != null)
                     {
-                        categoryRequest.Adapt(category); // Cập nhật Category nếu tìm thấy
+                        // Detach entity to avoid tracking errors
+                        _unitOfWork.Detach(category);
 
-                        // Kiểm tra và gán StartTime và EndTime hợp lệ cho Category
-                        if (categoryRequest.StartTime.HasValue)
+                        category.Name = categoryRequest.Name;
+                        category.SizeMin = categoryRequest.SizeMin;
+                        category.SizeMax = categoryRequest.SizeMax;
+                        category.VarietyId = categoryRequest.VarietyId;
+                        category.Description = categoryRequest.Description;
+                        category.MaxEntries = categoryRequest.MaxEntries;
+                        category.StartTime = categoryRequest.StartTime ?? category.StartTime;
+                        category.EndTime = categoryRequest.EndTime ?? category.EndTime;
+                        category.Status = categoryRequest.Status;
+
+                        // Update Category
+                         categoryRepository.UpdateAsync(category);
+
+                        // Update Variety
+                        if (categoryRequest.Variety != null)
                         {
-                            categoryRequest.StartTime = ValidateDate(categoryRequest.StartTime);  // Validate StartTime
-                        }
-                        else
-                        {
-                            categoryRequest.StartTime = null; // Keep it null if no valid date is provided
+                            var variety = await varietyRepository.SingleOrDefaultAsync(v => v.Id == categoryRequest.VarietyId, null, null);
+                            if (variety != null)
+                            {
+                                variety.Name = categoryRequest.Variety.Name;
+                                variety.Description = categoryRequest.Variety.Description;
+                                 varietyRepository.UpdateAsync(variety);
+                            }
+                            else
+                            {
+                                var newVariety = new Variety
+                                {
+                                    Name = categoryRequest.Variety.Name,
+                                    Description = categoryRequest.Variety.Description
+                                };
+                                await varietyRepository.InsertAsync(newVariety);
+                            }
                         }
 
-                        if (categoryRequest.EndTime.HasValue)
+                        // Update Rounds
+                        if (categoryRequest.Rounds != null && categoryRequest.Rounds.Any())
                         {
-                            categoryRequest.EndTime = ValidateDate(categoryRequest.EndTime);  // Validate EndTime
+                            foreach (var roundRequest in categoryRequest.Rounds)
+                            {
+                                var round = await roundRepository.SingleOrDefaultAsync(r => r.CategoryId == category.Id && r.Id == roundRequest.Id, null, null);
+                                if (round != null)
+                                {
+                                    round.Name = roundRequest.Name;
+                                    round.RoundOrder = roundRequest.RoundOrder;
+                                    round.RoundType = roundRequest.RoundType;
+                                    round.StartTime = ValidateDate(roundRequest.StartTime) ?? round.StartTime;
+                                    round.EndTime = ValidateDate(roundRequest.EndTime) ?? round.EndTime;
+                                    round.MinScoreToAdvance = roundRequest.MinScoreToAdvance;
+                                    round.Status = roundRequest.Status;
+
+                                     roundRepository.UpdateAsync(round);
+                                }
+                                else
+                                {
+                                    var newRound = new Round
+                                    {
+                                        CategoryId = category.Id,
+                                        Name = roundRequest.Name,
+                                        RoundOrder = roundRequest.RoundOrder,
+                                        RoundType = roundRequest.RoundType,
+                                        StartTime = roundRequest.StartTime ?? round.StartTime,
+                                        EndTime = roundRequest.EndTime ?? round.EndTime,
+                                        MinScoreToAdvance = roundRequest.MinScoreToAdvance,
+                                        Status = roundRequest.Status
+                                    };
+                                    await roundRepository.InsertAsync(newRound);
+                                }
+                            }
                         }
-                        else
+
+                        // Update Awards
+                        if (categoryRequest.Awards != null && categoryRequest.Awards.Any())
                         {
-                            categoryRequest.EndTime = null; // Keep it null if no valid date is provided
+                            foreach (var awardRequest in categoryRequest.Awards)
+                            {
+                                var award = await awardRepository.SingleOrDefaultAsync(a => a.CategoryId == category.Id && a.Id == awardRequest.Id, null, null);
+                                if (award != null)
+                                {
+                                    award.Name = awardRequest.Name;
+                                    award.AwardType = awardRequest.AwardType;
+                                    award.PrizeValue = awardRequest.PrizeValue;
+                                    award.Description = awardRequest.Description;
+
+                                     awardRepository.UpdateAsync(award);
+                                }
+                                else
+                                {
+                                    var newAward = new Award
+                                    {
+                                        CategoryId = category.Id,
+                                        Name = awardRequest.Name,
+                                        AwardType = awardRequest.AwardType,
+                                        PrizeValue = awardRequest.PrizeValue,
+                                        Description = awardRequest.Description
+                                    };
+                                    await awardRepository.InsertAsync(newAward);
+                                }
+                            }
                         }
+
+                        // Update CriteriaGroups and Criteria
+                        if (categoryRequest.CriteriaGroups != null && categoryRequest.CriteriaGroups.Any())
+                        {
+                            foreach (var criteriaGroupRequest in categoryRequest.CriteriaGroups)
+                            {
+                                var criteriaGroup = await criteriaGroupRepository.SingleOrDefaultAsync(g => g.CategoryId == category.Id && g.Id == criteriaGroupRequest.Id, null, null);
+                                if (criteriaGroup != null)
+                                {
+                                    criteriaGroup.Name = criteriaGroupRequest.Name;
+                                    criteriaGroup.Description = criteriaGroupRequest.Description;
+                                    criteriaGroup.RoundType = criteriaGroupRequest.RoundType;
+
+                                     criteriaGroupRepository.UpdateAsync(criteriaGroup);
+
+                                    // Update Criteria
+                                    if (criteriaGroupRequest.Criterias != null && criteriaGroupRequest.Criterias.Any())
+                                    {
+                                        foreach (var criteriaRequest in criteriaGroupRequest.Criterias)
+                                        {
+                                            var criteria = await criteriaRepository.SingleOrDefaultAsync(c => c.CriteriaGroupId == criteriaGroup.Id && c.Id == criteriaRequest.Id, null, null);
+                                            if (criteria != null)
+                                            {
+                                                criteria.Name = criteriaRequest.Name;
+                                                criteria.Description = criteriaRequest.Description;
+                                                criteria.MaxScore = criteriaRequest.MaxScore;
+                                                criteria.Weight = criteriaRequest.Weight;
+                                                criteria.Order = criteriaRequest.Order;
+
+                                                 criteriaRepository.UpdateAsync(criteria);
+                                            }
+                                            else
+                                            {
+                                                var newCriteria = new Criterion
+                                                {
+                                                    CriteriaGroupId = criteriaGroup.Id,
+                                                    Name = criteriaRequest.Name,
+                                                    Description = criteriaRequest.Description,
+                                                    MaxScore = criteriaRequest.MaxScore,
+                                                    Weight = criteriaRequest.Weight,
+                                                    Order = criteriaRequest.Order
+                                                };
+                                                await criteriaRepository.InsertAsync(newCriteria);
+                                            }
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    throw new NotFoundException($"CriteriaGroup with ID {criteriaGroupRequest.Id} not found.");
+                                }
+                            }
+                        }
+
+                        // Update RefereeAssignments
+                        if (categoryRequest.RefereeAssignments != null && categoryRequest.RefereeAssignments.Any())
+                        {
+                            foreach (var refereeRequest in categoryRequest.RefereeAssignments)
+                            {
+                                var refereeAssignment = new RefereeAssignment
+                                {
+                                    CategoryId = category.Id,
+                                    RefereeAccountId = refereeRequest.RefereeAccountId,
+                                    AssignedAt = refereeRequest.AssignedAt ?? DateTime.Now,
+                                    AssignedBy = refereeRequest.AssignedBy
+                                };
+                                 refereeAssignmentRepository.UpdateAsync(refereeAssignment);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        throw new NotFoundException($"Category with ID {categoryRequest.Id} not found in Show {id}. Cannot update this Category.");
                     }
                 }
             }
 
-            // Commit các thay đổi vào cơ sở dữ liệu
-            _unitOfWork.GetRepository<Show>().UpdateAsync(show);
-            _unitOfWork.GetRepository<Category>().UpdateRange(show.Categories);
+            // Handle other entities such as ShowStaff, ShowRule, ShowStatistic, ShowStatus, Sponsor, Ticket
+            // Update ShowStaffs
+            if (updateShowRequest.ShowStaffs != null && updateShowRequest.ShowStaffs.Any())
+            {
+                foreach (var staffRequest in updateShowRequest.ShowStaffs)
+                {
+                    var staff = await showStaffRepository.SingleOrDefaultAsync(s => s.Id == staffRequest.Id, null, null);
+                    if (staff != null)
+                    {
+                        staff.AccountId = staffRequest.AccountId;
+                        staff.AssignedBy = staffRequest.AssignedBy;
+                        staff.AssignedAt = staffRequest.AssignedAt ?? staff.AssignedAt;
+                         showStaffRepository.UpdateAsync(staff);
+                    }
+                    else
+                    {
+                        throw new NotFoundException($"ShowStaff with ID {staffRequest.Id} not found.");
+                    }
+                }
+            }
+
+            // Update ShowRules
+            if (updateShowRequest.ShowRules != null && updateShowRequest.ShowRules.Any())
+            {
+                foreach (var ruleRequest in updateShowRequest.ShowRules)
+                {
+                    var rule = await showRuleRepository.SingleOrDefaultAsync(r => r.Id == ruleRequest.Id, null, null);
+                    if (rule != null)
+                    {
+                        rule.Title = ruleRequest.Title;
+                        rule.Content = ruleRequest.Content;
+                         showRuleRepository.UpdateAsync(rule);
+                    }
+                    else
+                    {
+                        throw new NotFoundException($"ShowRule with ID {ruleRequest.Id} not found.");
+                    }
+                }
+            }
+
+            // Update ShowStatistics
+            if (updateShowRequest.ShowStatistics != null && updateShowRequest.ShowStatistics.Any())
+            {
+                foreach (var statisticRequest in updateShowRequest.ShowStatistics)
+                {
+                    var statistic = await showStatisticRepository.SingleOrDefaultAsync(s => s.Id == statisticRequest.Id, null, null);
+                    if (statistic != null)
+                    {
+                        statistic.MetricName = statisticRequest.MetricName;
+                        statistic.MetricValue = statisticRequest.MetricValue;
+                         showStatisticRepository.UpdateAsync(statistic);
+                    }
+                    else
+                    {
+                        throw new NotFoundException($"ShowStatistic with ID {statisticRequest.Id} not found.");
+                    }
+                }
+            }
+
+            // Update ShowStatuses
+            if (updateShowRequest.ShowStatuses != null && updateShowRequest.ShowStatuses.Any())
+            {
+                foreach (var statusRequest in updateShowRequest.ShowStatuses)
+                {
+                    var status = await showStatusRepository.SingleOrDefaultAsync(s => s.Id == statusRequest.Id, null, null);
+                    if (status != null)
+                    {
+                        status.StatusName = statusRequest.StatusName;
+                        status.Description = statusRequest.Description;
+                        status.StartDate = statusRequest.StartDate;
+                        status.EndDate = statusRequest.EndDate;
+                        status.IsActive = statusRequest.IsActive;
+                         showStatusRepository.UpdateAsync(status);
+                    }
+                    else
+                    {
+                        throw new NotFoundException($"ShowStatus with ID {statusRequest.Id} not found.");
+                    }
+                }
+            }
+
+            // Update Sponsors
+            if (updateShowRequest.Sponsors != null && updateShowRequest.Sponsors.Any())
+            {
+                foreach (var sponsorRequest in updateShowRequest.Sponsors)
+                {
+                    var sponsor = await sponsorRepository.SingleOrDefaultAsync(s => s.Id == sponsorRequest.Id, null, null);
+                    if (sponsor != null)
+                    {
+                        sponsor.Name = sponsorRequest.Name;
+                        sponsor.LogoUrl = sponsorRequest.LogoUrl;
+                         sponsorRepository.UpdateAsync(sponsor);
+                    }
+                    else
+                    {
+                        throw new NotFoundException($"Sponsor with ID {sponsorRequest.Id} not found.");
+                    }
+                }
+            }
+
+            // Update Tickets
+            if (updateShowRequest.Tickets != null && updateShowRequest.Tickets.Any())
+            {
+                foreach (var ticketRequest in updateShowRequest.Tickets)
+                {
+                    var ticket = await ticketRepository.SingleOrDefaultAsync(t => t.Id == ticketRequest.Id, null, null);
+                    if (ticket != null)
+                    {
+                        ticket.TicketType = ticketRequest.TicketType;
+                        ticket.Price = ticketRequest.Price;
+                        ticket.AvailableQuantity = ticketRequest.AvailableQuantity;
+                         ticketRepository.UpdateAsync(ticket);
+                    }
+                    else
+                    {
+                        throw new NotFoundException($"Ticket with ID {ticketRequest.Id} not found.");
+                    }
+                }
+            }
+
+            // Commit all changes to the database
             await _unitOfWork.CommitAsync();
         }
 
-        //public async Task UpdateShowAsync(Guid id, UpdateShowRequest updateShowRequest)
-        //{   
-        //    var showRepository = _unitOfWork.GetRepository<Show>();
-        //    var categoryRepository = _unitOfWork.GetRepository<Category>();
-        //    var varietyRepository = _unitOfWork.GetRepository<Variety>();
-        //    var sponsorRepository = _unitOfWork.GetRepository<Sponsor>();
-        //    var showStaffRepository = _unitOfWork.GetRepository<ShowStaff>();
-        //    var showRuleRepository = _unitOfWork.GetRepository<ShowRule>();
-        //    var showStatusRepository = _unitOfWork.GetRepository<ShowStatus>();
-        //    var showStatisticRepository = _unitOfWork.GetRepository<ShowStatistic>();
-        //    var ticketRepository = _unitOfWork.GetRepository<Ticket>();
-        //    var roundRepository = _unitOfWork.GetRepository<Round>();
-        //    var criteriaGroupRepository = _unitOfWork.GetRepository<CriteriaGroup>();
-        //    var criteriaRepository = _unitOfWork.GetRepository<Criterion>();
-        //    var refereeAssignmentRepository = _unitOfWork.GetRepository<RefereeAssignment>();
-
-
-        //    var show = await showRepository.SingleOrDefaultAsync(
-        //        predicate: s => s.Id == id,
-        //        include: query => query.Include(s => s.ShowStatuses)
-        //            .Include(s => s.Categories)
-        //                .ThenInclude(s => s.Rounds)
-        //            .Include(s => s.Categories)
-        //                .ThenInclude(s => s.Awards)
-        //            .Include(s => s.Categories)
-        //                .ThenInclude(s => s.CriteriaGroups)
-        //                    .ThenInclude(s => s.Criteria)
-        //            .Include(s => s.Categories)
-        //                .ThenInclude(s => s.RefereeAssignments)
-        //            .Include(s => s.ShowStaffs)
-        //            .Include(s => s.ShowRules)
-        //            .Include(s => s.ShowStatistics)
-        //            .Include(s => s.Sponsors)
-        //            .Include(s => s.Tickets)
-        //    );
-
-        //    if (show == null)
-        //    {
-        //        throw new NotFoundException("Show not found.");
-        //    }
-        //    show.StartDate = updateShowRequest.StartDate.HasValue && updateShowRequest.StartDate.Value >= new DateTime(1753, 1, 1) ? updateShowRequest.StartDate.Value : DateTime.Now;
-        //    show.EndDate = updateShowRequest.EndDate.HasValue && updateShowRequest.EndDate.Value >= new DateTime(1753, 1, 1) ? updateShowRequest.EndDate.Value : DateTime.Now.AddDays(1);
-        //    show.StartExhibitionDate = updateShowRequest.StartExhibitionDate.HasValue && updateShowRequest.StartExhibitionDate.Value >= new DateTime(1753, 1, 1) ? updateShowRequest.StartExhibitionDate.Value : DateTime.Now.AddDays(2);
-        //    show.EndExhibitionDate = updateShowRequest.EndExhibitionDate.HasValue && updateShowRequest.EndExhibitionDate.Value >= new DateTime(1753, 1, 1) ? updateShowRequest.EndExhibitionDate.Value : DateTime.Now.AddDays(3);
-
-
-        //    updateShowRequest.Adapt(show);
-        //    updateShowRequest.Adapt(show).UpdatedAt = DateTime.Now;
-
-
-        //    if (updateShowRequest.Categories != null && updateShowRequest.Categories.Any())
-        //    {
-        //        foreach (var categoryRequest in updateShowRequest.Categories)
-        //        {
-        //            var category = await categoryRepository.SingleOrDefaultAsync(c => c.Id == categoryRequest.Id && c.ShowId == id, null, null);
-
-        //            if (category != null)
-        //            {
-        //                categoryRequest.Adapt(category);  // Cập nhật Category nếu tìm thấy
-        //            }
-
-        //            // Cập nhật các Round liên quan
-        //            if (categoryRequest.Rounds != null && categoryRequest.Rounds.Any())
-        //            {
-        //                foreach (var roundRequest in categoryRequest.Rounds)
-        //                {
-        //                    var round = await roundRepository.SingleOrDefaultAsync(r => r.CategoryId == category.Id && r.Id == roundRequest.Id, null, null);
-        //                    if (round != null)
-        //                    {
-        //                        roundRequest.Adapt(round);  // Cập nhật Round nếu tìm thấy
-        //                    }
-        //                    else
-        //                    {
-        //                        // Thêm mới Round nếu không tồn tại
-        //                        var newRound = roundRequest.Adapt<Round>();
-        //                        newRound.CategoryId = category.Id;
-        //                        await roundRepository.InsertAsync(newRound);
-        //                    }
-        //                }
-        //            }
-
-        //            // Cập nhật CriteriaGroups và Criterias liên quan
-        //            if (categoryRequest.CriteriaGroups != null && categoryRequest.CriteriaGroups.Any())
-        //            {
-        //                foreach (var criteriaGroupRequest in categoryRequest.CriteriaGroups)
-        //                {
-        //                    var criteriaGroup = await criteriaGroupRepository.SingleOrDefaultAsync(g => g.CategoryId == category.Id && g.Id == criteriaGroupRequest.Id, null, null);
-        //                    if (criteriaGroup != null)
-        //                    {
-        //                        criteriaGroupRequest.Adapt(criteriaGroup);  // Cập nhật CriteriaGroup nếu tìm thấy
-        //                    }
-        //                    else
-        //                    {
-        //                        // Thêm mới CriteriaGroup nếu không tồn tại
-        //                        var newGroup = criteriaGroupRequest.Adapt<CriteriaGroup>();
-        //                        newGroup.CategoryId = category.Id;
-        //                        await criteriaGroupRepository.InsertAsync(newGroup);
-        //                    }
-
-        //                    // Cập nhật Criteria liên quan trong CriteriaGroup
-        //                    if (criteriaGroupRequest.Criterias != null && criteriaGroupRequest.Criterias.Any())
-        //                    {
-        //                        foreach (var criteriaRequest in criteriaGroupRequest.Criterias)
-        //                        {
-        //                            var criteria = await criteriaRepository.SingleOrDefaultAsync(c => c.CriteriaGroupId == criteriaGroup.Id && c.Id == criteriaRequest.Id, null, null);
-        //                            if (criteria != null)
-        //                            {
-        //                                criteriaRequest.Adapt(criteria);  // Cập nhật Criteria nếu tìm thấy
-        //                            }
-        //                            else
-        //                            {
-        //                                // Thêm mới Criteria nếu không tồn tại
-        //                                var newCriteria = criteriaRequest.Adapt<Criterion>();
-        //                                newCriteria.CriteriaGroupId = criteriaGroup.Id;
-        //                                await criteriaRepository.InsertAsync(newCriteria);
-        //                            }
-        //                        }
-        //                    }
-        //                }
-        //            }
-        //        }
-        //    }
-
-        //    //// Cập nhật các Sponsors
-        //    //if (updateShowRequest.Sponsors != null && updateShowRequest.Sponsors.Any())
-        //    //{
-        //    //    foreach (var sponsorRequest in updateShowRequest.Sponsors)
-        //    //    {
-        //    //        var sponsor = await sponsorRepository.SingleOrDefaultAsync(s => s.ShowId == id && s.Id == sponsorRequest.Id, null, null);
-        //    //        if (sponsor != null)
-        //    //        {
-        //    //            sponsorRequest.Adapt(sponsor);  // Cập nhật Sponsor nếu tìm thấy
-        //    //        }
-        //    //        else
-        //    //        {
-        //    //            var newSponsor = sponsorRequest.Adapt<Sponsor>();
-        //    //            newSponsor.ShowId = id;
-        //    //            await sponsorRepository.InsertAsync(newSponsor);  // Thêm mới Sponsor nếu không tồn tại
-        //    //        }
-        //    //    }
-        //    //}
-
-        //    //// Cập nhật ShowStaffs
-        //    //if (updateShowRequest.ShowStaffs != null && updateShowRequest.ShowStaffs.Any())
-        //    //{
-        //    //    foreach (var staffRequest in updateShowRequest.ShowStaffs)
-        //    //    {
-        //    //        var staff = await showStaffRepository.SingleOrDefaultAsync(s => s.Id == staffRequest.Id && s.ShowId == id, null, null);
-        //    //        if (staff != null)
-        //    //        {
-        //    //            staffRequest.Adapt(staff);  // Cập nhật ShowStaff nếu tìm thấy
-        //    //        }
-        //    //    }
-        //    //}
-
-        //    //// Cập nhật ShowRules
-        //    //if (updateShowRequest.ShowRules != null && updateShowRequest.ShowRules.Any())
-        //    //{
-        //    //    foreach (var ruleRequest in updateShowRequest.ShowRules)
-        //    //    {
-        //    //        var rule = await showRuleRepository.SingleOrDefaultAsync(r => r.ShowId == id && r.Id == ruleRequest.ShowId, null, null);
-        //    //        if (rule != null)
-        //    //        {
-        //    //            ruleRequest.Adapt(rule);  // Cập nhật ShowRule nếu tìm thấy
-        //    //        }
-        //    //    }
-        //    //}
-
-        //    //// Cập nhật ShowStatuses
-        //    //if (updateShowRequest.ShowStatuses != null && updateShowRequest.ShowStatuses.Any())
-        //    //{
-        //    //    foreach (var statusRequest in updateShowRequest.ShowStatuses)
-        //    //    {
-        //    //        var status = await showStatusRepository.SingleOrDefaultAsync(s => s.ShowId == id && s.Id == statusRequest.ShowId, null, null);
-        //    //        if (status != null)
-        //    //        {
-        //    //            statusRequest.Adapt(status);  // Cập nhật ShowStatus nếu tìm thấy
-        //    //        }
-        //    //    }
-        //    //}
-
-        //    //// Cập nhật ShowStatistics
-        //    //if (updateShowRequest.ShowStatistics != null && updateShowRequest.ShowStatistics.Any())
-        //    //{
-        //    //    foreach (var statRequest in updateShowRequest.ShowStatistics)
-        //    //    {
-        //    //        var stat = await showStatisticRepository.SingleOrDefaultAsync(s => s.ShowId == id && s.Id == statRequest.ShowId, null, null);
-        //    //        if (stat != null)
-        //    //        {
-        //    //            statRequest.Adapt(stat);  // Cập nhật ShowStatistic nếu tìm thấy
-        //    //        }
-        //    //    }
-        //    //}
-
-        //    //// Cập nhật Tickets
-        //    //if (updateShowRequest.Tickets != null && updateShowRequest.Tickets.Any())
-        //    //{
-        //    //    foreach (var ticketRequest in updateShowRequest.Tickets)
-        //    //    {
-        //    //        var ticket = await ticketRepository.SingleOrDefaultAsync(t => t.ShowId == id && t.Id == ticketRequest.ShowId, null, null);
-        //    //        if (ticket != null)
-        //    //        {
-        //    //            ticketRequest.Adapt(ticket);  // Cập nhật Ticket nếu tìm thấy
-        //    //        }
-        //    //    }
-        //    //}
-
-        //    //// Commit các thay đổi vào cơ sở dữ liệu
-
-        //    _unitOfWork.GetRepository<Show>().UpdateAsync(show);
-        //    await _unitOfWork.CommitAsync();
-
-
-
-
-
-        //}
-
+        
         /// <summary>
         /// Cập nhật trạng thái của ShowStatus theo thời gian
         /// </summary>

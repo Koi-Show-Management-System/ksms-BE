@@ -87,6 +87,15 @@ namespace KSMS.Infrastructure.Repositories
                 }
             }
         }
+        public void Detach<T>(T entity) where T : class
+        {
+            var entry = Context.Entry(entity);
+            if (entry.State == EntityState.Detached)
+            {
+                return;
+            }
+            entry.State = EntityState.Detached;
+        }
 
         public async Task<IDbContextTransaction> BeginTransactionAsync()
         {
