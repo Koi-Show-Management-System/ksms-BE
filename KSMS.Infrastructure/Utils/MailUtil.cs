@@ -44,7 +44,7 @@ public static class MailUtil
           "[KOI SHOW SYSTEM] Xác nhận đăng kí tham gia giải cá koi thành công";
       public readonly static string Title_ApproveForRegisterSh =
           "[KOI SHOW SYSTEM] Xác nhận duyệt đơn đăng kí cá koi thành công";
-        public static string StaffRoleNotification(string staffFullName, string showName)
+        public static string StaffRoleNotification(string staffFullName, string showName, string username, string defaultPassword)
         {
             return $@"
 <!DOCTYPE html>
@@ -60,11 +60,23 @@ public static class MailUtil
         <p>We are excited to inform you that you have been assigned as the Show Manager for the event:</p>
         <h3 style='color: #b21f1f;'>{showName}</h3>
         <p>Your role will include overseeing the successful execution of this event. We are confident that your contributions will help make this a spectacular show!</p>
+        
+        <h3 style='color: #b21f1f;'>Account Details</h3>
+        <p>Your login credentials are as follows:</p>
+        <ul>
+            <li><strong>Username:</strong> {username}</li>
+            <li><strong>Password:</strong> {defaultPassword}</li>
+        </ul>
+
+        <p>Please <a href='https://www.facebook.com/khoa.phung.12177/' style='font-weight: bold; color: #ffffff; background-color: #b21f1f; padding: 10px 20px; text-decoration: none; border-radius: 5px;'>click here to change your password</a> after your first login.</p>
+
+        <p>If you didn't request this, please ignore this email.</p>
         <p>Best Regards,<br>KOI SHOW TEAM</p>
     </div>
 </body>
 </html>";
         }
+
 
 
         public static string ThankingForRegistration(string fullname, string confirmationLink)
