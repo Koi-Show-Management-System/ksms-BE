@@ -13,6 +13,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using KSMS.Infrastructure.Utils;
+using static KSMS.Infrastructure.Utils.MailUtil;
 
 namespace KSMS.Infrastructure.Services
 {
@@ -38,7 +40,7 @@ namespace KSMS.Infrastructure.Services
             var criteriaGroupRepository = _unitOfWork.GetRepository<CriteriaGroup>();
             var criteriaRepository = _unitOfWork.GetRepository<Criterion>();
             var refereeAssignmentRepository = _unitOfWork.GetRepository<RefereeAssignment>();
-
+            var accountRepository = _unitOfWork.GetRepository<Account>();
             // Kiểm tra dữ liệu đầu vào
             if (string.IsNullOrWhiteSpace(createShowRequest.Name))
             {
@@ -144,16 +146,39 @@ namespace KSMS.Infrastructure.Services
                 }
 
                 // Xử lý Show Staffs
+                //if (createShowRequest.ShowStaffs != null && createShowRequest.ShowStaffs.Any())
+                //{
+                //    foreach (var staffRequest in createShowRequest.ShowStaffs)
+                //    {
+                //        var showStaff = staffRequest.Adapt<ShowStaff>();
+                //        showStaff.ShowId = showId;
+                //        await showStaffRepository.InsertAsync(showStaff);
+                //    }
+                //}
                 if (createShowRequest.ShowStaffs != null && createShowRequest.ShowStaffs.Any())
                 {
                     foreach (var staffRequest in createShowRequest.ShowStaffs)
                     {
                         var showStaff = staffRequest.Adapt<ShowStaff>();
                         showStaff.ShowId = showId;
-                        await showStaffRepository.InsertAsync(showStaff);
+                        var createdStaff = await showStaffRepository.InsertAsync(showStaff);
+
+                        // Fetch the staff's email and full name
+                        var staffAccount = await accountRepository.SingleOrDefaultAsync(a => a.Id == showStaff.AccountId,null,null);
+                        if (staffAccount != null)
+                        {
+                            var subject = "[KOI SHOW SYSTEM] New Show Management Role Assigned";
+                            var body = ContentMailUtil.StaffRoleNotification(staffAccount.FullName, createdShow.Name);
+
+                            // Send email
+                            bool emailSent = MailUtil.SendEmail(staffAccount.Email, subject, body, null);
+                            if (!emailSent)
+                            {
+                                throw new Exception($"Failed to send email to staff {staffAccount.FullName}");
+                            }
+                        }
                     }
                 }
-
                 // Xử lý Show Rules
                 if (createShowRequest.ShowRules != null && createShowRequest.ShowRules.Any())
                 {
