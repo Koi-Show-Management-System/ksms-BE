@@ -35,7 +35,7 @@ public static class MailUtil
             return false;
         }
     }
-
+   
     public static class ContentMailUtil
     {
       public readonly static string Title_ThankingForRegisAccount =
@@ -44,7 +44,30 @@ public static class MailUtil
           "[KOI SHOW SYSTEM] Xác nhận đăng kí tham gia giải cá koi thành công";
       public readonly static string Title_ApproveForRegisterSh =
           "[KOI SHOW SYSTEM] Xác nhận duyệt đơn đăng kí cá koi thành công";
-      public static string ThankingForRegistration(string fullname, string confirmationLink)
+        public static string StaffRoleNotification(string staffFullName, string showName)
+        {
+            return $@"
+<!DOCTYPE html>
+<html lang='vi'>
+<head>
+    <meta charset='UTF-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <title>KOI SHOW - New Role Assigned</title>
+</head>
+<body style='font-family: Arial, sans-serif; background-color: #f4f4f4;'>
+    <div style='max-width: 600px; margin: 20px auto; padding: 20px; background-color: #fff; border-radius: 8px;'>
+        <h2 style='color: #b21f1f;'>Dear {staffFullName},</h2>
+        <p>We are excited to inform you that you have been assigned as the Show Manager for the event:</p>
+        <h3 style='color: #b21f1f;'>{showName}</h3>
+        <p>Your role will include overseeing the successful execution of this event. We are confident that your contributions will help make this a spectacular show!</p>
+        <p>Best Regards,<br>KOI SHOW TEAM</p>
+    </div>
+</body>
+</html>";
+        }
+
+
+        public static string ThankingForRegistration(string fullname, string confirmationLink)
       {
           return @"
 <!DOCTYPE html>
