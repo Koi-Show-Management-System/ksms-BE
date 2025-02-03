@@ -129,6 +129,22 @@ namespace KSMS.Infrastructure.Services
                                 var refereeAssignment = refereeRequest.Adapt<RefereeAssignment>();
                                 refereeAssignment.CategoryId = createdCategory.Id;
                                 await refereeAssignmentRepository.InsertAsync(refereeAssignment);
+                                var refereeAccount = await accountRepository.SingleOrDefaultAsync(a => a.Id == refereeAssignment.RefereeAccountId, null, null);
+                                if (refereeAccount != null)
+                                {
+                                    // Prepare email content with login credentials
+                                    var username = refereeAccount.Username; // Assuming Username is stored in the Account entity
+                                    
+                                    var subject = "[KOI SHOW SYSTEM] New Role Assigned";
+                                    var body = ContentMailUtil.StaffRoleNotification(refereeAccount.FullName, createdShow.Name, username, refereeAccount.HashedPassword);
+
+                                    // Send email to referee
+                                    bool emailSent = MailUtil.SendEmail(refereeAccount.Email, subject, body, null);
+                                    if (!emailSent)
+                                    {
+                                        throw new Exception($"Failed to send email to referee {refereeAccount.FullName}");
+                                    }
+                                }
                             }
                         }
                     }
@@ -168,7 +184,7 @@ namespace KSMS.Infrastructure.Services
                         if (staffAccount != null)
                         {
                             var subject = "[KOI SHOW SYSTEM] New Show Management Role Assigned";
-                            var body = ContentMailUtil.StaffRoleNotification(staffAccount.FullName, createdShow.Name);
+                            var body = ContentMailUtil.StaffRoleNotification(staffAccount.FullName, createdShow.Name, staffAccount.Email, staffAccount.HashedPassword);
 
                             // Send email
                             bool emailSent = MailUtil.SendEmail(staffAccount.Email, subject, body, null);
