@@ -2,6 +2,7 @@
 using KSMS.Application.Services;
 using KSMS.Infrastructure.Utils;
 using KSMS.Domain.Dtos.Requests;
+using Microsoft.AspNetCore.Authorization;
 
 namespace KSMS.API.Controllers
 {
@@ -26,16 +27,12 @@ namespace KSMS.API.Controllers
 
        
         [HttpPost("verify-ticket")]
-        public async Task<IActionResult> VerifyTicketId([FromBody] Guid TicketId)
+        [Authorize(Roles = "Staff")]
+        public async Task<IActionResult> VerifyTicketId([FromBody] Guid qrCodeId)
         {
-            var isValid = await _ticketService.VerifyTicketIdAsync(TicketId);
+            await _ticketService.VerifyTicketIdAsync(HttpContext.User, qrCodeId);
 
-            if (isValid)
-            {
-                return Ok(new { message = "Ticket hợp lệ!" });
-            }
-
-            return BadRequest(new { message = "Ticket không hợp lệ!" });
+            return Ok(new { message = "Scan QR Successfully" });
         }
     }
 }
