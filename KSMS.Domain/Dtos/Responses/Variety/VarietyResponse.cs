@@ -1,4 +1,5 @@
-﻿using System;
+﻿using KSMS.Domain.Dtos.Responses.KoiProfile;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -12,5 +13,7 @@ namespace KSMS.Domain.Dtos.Responses.Variety
         public string Name { get; set; } = null!;
 
         public string? Description { get; set; }
+
+        public virtual ICollection<KoiProfileResponse> KoiProfiles { get; set; } = new List<KoiProfileResponse>();
     }
 }

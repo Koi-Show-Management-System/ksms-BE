@@ -3,5 +3,7 @@
 public enum RegistrationStatus
 {
     Pending,
-    Confirm
+    NotEnoughQuota,
+    Confirm,
+    Cancelled
 }

@@ -141,6 +141,8 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
         {
             RegistrationStatus.Pending => RegistrationStatus.Pending.ToString().ToLower(),
             RegistrationStatus.Confirm => RegistrationStatus.Confirm.ToString().ToLower(),
+            //RegistrationStatus.NotEnoughQuota => RegistrationStatus.NotEnoughQuota.ToString().ToLower(),
+            //RegistrationStatus.Cancelled => RegistrationStatus.Cancelled.ToString().ToLower(),
             _ => registration.Status
         };
         _unitOfWork.GetRepository<Registration>().UpdateAsync(registration);

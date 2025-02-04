@@ -4,6 +4,7 @@ using KSMS.Domain.Dtos.Requests.Variety;
 using KSMS.Domain.Dtos.Responses.Award;
 using KSMS.Domain.Dtos.Responses.CriteriaGroupRequest;
 using KSMS.Domain.Dtos.Responses.RefereeAssignment;
+using KSMS.Domain.Dtos.Responses.Registration;
 using KSMS.Domain.Dtos.Responses.Round;
 using KSMS.Domain.Dtos.Responses.Variety;
 using KSMS.Domain.Entities;
@@ -42,7 +43,10 @@ namespace KSMS.Domain.Dtos.Responses.Categorie
 
         public virtual ICollection<AwardResponse> Awards { get; set; } = new List<AwardResponse>();
 
-        public virtual VarietyResponse? Variety { get; set; }
+        public virtual VarietyResponse Variety { get; set; }
+
+        public virtual ICollection<RegistrationStaffResponse> Registrations { get; set; } = new List<RegistrationStaffResponse>();
+
 
         public virtual ICollection<CriteriaGroupResponse> CriteriaGroups { get; set; } = new List<CriteriaGroupResponse>();
 
