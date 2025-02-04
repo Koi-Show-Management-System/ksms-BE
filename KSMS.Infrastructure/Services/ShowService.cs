@@ -319,6 +319,7 @@ namespace KSMS.Infrastructure.Services
                                 .ThenInclude(s => s.Role)
                      .Include(s => s.Categories)
                         .ThenInclude(s => s.Variety)
+                          .ThenInclude(s => s.KoiProfiles)
                     .Include(s => s.Categories)
                         .ThenInclude(s => s.RefereeAssignments)
                             .ThenInclude(s => s.AssignedByNavigation)
