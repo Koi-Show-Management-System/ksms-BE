@@ -30,7 +30,8 @@ namespace KSMS.Infrastructure.Services
           
             var pagedCategories = await categoryRepository.GetPagingListAsync(
                 orderBy: query => query.OrderBy(c => c.Name),  
-                include: query => query.Include(c => c.Registrations),  
+                include: query => query.Include(c => c.Registrations).Include(s => s.Variety)
+                          .ThenInclude(s => s.KoiProfiles),  
                 predicate: c => c.ShowId == showId,  
                 page: page,
                 size: size
@@ -44,10 +45,7 @@ namespace KSMS.Infrastructure.Services
             {
              
                 categoryResponse.Registrations = categoryResponse.Registrations
-                    .Adapt<List<RegistrationStaffResponse>>();
-
-            
-                
+                    .Adapt<List<RegistrationStaffResponse>>(); 
             }
 
             return pagedCategorieResponses;
