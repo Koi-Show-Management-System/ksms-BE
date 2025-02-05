@@ -9,7 +9,7 @@ public partial class Variety : BaseEntity
     public string Name { get; set; } = null!;
 
     public string? Description { get; set; }
-    
+
     public virtual ICollection<Category> Categories { get; set; } = new List<Category>();
 
     public virtual ICollection<KoiProfile> KoiProfiles { get; set; } = new List<KoiProfile>();

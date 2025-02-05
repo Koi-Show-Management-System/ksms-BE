@@ -44,7 +44,7 @@ public partial class Registration : BaseEntity
 
     public virtual ICollection<GrandChampionContender> GrandChampionContenders { get; set; } = new List<GrandChampionContender>();
 
-    public virtual ICollection<RegistrationPayment> RegistrationPayments { get; set; } = new List<RegistrationPayment>();
+    public virtual RegistrationPayment? RegistrationPayment { get; set; }
 
     public virtual ICollection<Result> Results { get; set; } = new List<Result>();
 

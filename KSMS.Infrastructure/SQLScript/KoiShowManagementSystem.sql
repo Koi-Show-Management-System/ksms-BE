@@ -23,7 +23,7 @@ CREATE TABLE [dbo].[Accounts](
     [FullName] nvarchar(100) NULL,
     [Phone] varchar(20) NULL,
     [Avatar] nvarchar(255) NULL,
-    [RoleId] UNIQUEIDENTIFIER NULL,
+    [RoleId] UNIQUEIDENTIFIER NOT NULL,
     [Status] varchar(20) DEFAULT 'active',
     [ConfirmationToken] NVARCHAR(255)  NULL,
     [IsConfirmed]  BIT NOT NULL DEFAULT '0',
@@ -439,24 +439,24 @@ CREATE TABLE [dbo].[BlogsNews](
 )
 GO
 -- RegistrationPayments table
-CREATE TABLE [dbo].[RegistrationPayments](
-    [Id] UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
-    [RegistrationId] UNIQUEIDENTIFIER NOT NULL,
-    [PaymentTypeId] UNIQUEIDENTIFIER NOT NULL,
-    [PaidAmount] decimal(18,2) NOT NULL,
-    [PaymentDate] datetime NOT NULL DEFAULT GETDATE(),
-    [PaymentMethod] nvarchar(50) NOT NULL,
-    [Status] varchar(20) NOT NULL,
-    FOREIGN KEY ([RegistrationId]) REFERENCES [Registrations]([Id]),
-    FOREIGN KEY ([PaymentTypeId]) REFERENCES [PaymentTypes]([Id])
+CREATE TABLE [dbo].[RegistrationPayments] (
+      [Id] UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+      [RegistrationId] UNIQUEIDENTIFIER NOT NULL UNIQUE,
+      [PaymentTypeId] UNIQUEIDENTIFIER NOT NULL,
+      [PaidAmount] DECIMAL(18,2) NOT NULL,
+      [PaymentDate] DATETIME NOT NULL DEFAULT GETDATE(),
+      [PaymentMethod] NVARCHAR(50) NOT NULL,
+      [Status] VARCHAR(20) NOT NULL,
+      FOREIGN KEY ([RegistrationId]) REFERENCES [Registrations]([Id]),
+      FOREIGN KEY ([PaymentTypeId]) REFERENCES [PaymentTypes]([Id])
 )
 GO
 -- QRCodes table
 CREATE TABLE [dbo].[QRCodes](
     [Id] UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
-    [TicketOrderDetailId] UNIQUEIDENTIFIER NULL,
-    [RegistrationPaymentId] UNIQUEIDENTIFIER NULL,
-    [QRCodeData] varchar(255) NOT NULL,
+    [TicketOrderDetailId] UNIQUEIDENTIFIER NULL UNIQUE,
+    [RegistrationPaymentId] UNIQUEIDENTIFIER NULL UNIQUE,
+    [QRCodeData] varchar(255) NULL,
     [ExpiryDate] datetime NULL,
     [IsActive] bit DEFAULT 1,
     [CreatedAt] datetime NOT NULL,
@@ -480,7 +480,7 @@ GO
 -- CheckInLogs table
 CREATE TABLE [dbo].[CheckInLogs](
     [Id] UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
-    [QRCodeId] UNIQUEIDENTIFIER NOT NULL,
+    [QRCodeId] UNIQUEIDENTIFIER NOT NULL UNIQUE,
     [CheckInTime] datetime DEFAULT GETDATE(),
     [CheckInLocation] nvarchar(100) NULL,
     [CheckedInBy] UNIQUEIDENTIFIER NULL,

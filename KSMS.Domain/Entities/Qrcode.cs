@@ -10,13 +10,13 @@ public partial class Qrcode : BaseEntity
 
     public Guid? RegistrationPaymentId { get; set; }
 
-    public string QrcodeData { get; set; } = null!;
+    public string? QrcodeData { get; set; }
 
     public DateTime? ExpiryDate { get; set; }
 
     public bool? IsActive { get; set; }
 
-    public virtual ICollection<CheckInLog> CheckInLogs { get; set; } = new List<CheckInLog>();
+    public virtual CheckInLog? CheckInLog { get; set; }
 
     public virtual RegistrationPayment? RegistrationPayment { get; set; }
 

@@ -130,11 +130,9 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
     }
     public async Task UpdateStatusForRegistration(Guid registrationId, RegistrationStatus status)
     {
-        DateTime? expireDate = null;
-        string qrCodeUrl = null;
         var registration = await _unitOfWork.GetRepository<Registration>()
             .SingleOrDefaultAsync(predicate: r => r.Id == registrationId,
-                include: query => query.Include(r => r.RegistrationPayments)
+                include: query => query.Include(r => r.RegistrationPayment)
                     .Include(r => r.Category).ThenInclude(r => r.Show)
                     .Include(r => r.Account));
         registration.Status = status switch
@@ -146,37 +144,29 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
             _ => registration.Status
         };
         _unitOfWork.GetRepository<Registration>().UpdateAsync(registration);
-        var qrCodes = new List<Qrcode>();
+        
         if (registration.Status == RegistrationStatus.Confirm.ToString().ToLower())
         {
-            foreach (var registrationPayment in registration.RegistrationPayments)
+            var qrCode = new Qrcode()
             {
-                qrCodes.Add(new Qrcode()
-                {
-                    RegistrationPaymentId = registrationPayment.Id,
-                    QrcodeData = "",
-                    ExpiryDate = registration.Category.Show.StartDate?.AddMinutes(30) ?? DateTime.Now.AddMinutes(30),
-                    IsActive = true
-                });
-            }
-            await _unitOfWork.GetRepository<Qrcode>().InsertRangeAsync(qrCodes);
-        }
-        await _unitOfWork.CommitAsync();
-        foreach (var qrCode in qrCodes)
-        {
+                RegistrationPaymentId = registration.RegistrationPayment.Id,
+                ExpiryDate = registration.Category.Show.StartDate?.AddMinutes(30) ?? DateTime.Now.AddMinutes(30),
+                IsActive = true
+            };
+            await _unitOfWork.GetRepository<Qrcode>().InsertAsync(qrCode);
+            await _unitOfWork.CommitAsync();
             qrCode.QrcodeData = await _firebaseService.UploadImageAsync(
-                    FileUtils.ConvertBase64ToFile(QrcodeUtil.GenerateQrCode(qrCode.Id)), "qrCode/");
-            qrCodeUrl = qrCode.QrcodeData;
-            expireDate = qrCode.ExpiryDate;
+                FileUtils.ConvertBase64ToFile(QrcodeUtil.GenerateQrCode(qrCode.Id)), "qrCode/");
+            _unitOfWork.GetRepository<Qrcode>().UpdateAsync(qrCode);
+            await _unitOfWork.CommitAsync();
+            var sendMail = MailUtil.SendEmail(registration.Account.Email,
+                MailUtil.ContentMailUtil.Title_ApproveForRegisterSh,
+                MailUtil.ContentMailUtil.SendApprovalEmail(registration, qrCode.QrcodeData, qrCode.ExpiryDate), "");
+            if (!sendMail)
+            {
+                throw new BadRequestException("Error sending confirmation email.");
+            }
         }
-        _unitOfWork.GetRepository<Qrcode>().UpdateRange(qrCodes);
-        await _unitOfWork.CommitAsync();
-        var sendMail = MailUtil.SendEmail(registration.Account.Email,
-            MailUtil.ContentMailUtil.Title_ApproveForRegisterSh,
-            MailUtil.ContentMailUtil.SendApprovalEmail(registration, qrCodeUrl, expireDate), "");
-        if (!sendMail)
-        {
-            throw new BadRequestException("Error sending confirmation email.");
-        }
+        
     }
 }
