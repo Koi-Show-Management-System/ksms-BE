@@ -18,7 +18,7 @@ public partial class Account : BaseEntity
 
     public string? Avatar { get; set; }
 
-    public Guid? RoleId { get; set; }
+    public Guid RoleId { get; set; }
 
     public string? Status { get; set; }
 
@@ -42,7 +42,7 @@ public partial class Account : BaseEntity
 
     public virtual ICollection<Registration> Registrations { get; set; } = new List<Registration>();
 
-    public virtual Role? Role { get; set; }
+    public virtual Role Role { get; set; } = null!;
 
     public virtual ICollection<Score> Scores { get; set; } = new List<Score>();
 

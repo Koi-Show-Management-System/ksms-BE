@@ -5,7 +5,7 @@ using KSMS.Domain.Common;
 namespace KSMS.Domain.Entities;
 
 public partial class Award : BaseEntity
-{ 
+{
     public Guid CategoryId { get; set; }
 
     public string Name { get; set; } = null!;

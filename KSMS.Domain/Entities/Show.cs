@@ -6,7 +6,6 @@ namespace KSMS.Domain.Entities;
 
 public partial class Show : BaseEntity
 {
-    
     public string Name { get; set; } = null!;
 
     public DateTime? StartDate { get; set; }

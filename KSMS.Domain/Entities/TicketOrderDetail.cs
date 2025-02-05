@@ -17,7 +17,7 @@ public partial class TicketOrderDetail
 
     public decimal Amount { get; set; }
 
-    public virtual ICollection<Qrcode> Qrcodes { get; set; } = new List<Qrcode>();
+    public virtual Qrcode? Qrcode { get; set; }
 
     public virtual Ticket? Ticket { get; set; }
 

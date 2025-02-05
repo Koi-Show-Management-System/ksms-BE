@@ -21,7 +21,7 @@ public partial class RegistrationPayment
 
     public virtual PaymentType PaymentType { get; set; } = null!;
 
-    public virtual ICollection<Qrcode> Qrcodes { get; set; } = new List<Qrcode>();
+    public virtual Qrcode? Qrcode { get; set; }
 
     public virtual Registration Registration { get; set; } = null!;
 }

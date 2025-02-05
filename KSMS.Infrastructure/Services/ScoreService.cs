@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.SignalR;
 using System;
 using System.Threading.Tasks;
 using System.Linq;
+using KSMS.Domain.Exceptions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using KSMS.Infrastructure.Database;
@@ -58,14 +59,14 @@ namespace KSMS.Infrastructure.Services
                       );
             if (referee == null || referee.Role.Name != "Referee")
             {
-                throw new UnauthorizedAccessException("Only referees can create scores.");
+                throw new UnauthorizedException("Only referees can create scores.");
             }
 
 
             var criteria = await criteriaRepository.SingleOrDefaultAsync(c => c.Id == request.CriteriaId, null, null);
             if (criteria == null)
             {
-                throw new KeyNotFoundException($"Criteria with ID '{request.CriteriaId}' not found.");
+                throw new NotFoundException($"Criteria with ID '{request.CriteriaId}' not found.");
             }
             var score = request.Adapt<Score>();
            
