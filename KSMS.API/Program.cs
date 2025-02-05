@@ -7,6 +7,7 @@ using KSMS.Application.Repositories;
 using KSMS.Infrastructure.Database;
 using KSMS.Infrastructure.Repositories;
 using KSMS.Infrastructure.Services;
+using KSMS.Infrastructure.SignalR;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -38,6 +39,8 @@ builder.Configuration.SettingsBinding();
 builder.Services.AddAuthenticationServicesConfigurations(builder.Configuration);
 builder.Services.AddSwaggerConfigurations();
 builder.Services.AddDbContext();
+builder.Services.AddSignalR();
+
 builder.Services.AddMvc()
                 .AddJsonOptions(x => x.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles);
 ConfigureFireBase.AddFirebase();
@@ -62,5 +65,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+app.MapHub<ScoreHub>("/scoreHub");
 
 await app.RunAsync();
