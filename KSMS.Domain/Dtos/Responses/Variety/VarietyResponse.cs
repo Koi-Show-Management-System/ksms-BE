@@ -13,7 +13,5 @@ namespace KSMS.Domain.Dtos.Responses.Variety
         public string Name { get; set; } = null!;
 
         public string? Description { get; set; }
-
-        public virtual ICollection<KoiProfileResponse> KoiProfiles { get; set; } = new List<KoiProfileResponse>();
     }
 }

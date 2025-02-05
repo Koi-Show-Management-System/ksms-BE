@@ -11,6 +11,8 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using Google.Cloud.Storage.V1;
+using KSMS.Domain.Dtos.Requests.KoiProfile;
+using KSMS.Domain.Entities;
 
 namespace KSMS.Infrastructure
 {
@@ -46,7 +48,7 @@ namespace KSMS.Infrastructure
         {
             var config = new TypeAdapterConfig();
             config.Scan(Assembly.GetExecutingAssembly());
-
+            TypeAdapterConfig<UpdateKoiProfileRequest, KoiProfile>.NewConfig().IgnoreNullValues(true);
             builder.RegisterInstance(config).AsSelf().SingleInstance();
             builder.RegisterType<Mapper>().As<IMapper>().InstancePerLifetimeScope();
         }
