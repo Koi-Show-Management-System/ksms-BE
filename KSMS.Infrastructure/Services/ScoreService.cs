@@ -21,12 +21,10 @@ namespace KSMS.Infrastructure.Services
 {
     public class ScoreService : BaseService<ScoreService> ,  IScoreService
     {
-        private readonly IUnitOfWork _unitOfWork;
         private readonly IHubContext<ScoreHub> _scoreHub;
         public ScoreService(IUnitOfWork<KoiShowManagementSystemContext> unitOfWork, IHubContext<ScoreHub> scoreHub, ILogger<ScoreService> logger)
          : base(unitOfWork, logger)  
         {
-            _unitOfWork = unitOfWork;
             _scoreHub = scoreHub;
         }
         public async Task<Paginate<ScoreResponse>> GetPagedScoresAsync(int page, int size)
