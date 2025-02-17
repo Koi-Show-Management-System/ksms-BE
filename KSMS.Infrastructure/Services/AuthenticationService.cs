@@ -16,6 +16,8 @@ namespace KSMS.Infrastructure.Services;
 
 public class AuthenticationService : BaseService<AuthenticationService>, IAuthenticationService
 {
+    private const int OTP_EXPIRY_MINUTES = 5;
+    
     public AuthenticationService(IUnitOfWork<KoiShowManagementSystemContext> unitOfWork, ILogger<AuthenticationService> logger, IHttpContextAccessor httpContextAccessor) : base(unitOfWork, logger, httpContextAccessor)
     {
     }
@@ -73,5 +75,55 @@ public class AuthenticationService : BaseService<AuthenticationService>, IAuthen
 
     }
 
-    
+    public async Task SendForgotPasswordOTP(string email)
+    {
+        var account = await _unitOfWork.GetRepository<Account>()
+            .SingleOrDefaultAsync(predicate: a => a.Email == email);
+            
+        if (account == null)
+            throw new NotFoundException("Email không tồn tại trong hệ thống.");
+        if (account.ResetPasswordOTP != null && account.ResetPasswordOTPExpiry > DateTime.UtcNow)
+        {
+            var remainingTime = (account.ResetPasswordOTPExpiry.Value - DateTime.UtcNow).TotalSeconds;
+            throw new BadRequestException($"Vui lòng đợi {(int)remainingTime} giây trước khi yêu cầu mã OTP mới.");
+        }
+        var otp = Random.Shared.Next(100000, 999999).ToString();
+        account.ResetPasswordOTP = otp;
+        account.ResetPasswordOTPExpiry = DateTime.UtcNow.AddMinutes(OTP_EXPIRY_MINUTES);
+        
+        _unitOfWork.GetRepository<Account>().UpdateAsync(account);
+        await _unitOfWork.CommitAsync();
+        var sendMail = MailUtil.SendEmail(
+            email,
+            MailUtil.ContentMailUtil.Title_ForgotPassword,
+            MailUtil.ContentMailUtil.ForgotPasswordOTP(account.FullName, otp),
+            ""
+        );
+
+        if (!sendMail)
+            throw new BadRequestException("Không thể gửi email OTP.");
+    }
+
+    public async Task ResetPassword(string email, string otp, string newPassword)
+    {
+        var account = await _unitOfWork.GetRepository<Account>()
+            .SingleOrDefaultAsync(predicate: a => a.Email == email);
+            
+        if (account == null)
+            throw new NotFoundException("Email không tồn tại trong hệ thống.");
+        
+        if (account.ResetPasswordOTP != otp)
+            throw new BadRequestException("Mã OTP không chính xác.");
+        
+        if (account.ResetPasswordOTPExpiry < DateTime.UtcNow)
+            throw new BadRequestException("Mã OTP đã hết hạn.");
+
+        // Cập nhật mật khẩu mới
+        account.HashedPassword = PasswordUtil.HashPassword(newPassword);
+        account.ResetPasswordOTP = null;
+        account.ResetPasswordOTPExpiry = null;
+
+        _unitOfWork.GetRepository<Account>().UpdateAsync(account);
+        await _unitOfWork.CommitAsync();
+    }
 }

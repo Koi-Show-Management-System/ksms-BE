@@ -28,5 +28,18 @@ namespace KSMS.API.Controllers
             return Created(nameof(Login), await _authenticationService.Login(loginRequest));
         }
         
+        [HttpPost("forgot-password")]
+        public async Task<IActionResult> ForgotPassword([FromQuery] string email)
+        {
+            await _authenticationService.SendForgotPasswordOTP(email);
+            return Ok(new { Message = "Mã OTP đã được gửi đến email của bạn." });
+        }
+
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
+        {
+            await _authenticationService.ResetPassword(request.Email, request.OTP, request.NewPassword);
+            return Ok(new { Message = "Đặt lại mật khẩu thành công." });
+        }
     }
 }

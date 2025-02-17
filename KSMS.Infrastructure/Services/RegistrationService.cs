@@ -23,11 +23,13 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
     private readonly PayOS _payOs;
     private readonly IMediaService _mediaService;
     private readonly IFirebaseService _firebaseService;
-    public RegistrationService(IUnitOfWork<KoiShowManagementSystemContext> unitOfWork, ILogger<RegistrationService> logger, IHttpContextAccessor httpContextAccessor, PayOS payOs, IMediaService mediaService, IFirebaseService firebaseService) : base(unitOfWork, logger, httpContextAccessor)
+    private readonly INotificationService _notificationService;
+    public RegistrationService(IUnitOfWork<KoiShowManagementSystemContext> unitOfWork, ILogger<RegistrationService> logger, IHttpContextAccessor httpContextAccessor, PayOS payOs, IMediaService mediaService, IFirebaseService firebaseService, INotificationService notificationService) : base(unitOfWork, logger, httpContextAccessor)
     {
         _payOs = payOs;
         _mediaService = mediaService;
         _firebaseService = firebaseService;
+        _notificationService = notificationService;
     }
 
     public async Task<object> CreateRegistration(CreateRegistrationRequest createRegistrationRequest)
@@ -84,6 +86,23 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
         {
             throw new BadRequestException("Error sending confirmation email.");
         }
+
+        // Lấy danh sách staff của show
+        var staffList = await _unitOfWork.GetRepository<ShowStaff>()
+            .GetListAsync(predicate: s => s.KoiShowId == koiShow.Id,
+                include: query => query.Include(s => s.Account));
+
+        // Gửi thông báo cho tất cả staff
+        foreach (var staff in staffList)
+        {
+            await _notificationService.SendNotification(
+                staff.Account.Id,
+                "New Registration",
+                $"New registration from {registration.Account.FullName} for koi {koiProfile.Name}",
+                NotificationType.NewRegistration
+            );
+        }
+
         return new
         {
             Message = "Register successfully"
