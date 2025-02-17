@@ -3,6 +3,7 @@ using KSMS.Infrastructure.Services;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Threading.Tasks;
+using KSMS.Domain.Dtos;
 
 namespace KSMS.API.Controllers
 {
@@ -18,13 +19,13 @@ namespace KSMS.API.Controllers
         }
 
         [HttpGet("show/registrations")]
-        public async Task<IActionResult> GetAllRegistrationsByShow(
-      [FromQuery] Guid showId,       
-      [FromQuery] int page = 1,     
-      [FromQuery] int size = 10)    
+        public async Task<ActionResult<ApiResponse<object>>> GetAllRegistrationsByShow(
+            [FromQuery] Guid showId,       
+            [FromQuery] int page = 1,     
+            [FromQuery] int size = 10)    
         {
             var registrations = await _categoryService.GetPagedRegistrationsInShow(showId, page, size);
-            return Ok(registrations);
+            return Ok(ApiResponse<object>.Success(registrations, "Get the list of registrations successfully"));
         }
 
     }

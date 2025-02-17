@@ -5,10 +5,11 @@ using KSMS.Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using KSMS.Domain.Dtos;
 
 namespace KSMS.API.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/registration")]
     [ApiController]
     public class RegistrationController : ControllerBase
     {
@@ -21,15 +22,17 @@ namespace KSMS.API.Controllers
 
         [HttpPost("create")]
         [Authorize(Roles = "Member")]
-        public async Task<ActionResult<object>> CreateRegistration([FromForm]CreateRegistrationRequest createRegistrationRequest)
+        public async Task<ActionResult<ApiResponse<object>>> CreateRegistration([FromForm]CreateRegistrationRequest createRegistrationRequest)
         {
-            return Created(nameof(CreateRegistration), await _registrationService.CreateRegistration(createRegistrationRequest));
+            await _registrationService.CreateRegistration(createRegistrationRequest);
+            return StatusCode(201, ApiResponse<object>.Created(null, "Create registration successfully"));
         }
         [HttpPost("checkout")]
         [Authorize(Roles = "Member")]
-        public async Task<ActionResult<CheckOutRegistrationResponse>> CheckOut([FromQuery] Guid registrationId)
+        public async Task<ActionResult<ApiResponse<CheckOutRegistrationResponse>>> CheckOut([FromQuery] Guid registrationId)
         {
-            return Created(nameof(CheckOut), await _registrationService.CheckOut(registrationId));
+            var result = await _registrationService.CheckOut(registrationId);
+            return StatusCode(201, ApiResponse<CheckOutRegistrationResponse>.Created(result, "Payment successfully"));
         }
         [HttpGet("success")]
         public async Task<IActionResult> Success([FromQuery] Guid registrationPaymentId,[FromQuery] string status)
@@ -44,11 +47,10 @@ namespace KSMS.API.Controllers
         }
         [HttpPut("{id:guid}")]
         [Authorize(Roles = "Staff")]
-        public async Task<IActionResult> ToggleUserStatus(Guid id, RegistrationStatus status)
+        public async Task<ActionResult<ApiResponse<object>>> ToggleUserStatus(Guid id, RegistrationStatus status)
         {
             await _registrationService.UpdateStatusForRegistration(id, status);
-            return NoContent();
-        
+            return Ok(ApiResponse<object>.Success(null, "Update registration status successfully"));
         }
     }
 }

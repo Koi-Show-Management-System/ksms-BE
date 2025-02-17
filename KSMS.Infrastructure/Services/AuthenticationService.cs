@@ -81,11 +81,11 @@ public class AuthenticationService : BaseService<AuthenticationService>, IAuthen
             .SingleOrDefaultAsync(predicate: a => a.Email == email);
             
         if (account == null)
-            throw new NotFoundException("Email không tồn tại trong hệ thống.");
+            throw new NotFoundException("Email is not existed.");
         if (account.ResetPasswordOTP != null && account.ResetPasswordOTPExpiry > DateTime.UtcNow)
         {
             var remainingTime = (account.ResetPasswordOTPExpiry.Value - DateTime.UtcNow).TotalSeconds;
-            throw new BadRequestException($"Vui lòng đợi {(int)remainingTime} giây trước khi yêu cầu mã OTP mới.");
+            throw new BadRequestException($"Please wait {(int)remainingTime} seconds before requesting a new OTP code.");
         }
         var otp = Random.Shared.Next(100000, 999999).ToString();
         account.ResetPasswordOTP = otp;
@@ -101,7 +101,7 @@ public class AuthenticationService : BaseService<AuthenticationService>, IAuthen
         );
 
         if (!sendMail)
-            throw new BadRequestException("Không thể gửi email OTP.");
+            throw new BadRequestException("Unable to send OTP email.");
     }
 
     public async Task ResetPassword(string email, string otp, string newPassword)
@@ -110,13 +110,13 @@ public class AuthenticationService : BaseService<AuthenticationService>, IAuthen
             .SingleOrDefaultAsync(predicate: a => a.Email == email);
             
         if (account == null)
-            throw new NotFoundException("Email không tồn tại trong hệ thống.");
+            throw new NotFoundException("Email is not existed.");
         
         if (account.ResetPasswordOTP != otp)
-            throw new BadRequestException("Mã OTP không chính xác.");
+            throw new BadRequestException("OTP code is incorrect.");
         
         if (account.ResetPasswordOTPExpiry < DateTime.UtcNow)
-            throw new BadRequestException("Mã OTP đã hết hạn.");
+            throw new BadRequestException("OTP code has expired.");
 
         // Cập nhật mật khẩu mới
         account.HashedPassword = PasswordUtil.HashPassword(newPassword);

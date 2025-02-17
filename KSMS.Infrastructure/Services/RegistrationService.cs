@@ -32,7 +32,7 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
         _notificationService = notificationService;
     }
 
-    public async Task<object> CreateRegistration(CreateRegistrationRequest createRegistrationRequest)
+    public async Task CreateRegistration(CreateRegistrationRequest createRegistrationRequest)
     {
         var accountId = GetIdFromJwt();
         var koiShow = await _unitOfWork.GetRepository<KoiShow>()
@@ -102,11 +102,6 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
                 NotificationType.NewRegistration
             );
         }
-
-        return new
-        {
-            Message = "Register successfully"
-        };
     }
 
     public async Task UpdateRegistrationPaymentStatusForPayOs(Guid registrationPaymentId, RegistrationPaymentStatus status)
@@ -190,7 +185,7 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
                 .ToList();
 
             if (!eligibleCategories.Any())
-                throw new BadRequestException("Không tìm thấy hạng mục phù hợp cho cá Koi này");
+                throw new BadRequestException("No suitable category was found for this Koi fish");
             var bestCategory = eligibleCategories.MinBy(c => c.SizeMax - c.SizeMin);
             if (bestCategory != null)
             {
