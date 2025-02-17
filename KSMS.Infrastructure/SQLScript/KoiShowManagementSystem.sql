@@ -22,6 +22,8 @@ CREATE TABLE [dbo].[Accounts](
     [IsConfirmed]  BIT NOT NULL DEFAULT '0',
     [CreatedAt] datetime NOT NULL,
     [UpdatedAt] datetime NULL,
+    [ResetPasswordOTP] nvarchar(10) NULL,
+    [ResetPasswordOTPExpiry] datetime NULL
 )
 GO
 
