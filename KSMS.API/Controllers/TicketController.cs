@@ -3,6 +3,7 @@ using KSMS.Application.Services;
 using KSMS.Infrastructure.Utils;
 using KSMS.Domain.Dtos.Requests;
 using Microsoft.AspNetCore.Authorization;
+using KSMS.Domain.Dtos;
 
 namespace KSMS.API.Controllers
 {
@@ -19,20 +20,19 @@ namespace KSMS.API.Controllers
 
       
         [HttpPost("generate-qr")]
-        public IActionResult GenerateQrCode([FromBody] Guid TicketId)
+        public ActionResult<ApiResponse<string>> GenerateQrCode([FromBody] Guid TicketId)
         {
             var qrCodeBase64 = QrcodeUtil.GenerateQrCode(TicketId);
-            return Ok(new { qrCode = qrCodeBase64 });
+            return Ok(ApiResponse<string>.Success(qrCodeBase64, "Tạo mã QR thành công"));
         }
 
        
         [HttpPost("verify-ticket")]
         [Authorize(Roles = "Staff")]
-        public async Task<IActionResult> VerifyTicketId([FromBody] Guid qrCodeId)
+        public async Task<ActionResult<ApiResponse<string>>> VerifyTicketId([FromBody] Guid qrCodeId)
         {
             await _ticketService.VerifyTicketIdAsync(HttpContext.User, qrCodeId);
-
-            return Ok(new { message = "Scan QR Successfully" });
+            return Ok(ApiResponse<string>.Success(null, "Xác thực vé thành công"));
         }
     }
 }

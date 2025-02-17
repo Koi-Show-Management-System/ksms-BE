@@ -46,6 +46,7 @@ public static class MailUtil
           "[KOI SHOW SYSTEM] Xác nhận duyệt đơn đăng kí cá koi thành công";
       public readonly static string Title_CheckOutSuccessfully =
           "[KOI SHOW SYSTEM] Xác nhận thanh toán phí tham gia giải cá koi thành công";
+      public readonly static string Title_ForgotPassword = "[KOI SHOW SYSTEM] Mã OTP đặt lại mật khẩu";
         public static string StaffRoleNotification(string staffFullName, string showName, string username, string defaultPassword)
         {
             return $@"
@@ -346,6 +347,55 @@ public static string ConfirmCategoryAssignment(Registration registration, Compet
                             </ul>
 
                             <p>Nếu bạn cần hỗ trợ hoặc có bất kỳ thắc mắc nào, vui lòng liên hệ với chúng tôi qua email hoặc hotline.</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td align='center' style='padding: 20px;'>
+                            <p style='font-size: 14px; color: #666; border-top: 1px solid #ddd; padding-top: 10px;'>Trân trọng,</p>
+                            <p style='font-family: Arial, sans-serif; font-size: 18px; font-weight: bold; color: #1a2a6c;'>Đội ngũ Koi Show</p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>";
+}
+public static string ForgotPasswordOTP(string fullName, string otpCode)
+{
+    return $@"
+<!DOCTYPE html>
+<html lang='vi'>
+<head>
+    <meta charset='UTF-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <title>KOI SHOW - Mã OTP đặt lại mật khẩu</title>
+</head>
+<body style='margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4;'>
+    <table border='0' cellpadding='0' cellspacing='0' width='100%' style='background-color: #f4f4f4;'>
+        <tr>
+            <td align='center' style='padding: 20px 0;'>
+                <table border='0' cellpadding='0' cellspacing='0' width='600' style='background-color: #ffffff; border-radius: 10px; padding: 20px;'>
+                    <tr>
+                        <td align='center' style='font-family: Arial, sans-serif; color: #1a2a6c;'>
+                            <h1 style='font-size: 36px; margin: 20px 0;'>KOI SHOW</h1>
+                            <hr style='border: none; border-top: 3px solid #b21f1f; width: 60px; margin: 10px auto;'>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style='font-family: Arial, sans-serif; font-size: 16px; line-height: 1.8; padding: 20px; color: #333;'>
+                            <p>Thân gửi <span style='font-weight: bold; color: #b21f1f;'>{fullName}</span>,</p>
+                            <p>Chúng tôi nhận được yêu cầu đặt lại mật khẩu cho tài khoản của bạn.</p>
+                            <p>Mã OTP của bạn là:</p>
+                            <div style='text-align: center; margin: 20px 0;'>
+                                <div style='font-size: 32px; font-weight: bold; color: #b21f1f; letter-spacing: 5px; padding: 10px; background-color: #f8f8f8; display: inline-block; border-radius: 5px;'>
+                                    {otpCode}
+                                </div>
+                            </div>
+                            <p>Mã OTP này sẽ hết hạn sau 5 phút.</p>
+                            <p style='color: #b21f1f; font-weight: bold;'>Lưu ý: Không chia sẻ mã này với bất kỳ ai.</p>
+                            <p>Nếu bạn không yêu cầu đặt lại mật khẩu, vui lòng bỏ qua email này hoặc liên hệ với chúng tôi ngay.</p>
                         </td>
                     </tr>
                     <tr>

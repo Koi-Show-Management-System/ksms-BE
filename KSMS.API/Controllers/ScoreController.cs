@@ -4,6 +4,7 @@ using KSMS.Domain.Dtos.Responses;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Threading.Tasks;
+using KSMS.Domain.Dtos;
 
 namespace KSMS.API.Controllers
 {
@@ -19,23 +20,21 @@ namespace KSMS.API.Controllers
         }
         [Route("admin/GetAllScores")]
         [HttpGet]
-        public async Task<IActionResult> GetPagedScores([FromQuery] int page = 1, [FromQuery] int size = 10)
+        public async Task<ActionResult<ApiResponse<object>>> GetPagedScores([FromQuery] int page = 1, [FromQuery] int size = 10)
         {
             var pagedScores = await _scoreService.GetPagedScoresAsync(page, size);
-            return Ok(pagedScores);
+            return Ok(ApiResponse<object>.Success(pagedScores, "Get the list of score successfully"));
         }
          
         [Route("Refree/CreateScores")]
         [HttpPost]
-        public async Task<IActionResult> CreateScore([FromBody] CreateScoreRequest request)
+        public async Task<ActionResult<ApiResponse<object>>> CreateScore([FromBody] CreateScoreRequest request)
         {
             if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
+                return BadRequest(ApiResponse<object>.Fail(ModelState.ToString()));
 
             var response = await _scoreService.CreateScoreAsync(request);
-            return Ok(response);
+            return StatusCode(201, ApiResponse<object>.Created(response, "Create score successfully"));
         }
 
     }

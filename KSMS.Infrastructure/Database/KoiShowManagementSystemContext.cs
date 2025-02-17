@@ -126,6 +126,11 @@ public partial class KoiShowManagementSystemContext : DbContext
             entity.Property(e => e.Username)
                 .HasMaxLength(50)
                 .IsUnicode(false);
+            entity.Property(e => e.ResetPasswordOTP)
+                .HasMaxLength(10)
+                .IsUnicode(false);
+            entity.Property(e => e.ResetPasswordOTPExpiry)
+                .HasColumnType("datetime");
         });
 
         modelBuilder.Entity<Award>(entity =>

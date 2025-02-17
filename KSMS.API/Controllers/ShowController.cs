@@ -1,4 +1,5 @@
 ﻿using KSMS.Application.Services;
+using KSMS.Domain.Dtos;
 using KSMS.Domain.Dtos.Requests.Show;
 using KSMS.Domain.Dtos.Responses.Show;
 using KSMS.Domain.Exceptions;
@@ -7,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace KSMS.API.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/koi-show")]
     public class ShowController : ControllerBase
     {
         private readonly IShowService _showService;
@@ -21,80 +22,46 @@ namespace KSMS.API.Controllers
         /// Create a new show with related entities.
         /// </summary>
         [HttpPost("create")]
-        public async Task<IActionResult> CreateShow([FromBody] CreateShowRequest createShowRequest)
+        public async Task<ActionResult<ApiResponse<object>>> CreateShow([FromBody] CreateShowRequest createShowRequest)
         {
-            try
-            {
-                if (!ModelState.IsValid)
-                {
-                    return BadRequest(ModelState);
-                }
+            if (!ModelState.IsValid)
+                return BadRequest(ApiResponse<object>.Fail(ModelState.ToString()));
 
-                var showResponse = await _showService.CreateShowAsync(createShowRequest);
-                return CreatedAtAction(nameof(GetShowById), new { id = showResponse.Id }, showResponse);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { Error = "An unexpected error occurred.", Details = ex.Message });
-            }
+            var showResponse = await _showService.CreateShowAsync(createShowRequest);
+            return StatusCode(201, ApiResponse<object>.Created(showResponse, "Create show successfully"));
         }
 
         /// <summary>
         /// Get a show by its ID.
         /// </summary>
         [HttpGet("{id:guid}")]
-        public async Task<IActionResult> GetShowById(Guid id)
+        public async Task<ActionResult<ApiResponse<object>>> GetShowById(Guid id)
         {
-            try
-            {
-                var showResponse = await _showService.GetShowByIdAsync(id);
-                if (showResponse == null)
-                {
-                    return NotFound(new { Error = "Show not found." });
-                }
+            var showResponse = await _showService.GetShowByIdAsync(id);
+            if (showResponse == null)
+                return NotFound(ApiResponse<object>.Fail("Show is not existed"));
 
-                return Ok(showResponse);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { Error = "An unexpected error occurred.", Details = ex.Message });
-            }
+            return Ok(ApiResponse<ShowResponse>.Success(showResponse, "Get show successfully"));
         }
 
         // <summary>
         // Get a paginated list of shows.
         // </summary>
-        [HttpGet("listShow")]
-        public async Task<IActionResult> GetShows()
+        [HttpGet("list-show")]
+        public async Task<ActionResult<ApiResponse<object>>> GetShows()
         {
-           
-                var shows = await _showService.GetAllShowsAsync();
-                return Ok(shows);
-           
+            var shows = await _showService.GetAllShowsAsync();
+            return Ok(ApiResponse<object>.Success(shows, "Get list of show successfully"));
         }
 
         [HttpPut("{id:guid}")]
-        public async Task<IActionResult> UpdateShow(Guid id, [FromBody] UpdateShowRequest updateRequest)
+        public async Task<ActionResult<ApiResponse<object>>> UpdateShow(Guid id, [FromBody] UpdateShowRequest updateRequest)
         {
-            try
-            {
-                if (!ModelState.IsValid)
-                {
-                    return BadRequest(ModelState);
-                }
+            if (!ModelState.IsValid)
+                return BadRequest(ApiResponse<object>.Fail(ModelState.ToString()));
 
-                await _showService.UpdateShowAsync(id, updateRequest);
-
-                return Ok(new { Message = "Show updated successfully." });
-            }
-            catch (NotFoundException ex)
-            {
-                return NotFound(new { Error = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { Error = "An unexpected error occurred.", Details = ex.Message });
-            }
+            await _showService.UpdateShowAsync(id, updateRequest);
+            return Ok(ApiResponse<object>.Success(null, "Update show status successfully"));
         }
 
 

@@ -6,6 +6,7 @@ using KSMS.Infrastructure.Utils;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using KSMS.Domain.Dtos;
 
 namespace KSMS.API.Controllers
 {
@@ -22,59 +23,39 @@ namespace KSMS.API.Controllers
             _firebaseService = firebaseService;
         }
         [HttpPatch("{id:guid}")]
-        public async Task<IActionResult> ToggleUserStatus(Guid id, AccountStatus status)
+        public async Task<ActionResult<ApiResponse<object>>> ToggleUserStatus(Guid id, AccountStatus status)
         {
             var updatedUser = await _accountService.UpdateStatus(id, status);
             var statusMessage = status.ToString().ToLower();
-            return Ok(new { Message = $"User has been {statusMessage}.", User = updatedUser });
-
+            return Ok(ApiResponse<object>.Success(updatedUser, $"Account has been {statusMessage}"));
         }
 
         [HttpPost("create")]
-        public async Task<IActionResult> CreateUser([FromBody] CreateAccountRequest createAccountRequest)
+        public async Task<ActionResult<ApiResponse<object>>> CreateUser([FromBody] CreateAccountRequest createAccountRequest)
         {
             var newUser = await _accountService.CreateUserAsync(createAccountRequest);
-            return CreatedAtAction(nameof(GetAccUsersByAdmin), new { id = newUser.Id }, newUser);
+            return StatusCode(201, ApiResponse<object>.Created(newUser, "Register account successfully"));
         }
         [HttpGet("{id:guid}")]
-        public async Task<IActionResult> GetUserById(Guid id)
+        public async Task<ActionResult<ApiResponse<object>>> GetUserById(Guid id)
         {
             var user = await _accountService.GetUserByIdAsync(id);
-            return Ok(user);
+            return Ok(ApiResponse<object>.Success(user, "Get account successfully"));
         }
 
-        [Route("admin/GetAllUseraccount")]
+        [Route("admin/get-all-user-account")]
         [HttpGet]
-        public async Task<IActionResult> GetAccUsersByAdmin([FromQuery] int page = 1, [FromQuery] int size = 10)
+        public async Task<ActionResult<ApiResponse<object>>> GetAccUsersByAdmin([FromQuery] int page = 1, [FromQuery] int size = 10)
         {
-
-            
             var pagedUsers = await _accountService.GetPagedUsersAsync(page, size);
-
-            return Ok(pagedUsers);
+            return Ok(ApiResponse<object>.Success(pagedUsers, "Get list of account successfully"));
         }
 
         [HttpPut("{id:guid}")]
-        public async Task<ActionResult> UpdateCurrentAccount(Guid id, [FromForm] UpdateAccountRequest updateAccountRequest)
+        public async Task<ActionResult<ApiResponse<object>>> UpdateCurrentAccount(Guid id, [FromForm] UpdateAccountRequest updateAccountRequest)
         {
             await _accountService.UpdateAccount(id, updateAccountRequest);
-            return NoContent();
-        }
-        [HttpPost]
-        [Authorize(Roles = "Member")]
-        public async Task<IActionResult> UploadVideos(List<IFormFile> videoFiles)
-        {
-            try
-            {
-                string folderPath = "videos"; // Thư mục lưu trữ trên Firebase Storage
-                var videoUrls = await _firebaseService.UploadVideosAsync(videoFiles, folderPath);
-
-                return Ok(new { Message = "Upload thành công", VideoUrls = videoUrls });
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { Message = ex.Message });
-            }
+            return Ok(ApiResponse<object>.Success(null, "Update account successfully"));
         }
     }
 }

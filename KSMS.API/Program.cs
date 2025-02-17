@@ -8,6 +8,8 @@ using KSMS.Infrastructure.Database;
 using KSMS.Infrastructure.Repositories;
 using KSMS.Infrastructure.Services;
 using KSMS.Infrastructure.SignalR;
+using KSMS.Infrastructure.Hubs;
+using KSMS.Application.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -29,9 +31,10 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowAll", builder =>
     {
         builder
-            .AllowAnyOrigin()
+            .WithOrigins("http://localhost:3000") // Thêm domain của frontend
             .AllowAnyMethod()
-            .AllowAnyHeader();
+            .AllowAnyHeader()
+            .AllowCredentials(); // Cần thiết cho SignalR
     });
 });
 builder.Services.AddScoped<IUnitOfWork<KoiShowManagementSystemContext>, UnitOfWork<KoiShowManagementSystemContext>>();
@@ -40,6 +43,7 @@ builder.Services.AddAuthenticationServicesConfigurations(builder.Configuration);
 builder.Services.AddSwaggerConfigurations();
 builder.Services.AddDbContext();
 builder.Services.AddSignalR();
+builder.Services.AddScoped<INotificationService, NotificationService>();
 
 builder.Services.AddMvc()
                 .AddJsonOptions(x => x.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles);
@@ -67,5 +71,6 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.MapHub<ScoreHub>("/scoreHub");
+app.MapHub<NotificationHub>("/notificationHub");
 
 await app.RunAsync();

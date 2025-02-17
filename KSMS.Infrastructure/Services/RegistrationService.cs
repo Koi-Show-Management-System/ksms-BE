@@ -23,14 +23,16 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
     private readonly PayOS _payOs;
     private readonly IMediaService _mediaService;
     private readonly IFirebaseService _firebaseService;
-    public RegistrationService(IUnitOfWork<KoiShowManagementSystemContext> unitOfWork, ILogger<RegistrationService> logger, IHttpContextAccessor httpContextAccessor, PayOS payOs, IMediaService mediaService, IFirebaseService firebaseService) : base(unitOfWork, logger, httpContextAccessor)
+    private readonly INotificationService _notificationService;
+    public RegistrationService(IUnitOfWork<KoiShowManagementSystemContext> unitOfWork, ILogger<RegistrationService> logger, IHttpContextAccessor httpContextAccessor, PayOS payOs, IMediaService mediaService, IFirebaseService firebaseService, INotificationService notificationService) : base(unitOfWork, logger, httpContextAccessor)
     {
         _payOs = payOs;
         _mediaService = mediaService;
         _firebaseService = firebaseService;
+        _notificationService = notificationService;
     }
 
-    public async Task<object> CreateRegistration(CreateRegistrationRequest createRegistrationRequest)
+    public async Task CreateRegistration(CreateRegistrationRequest createRegistrationRequest)
     {
         var accountId = GetIdFromJwt();
         var koiShow = await _unitOfWork.GetRepository<KoiShow>()
@@ -84,10 +86,22 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
         {
             throw new BadRequestException("Error sending confirmation email.");
         }
-        return new
+
+        // Lấy danh sách staff của show
+        var staffList = await _unitOfWork.GetRepository<ShowStaff>()
+            .GetListAsync(predicate: s => s.KoiShowId == koiShow.Id,
+                include: query => query.Include(s => s.Account));
+
+        // Gửi thông báo cho tất cả staff
+        foreach (var staff in staffList)
         {
-            Message = "Register successfully"
-        };
+            await _notificationService.SendNotification(
+                staff.Account.Id,
+                "New Registration",
+                $"New registration from {registration.Account.FullName} for koi {koiProfile.Name}",
+                NotificationType.NewRegistration
+            );
+        }
     }
 
     public async Task UpdateRegistrationPaymentStatusForPayOs(Guid registrationPaymentId, RegistrationPaymentStatus status)
@@ -171,7 +185,7 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
                 .ToList();
 
             if (!eligibleCategories.Any())
-                throw new BadRequestException("Không tìm thấy hạng mục phù hợp cho cá Koi này");
+                throw new BadRequestException("No suitable category was found for this Koi fish");
             var bestCategory = eligibleCategories.MinBy(c => c.SizeMax - c.SizeMin);
             if (bestCategory != null)
             {

@@ -26,6 +26,10 @@ public partial class Account : BaseEntity
 
     public bool? IsConfirmed { get; set; }
 
+    public string? ResetPasswordOTP { get; set; }
+
+    public DateTime? ResetPasswordOTPExpiry { get; set; }
+
     public virtual ICollection<BlogsNews> BlogsNews { get; set; } = new List<BlogsNews>();
 
     public virtual ICollection<Feedback> Feedbacks { get; set; } = new List<Feedback>();

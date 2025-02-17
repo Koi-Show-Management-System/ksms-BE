@@ -7,7 +7,7 @@ namespace KSMS.Application.Services;
 
 public interface IRegistrationService
 {
-    Task<object> CreateRegistration(CreateRegistrationRequest createRegistrationRequest); 
+    Task CreateRegistration(CreateRegistrationRequest createRegistrationRequest); 
     Task UpdateRegistrationPaymentStatusForPayOs(Guid registrationPaymentId, RegistrationPaymentStatus status);
      Task UpdateStatusForRegistration(Guid registrationId, RegistrationStatus status);
      Task<CheckOutRegistrationResponse> CheckOut(Guid registrationId);
