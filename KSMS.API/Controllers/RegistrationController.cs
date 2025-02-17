@@ -19,11 +19,17 @@ namespace KSMS.API.Controllers
             _registrationService = registrationService;
         }
 
-        [HttpPost("payos")]
+        [HttpPost("create")]
         [Authorize(Roles = "Member")]
-        public async Task<ActionResult<RegistrationResponse>> CreateRegisWithPayOs([FromForm]CreateRegistrationRequest createRegistrationRequest)
+        public async Task<ActionResult<object>> CreateRegistration([FromForm]CreateRegistrationRequest createRegistrationRequest)
         {
-            return Created(nameof(CreateRegisWithPayOs), await _registrationService.CreateRegistrationWithPayOs(HttpContext.User, createRegistrationRequest));
+            return Created(nameof(CreateRegistration), await _registrationService.CreateRegistration(createRegistrationRequest));
+        }
+        [HttpPost("checkout")]
+        [Authorize(Roles = "Member")]
+        public async Task<ActionResult<CheckOutRegistrationResponse>> CheckOut([FromQuery] Guid registrationId)
+        {
+            return Created(nameof(CheckOut), await _registrationService.CheckOut(registrationId));
         }
         [HttpGet("success")]
         public async Task<IActionResult> Success([FromQuery] Guid registrationPaymentId,[FromQuery] string status)
@@ -37,11 +43,12 @@ namespace KSMS.API.Controllers
             return Redirect("http://localhost:5173/success");
         }
         [HttpPut("{id:guid}")]
+        [Authorize(Roles = "Staff")]
         public async Task<IActionResult> ToggleUserStatus(Guid id, RegistrationStatus status)
         {
             await _registrationService.UpdateStatusForRegistration(id, status);
             return NoContent();
-
+        
         }
     }
 }

@@ -15,6 +15,19 @@ public class FirebaseService : IFirebaseService
         _bucketName = configuration["Firebase:Bucket"]!;
     }
 
+    public async Task<string[]> UploadVideosAsync(List<IFormFile> videoFiles, string folderPath)
+    {
+        var uploadTasks = new List<Task<string>>();
+        foreach (var videoFile in videoFiles)
+        {
+            var filePath = $"{folderPath}/{Path.GetFileName(videoFile.FileName)}";
+            uploadTasks.Add(UploadVideoAsync(videoFile, filePath));
+        }
+
+        var videoUrls = await Task.WhenAll(uploadTasks);
+        return videoUrls;
+    }
+
     public string GetImageUrl(string folderName, string imageName)
     {
 
@@ -49,6 +62,40 @@ public class FirebaseService : IFirebaseService
         }
 
         await Task.WhenAll(deleteImageTasks);
+    }
+
+    public async Task<string> UploadVideoAsync(IFormFile videoFile, string videoPath)
+    {
+        long fileSizeLimit = 100 * 1024 * 1024;
+
+        if (videoFile.Length > fileSizeLimit)
+        {
+            throw new Exception("Kích thước file vượt quá giới hạn cho phép (100MB).");
+        }
+
+        using var stream = new MemoryStream();
+        await videoFile.CopyToAsync(stream);
+        stream.Position = 0;
+
+        // Upload video lên Firebase Storage
+        var blob = await _storageClient.UploadObjectAsync(
+            _bucketName,
+            videoPath,
+            videoFile.ContentType, // Đảm bảo ContentType là video (ví dụ: video/mp4)
+            stream,
+            cancellationToken: CancellationToken.None
+        );
+
+        if (blob is null)
+        {
+            throw new Exception("Upload failed");
+        }
+
+        var folderName = Path.GetDirectoryName(videoPath)?.Replace("\\", "/") ?? string.Empty;
+        var videoName = Path.GetFileName(videoPath);
+
+        // Trả về URL công khai
+        return GetImageUrl(folderName, videoName);
     }
 
     public async Task<string[]> UploadImagesAsync(List<IFormFile> imageFiles, string folderPath)

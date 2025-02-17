@@ -7,7 +7,9 @@ public partial class CheckInLog
 {
     public Guid Id { get; set; }
 
-    public Guid QrcodeId { get; set; }
+    public Guid? TicketId { get; set; }
+
+    public Guid? RegistrationPaymentId { get; set; }
 
     public DateTime? CheckInTime { get; set; }
 
@@ -19,7 +21,9 @@ public partial class CheckInLog
 
     public string? Notes { get; set; }
 
-    public virtual Account? CheckedInByNavigation { get; set; }
+    public virtual ShowStaff? CheckedInByNavigation { get; set; }
 
-    public virtual Qrcode Qrcode { get; set; } = null!;
+    public virtual RegistrationPayment? RegistrationPayment { get; set; }
+
+    public virtual Ticket? Ticket { get; set; }
 }

@@ -6,7 +6,6 @@ using KSMS.Domain.Dtos.Responses.ShowStatistic;
 using KSMS.Domain.Dtos.Responses.ShowStatus;
 using KSMS.Domain.Dtos.Responses.Sponsor;
 using KSMS.Domain.Dtos.Responses.Ticket;
-using KSMS.Domain.Entities;
 using System;
 using System.Collections.Generic;
 using System.Linq;

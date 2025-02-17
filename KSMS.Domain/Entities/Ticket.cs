@@ -7,15 +7,15 @@ public partial class Ticket
 {
     public Guid Id { get; set; }
 
-    public Guid ShowId { get; set; }
+    public Guid TicketOrderDetailId { get; set; }
 
-    public string TicketType { get; set; } = null!;
+    public string? QrcodeData { get; set; }
 
-    public decimal Price { get; set; }
+    public DateTime ExpiredDate { get; set; }
 
-    public int AvailableQuantity { get; set; }
+    public bool? IsUsed { get; set; }
 
-    public virtual Show Show { get; set; } = null!;
+    public virtual CheckInLog? CheckInLog { get; set; }
 
-    public virtual ICollection<TicketOrderDetail> TicketOrderDetails { get; set; } = new List<TicketOrderDetail>();
+    public virtual TicketOrderDetail TicketOrderDetail { get; set; } = null!;
 }

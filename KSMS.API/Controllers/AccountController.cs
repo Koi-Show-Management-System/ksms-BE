@@ -3,6 +3,7 @@ using KSMS.Application.Services;
 using KSMS.Domain.Dtos.Requests.Account;
 using KSMS.Domain.Enums;
 using KSMS.Infrastructure.Utils;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -59,12 +60,21 @@ namespace KSMS.API.Controllers
             await _accountService.UpdateAccount(id, updateAccountRequest);
             return NoContent();
         }
-        [HttpPost()]
-        public async Task<IActionResult> Test()
+        [HttpPost]
+        [Authorize(Roles = "Member")]
+        public async Task<IActionResult> UploadVideos(List<IFormFile> videoFiles)
         {
-            var qrCode = QrcodeUtil.GenerateQrCode(Guid.NewGuid());
-            await _firebaseService.UploadImageAsync(FileUtils.ConvertBase64ToFile(qrCode), "qrcode/");
-            return Ok();
+            try
+            {
+                string folderPath = "videos"; // Thư mục lưu trữ trên Firebase Storage
+                var videoUrls = await _firebaseService.UploadVideosAsync(videoFiles, folderPath);
+
+                return Ok(new { Message = "Upload thành công", VideoUrls = videoUrls });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { Message = ex.Message });
+            }
         }
     }
 }

@@ -7,7 +7,6 @@ using KSMS.Domain.Dtos.Responses.RefereeAssignment;
 using KSMS.Domain.Dtos.Responses.Registration;
 using KSMS.Domain.Dtos.Responses.Round;
 using KSMS.Domain.Dtos.Responses.Variety;
-using KSMS.Domain.Entities;
 using System;
 using System.Collections.Generic;
 using System.Linq;

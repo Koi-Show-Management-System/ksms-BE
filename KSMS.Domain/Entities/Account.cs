@@ -18,7 +18,7 @@ public partial class Account : BaseEntity
 
     public string? Avatar { get; set; }
 
-    public Guid RoleId { get; set; }
+    public string Role { get; set; } = null!;
 
     public string? Status { get; set; }
 
@@ -27,8 +27,6 @@ public partial class Account : BaseEntity
     public bool? IsConfirmed { get; set; }
 
     public virtual ICollection<BlogsNews> BlogsNews { get; set; } = new List<BlogsNews>();
-
-    public virtual ICollection<CheckInLog> CheckInLogs { get; set; } = new List<CheckInLog>();
 
     public virtual ICollection<Feedback> Feedbacks { get; set; } = new List<Feedback>();
 
@@ -41,10 +39,6 @@ public partial class Account : BaseEntity
     public virtual ICollection<RefereeAssignment> RefereeAssignmentRefereeAccounts { get; set; } = new List<RefereeAssignment>();
 
     public virtual ICollection<Registration> Registrations { get; set; } = new List<Registration>();
-
-    public virtual Role Role { get; set; } = null!;
-
-    public virtual ICollection<Score> Scores { get; set; } = new List<Score>();
 
     public virtual ICollection<ShowStaff> ShowStaffAccounts { get; set; } = new List<ShowStaff>();
 

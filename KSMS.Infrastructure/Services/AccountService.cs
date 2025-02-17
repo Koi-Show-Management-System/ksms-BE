@@ -15,13 +15,14 @@ using BCrypt.Net;
 using KSMS.Domain.Dtos.Responses.Account;
 using KSMS.Domain.Exceptions;
 using KSMS.Infrastructure.Utils;
+using Microsoft.AspNetCore.Http;
 
 namespace KSMS.Infrastructure.Services;
 
 public class AccountService : BaseService<AccountService>, IAccountService
 {
     private readonly IFirebaseService _firebaseService;
-    public AccountService(IUnitOfWork<KoiShowManagementSystemContext> unitOfWork, ILogger<AccountService> logger, IFirebaseService firebaseService) : base(unitOfWork, logger)
+    public AccountService(IUnitOfWork<KoiShowManagementSystemContext> unitOfWork, ILogger<AccountService> logger, IHttpContextAccessor httpContextAccessor, IFirebaseService firebaseService) : base(unitOfWork, logger, httpContextAccessor)
     {
         _firebaseService = firebaseService;
     }
@@ -32,7 +33,6 @@ public class AccountService : BaseService<AccountService>, IAccountService
         
        var pagedUsers = await userRepository.GetPagingListAsync(
             orderBy: query => query.OrderBy(a => a.Username),  
-            include: query => query.Include(a => a.Role),  
             page: page,  
             size: size   
         );
@@ -42,8 +42,7 @@ public class AccountService : BaseService<AccountService>, IAccountService
     {
         var user = await _unitOfWork.GetRepository<Account>()
             .SingleOrDefaultAsync(
-                predicate: u => u.Id == id,
-                include: query => query.Include(u => u.Role) 
+                predicate: u => u.Id == id
             );
 
         if (user == null)
@@ -59,27 +58,18 @@ public class AccountService : BaseService<AccountService>, IAccountService
     {
          
         var userRepository = _unitOfWork.GetRepository<Account>();
-        var roleRepository = _unitOfWork.GetRepository<Role>();
-
-       
-        var role = await roleRepository.SingleOrDefaultAsync(
-            predicate: r => r.Id == createAccountRequest.RoleId
-        );
-        if (role == null)
-        {
-            throw new NotFoundException($"Role with ID '{createAccountRequest.RoleId}' not found");
-        }
+        
         var emailExists = await userRepository.SingleOrDefaultAsync(
             predicate: u => u.Email == createAccountRequest.Email
-        ) != null;
-        if (emailExists)
+        );
+        if (emailExists!= null)
         {
             throw new BadRequestException($"Email '{createAccountRequest.Email}' is already in use");
         }
         var usernameExists = await userRepository.SingleOrDefaultAsync(
             predicate: u => u.Username == createAccountRequest.Username
-        ) != null;
-        if (usernameExists)
+        );
+        if (usernameExists != null)
         {
             throw new BadRequestException($"Username '{createAccountRequest.Username}' is already in use");
         }
@@ -141,5 +131,6 @@ public class AccountService : BaseService<AccountService>, IAccountService
         await _unitOfWork.CommitAsync();
     }
 
-  
+
+    
 }

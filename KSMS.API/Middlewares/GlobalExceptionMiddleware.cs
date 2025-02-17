@@ -21,6 +21,15 @@ namespace KSMS.API.Middlewares
             try
             {
                 await _next(context);
+                switch (context.Response.StatusCode)
+                {
+                    case (int)HttpStatusCode.Unauthorized:
+                        await HandleExceptionAsync(context, new UnauthorizedException("Unauthorized access"));
+                        break;
+                    case (int)HttpStatusCode.Forbidden:
+                        await HandleExceptionAsync(context, new ForbiddenMethodException("Forbidden access"));
+                        break;
+                }
             }
             catch (Exception ex)
             {

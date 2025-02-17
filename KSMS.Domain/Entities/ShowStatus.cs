@@ -7,7 +7,7 @@ public partial class ShowStatus
 {
     public Guid Id { get; set; }
 
-    public Guid ShowId { get; set; }
+    public Guid KoiShowId { get; set; }
 
     public string StatusName { get; set; } = null!;
 
@@ -19,5 +19,5 @@ public partial class ShowStatus
 
     public bool IsActive { get; set; }
 
-    public virtual Show Show { get; set; } = null!;
+    public virtual KoiShow KoiShow { get; set; } = null!;
 }
