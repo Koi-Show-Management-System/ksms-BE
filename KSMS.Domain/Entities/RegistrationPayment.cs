@@ -9,7 +9,9 @@ public partial class RegistrationPayment
 
     public Guid RegistrationId { get; set; }
 
-    public Guid PaymentTypeId { get; set; }
+    public Guid? PaymentTypeId { get; set; }
+
+    public string? QrcodeData { get; set; }
 
     public decimal PaidAmount { get; set; }
 
@@ -19,9 +21,9 @@ public partial class RegistrationPayment
 
     public string Status { get; set; } = null!;
 
-    public virtual PaymentType PaymentType { get; set; } = null!;
+    public virtual CheckInLog? CheckInLog { get; set; }
 
-    public virtual Qrcode? Qrcode { get; set; }
+    public virtual PaymentType? PaymentType { get; set; }
 
     public virtual Registration Registration { get; set; } = null!;
 }

@@ -23,7 +23,7 @@ namespace KSMS.Infrastructure.Utils
             [
                 new Claim("Id", account.Id.ToString()),
                 new Claim("Email", account.Email),
-                new Claim(ClaimTypes.Role, account.Role.Name),
+                new Claim(ClaimTypes.Role, account.Role),
             ];
             var expires = DateTime.Now.AddDays(30);
             var token = new JwtSecurityToken(AppConfig.JwtSetting.Issuer, AppConfig.JwtSetting.Audience, claims, notBefore: DateTime.Now, expires, credentials);

@@ -1,4 +1,4 @@
-﻿using KSMS.Domain.Entities;
+﻿
 using System;
 using System.ComponentModel.DataAnnotations;
 

@@ -4,7 +4,6 @@ using KSMS.Domain.Dtos.Requests.RefereeAssignment;
 using KSMS.Domain.Dtos.Requests.Round;
 using KSMS.Domain.Dtos.Requests.Variety;
 using KSMS.Domain.Dtos.Responses.Award;
-using KSMS.Domain.Entities;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;

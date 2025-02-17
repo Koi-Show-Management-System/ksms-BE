@@ -11,7 +11,9 @@ public partial class Sponsor
 
     public string? LogoUrl { get; set; }
 
-    public Guid ShowId { get; set; }
+    public decimal InvestMoney { get; set; }
 
-    public virtual Show Show { get; set; } = null!;
+    public Guid KoiShowId { get; set; }
+
+    public virtual KoiShow KoiShow { get; set; } = null!;
 }

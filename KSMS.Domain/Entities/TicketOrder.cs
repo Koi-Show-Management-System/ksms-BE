@@ -7,9 +7,13 @@ public partial class TicketOrder
 {
     public Guid Id { get; set; }
 
+    public string FullName { get; set; } = null!;
+
+    public string Email { get; set; } = null!;
+
     public Guid AccountId { get; set; }
 
-    public Guid PaymentTypeId { get; set; }
+    public Guid? PaymentTypeId { get; set; }
 
     public DateTime OrderDate { get; set; }
 
@@ -23,7 +27,7 @@ public partial class TicketOrder
 
     public virtual Account Account { get; set; } = null!;
 
-    public virtual PaymentType PaymentType { get; set; } = null!;
+    public virtual PaymentType? PaymentType { get; set; }
 
     public virtual ICollection<TicketOrderDetail> TicketOrderDetails { get; set; } = new List<TicketOrderDetail>();
 }

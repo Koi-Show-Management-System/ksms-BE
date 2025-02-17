@@ -4,7 +4,7 @@ using KSMS.Domain.Common;
 
 namespace KSMS.Domain.Entities;
 
-public partial class Show : BaseEntity
+public partial class KoiShow : BaseEntity
 {
     public string Name { get; set; } = null!;
 
@@ -35,22 +35,24 @@ public partial class Show : BaseEntity
     public decimal RegistrationFee { get; set; }
 
     public string? Status { get; set; }
-
-    public virtual ICollection<Category> Categories { get; set; } = new List<Category>();
+    
+    public virtual ICollection<CompetitionCategory> CompetitionCategories { get; set; } = new List<CompetitionCategory>();
 
     public virtual ICollection<Feedback> Feedbacks { get; set; } = new List<Feedback>();
 
     public virtual ICollection<Livestream> Livestreams { get; set; } = new List<Livestream>();
 
+    public virtual ICollection<Registration> Registrations { get; set; } = new List<Registration>();
+
     public virtual ICollection<ShowRule> ShowRules { get; set; } = new List<ShowRule>();
 
     public virtual ICollection<ShowStaff> ShowStaffs { get; set; } = new List<ShowStaff>();
-
-    public virtual ICollection<ShowStatistic> ShowStatistics { get; set; } = new List<ShowStatistic>();
 
     public virtual ICollection<ShowStatus> ShowStatuses { get; set; } = new List<ShowStatus>();
 
     public virtual ICollection<Sponsor> Sponsors { get; set; } = new List<Sponsor>();
 
-    public virtual ICollection<Ticket> Tickets { get; set; } = new List<Ticket>();
+    public virtual ICollection<Tank> Tanks { get; set; } = new List<Tank>();
+
+    public virtual ICollection<TicketType> TicketTypes { get; set; } = new List<TicketType>();
 }

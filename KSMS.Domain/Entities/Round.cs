@@ -6,7 +6,7 @@ namespace KSMS.Domain.Entities;
 
 public partial class Round : BaseEntity
 {
-    public Guid? CategoryId { get; set; }
+    public Guid? CompetitionCategoriesId { get; set; }
 
     public string? Name { get; set; }
 
@@ -22,9 +22,7 @@ public partial class Round : BaseEntity
 
     public string? Status { get; set; }
 
-    public virtual Category? Category { get; set; }
+    public virtual CompetitionCategory? CompetitionCategories { get; set; }
 
-    public virtual ICollection<GrandChampionContender> GrandChampionContenders { get; set; } = new List<GrandChampionContender>();
-
-    public virtual ICollection<Score> Scores { get; set; } = new List<Score>();
+    public virtual ICollection<RegistrationRound> RegistrationRounds { get; set; } = new List<RegistrationRound>();
 }

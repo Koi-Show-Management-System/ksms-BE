@@ -6,11 +6,11 @@ namespace KSMS.Domain.Entities;
 
 public partial class ShowRule : BaseEntity
 {
-    public Guid ShowId { get; set; }
+    public Guid KoiShowId { get; set; }
 
     public string Title { get; set; } = null!;
 
     public string Content { get; set; } = null!;
-
-    public virtual Show Show { get; set; } = null!;
+    
+    public virtual KoiShow KoiShow { get; set; } = null!;
 }

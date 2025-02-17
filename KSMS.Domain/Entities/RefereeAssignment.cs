@@ -7,9 +7,11 @@ public partial class RefereeAssignment
 {
     public Guid Id { get; set; }
 
-    public Guid CategoryId { get; set; }
+    public Guid CompetitionCategoryId { get; set; }
 
     public Guid RefereeAccountId { get; set; }
+
+    public string RoundType { get; set; } = null!;
 
     public DateTime AssignedAt { get; set; }
 
@@ -17,7 +19,9 @@ public partial class RefereeAssignment
 
     public virtual Account AssignedByNavigation { get; set; } = null!;
 
-    public virtual Category Category { get; set; } = null!;
+    public virtual CompetitionCategory CompetitionCategory { get; set; } = null!;
 
     public virtual Account RefereeAccount { get; set; } = null!;
+
+    public virtual ICollection<ScoreDetail> ScoreDetails { get; set; } = new List<ScoreDetail>();
 }

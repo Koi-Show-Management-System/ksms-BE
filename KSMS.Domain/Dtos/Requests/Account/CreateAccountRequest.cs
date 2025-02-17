@@ -4,10 +4,10 @@ using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using KSMS.Domain.Enums;
 
- 
 
-    namespace KSMS.Domain.Dtos.Requests.Account
+namespace KSMS.Domain.Dtos.Requests.Account
     {
         public class CreateAccountRequest
         {
@@ -34,7 +34,8 @@ using System.Threading.Tasks;
             public string Phone { get; set; } = string.Empty;
 
             [Required]
-            public Guid RoleId { get; set; }
+            [EnumDataType(typeof(RoleName))]
+            public required string Role { get; set; }
 
             public string? Avatar { get; set; }
     }

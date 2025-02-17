@@ -7,7 +7,7 @@ public partial class Livestream
 {
     public Guid Id { get; set; }
 
-    public Guid ShowId { get; set; }
+    public Guid KoiShowId { get; set; }
 
     public DateTime StartTime { get; set; }
 
@@ -15,5 +15,5 @@ public partial class Livestream
 
     public string StreamUrl { get; set; } = null!;
 
-    public virtual Show Show { get; set; } = null!;
+    public virtual KoiShow KoiShow { get; set; } = null!;
 }

@@ -8,6 +8,7 @@ using KSMS.Domain.Exceptions;
 using KSMS.Infrastructure.Database;
 using KSMS.Infrastructure.Utils;
 using Mapster;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -15,7 +16,7 @@ namespace KSMS.Infrastructure.Services;
 
 public class AuthenticationService : BaseService<AuthenticationService>, IAuthenticationService
 {
-    public AuthenticationService(IUnitOfWork<KoiShowManagementSystemContext> unitOfWork, ILogger<AuthenticationService> logger) : base(unitOfWork, logger)
+    public AuthenticationService(IUnitOfWork<KoiShowManagementSystemContext> unitOfWork, ILogger<AuthenticationService> logger, IHttpContextAccessor httpContextAccessor) : base(unitOfWork, logger, httpContextAccessor)
     {
     }
     public async Task Register(RegisterRequest registerRequest)
@@ -27,7 +28,7 @@ public class AuthenticationService : BaseService<AuthenticationService>, IAuthen
             throw new BadRequestException("Email is already existed");
         }
         var account = registerRequest.Adapt<Account>();
-        account.RoleId =(await _unitOfWork.GetRepository<Role>().SingleOrDefaultAsync(predicate: x => x.Name == RoleName.Member.ToString())).Id;
+        account.Role =RoleName.Member.ToString();
         account.HashedPassword = PasswordUtil.HashPassword(registerRequest.Password);
         account.ConfirmationToken = Guid.NewGuid().ToString();
         await _unitOfWork.GetRepository<Account>().InsertAsync(account);
@@ -43,8 +44,7 @@ public class AuthenticationService : BaseService<AuthenticationService>, IAuthen
     public async Task<LoginResponse> Login(LoginRequest loginRequest)
     {
         var account = await _unitOfWork.GetRepository<Account>().SingleOrDefaultAsync(predicate: a =>
-                a.Email == loginRequest.Email && a.HashedPassword == PasswordUtil.HashPassword(loginRequest.Password),
-            include: query => query.Include(a => a.Role));
+                a.Email == loginRequest.Email && a.HashedPassword == PasswordUtil.HashPassword(loginRequest.Password));
         if (account is null)
         {
             throw new NotFoundException("Wrong email or password!!!");
@@ -68,8 +68,10 @@ public class AuthenticationService : BaseService<AuthenticationService>, IAuthen
             Id = account.Id,
             Email = account.Email,
             Token = JwtUtil.GenerateJwtToken(account),
-            Role = account.Role.Name
+            Role = account.Role
         };
 
     }
+
+    
 }
