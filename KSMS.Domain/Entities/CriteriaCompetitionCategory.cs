@@ -17,4 +17,6 @@ public partial class CriteriaCompetitionCategory : BaseEntity
     public int? Order { get; set; }
 
     public virtual CompetitionCategory CompetitionCategory { get; set; } = null!;
+
+    public virtual Criterion Criteria { get; set; } = null!;
 }

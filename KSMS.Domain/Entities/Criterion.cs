@@ -12,5 +12,7 @@ public partial class Criterion : BaseEntity
 
     public int? Order { get; set; }
     
+    public virtual ICollection<CriteriaCompetitionCategory> CriteriaCompetitionCategories { get; set; } = new List<CriteriaCompetitionCategory>();
+
     public virtual ICollection<ErrorType> ErrorTypes { get; set; } = new List<ErrorType>();
 }

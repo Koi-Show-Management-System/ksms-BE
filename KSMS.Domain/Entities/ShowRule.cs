@@ -11,6 +11,6 @@ public partial class ShowRule : BaseEntity
     public string Title { get; set; } = null!;
 
     public string Content { get; set; } = null!;
-    
+
     public virtual KoiShow KoiShow { get; set; } = null!;
 }

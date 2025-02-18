@@ -11,7 +11,7 @@ public partial class Feedback : BaseEntity
     public Guid KoiShowId { get; set; }
 
     public string Content { get; set; } = null!;
-    
+
     public virtual Account Account { get; set; } = null!;
 
     public virtual KoiShow KoiShow { get; set; } = null!;

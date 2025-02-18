@@ -11,7 +11,7 @@ public partial class Vote : BaseEntity
     public Guid RegistrationId { get; set; }
 
     public string? Prediction { get; set; }
-    
+
     public virtual Account Account { get; set; } = null!;
 
     public virtual Registration Registration { get; set; } = null!;
