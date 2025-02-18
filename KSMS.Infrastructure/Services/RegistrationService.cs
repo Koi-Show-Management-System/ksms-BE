@@ -264,14 +264,14 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
         var items = new List<ItemData>();
         var item = new ItemData("Registration for " + registration.KoiProfile.Name, 1, (int)registration.RegistrationFee);
         items.Add(item);
-        const string baseUrl = "https://localhost:7042/api/Registration" + "/success";
+        const string baseUrl = "https://localhost:7042/api/registration" + "/call-back";
         var url = $"{baseUrl}?registrationPaymentId={registrationPayment.Id}";
         var paymentData = new PaymentData(registrationCode, (int)registration.RegistrationFee, "Registration", items,
             url, url);
         var createPayment = await _payOs.createPaymentLink(paymentData);
         return new CheckOutRegistrationResponse()
         {
-            Message = "Checkout Successfully",
+            Message = "Create payment Successfully",
             Url = createPayment.checkoutUrl
         };
     }

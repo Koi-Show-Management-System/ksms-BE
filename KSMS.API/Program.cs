@@ -7,9 +7,9 @@ using KSMS.Application.Repositories;
 using KSMS.Infrastructure.Database;
 using KSMS.Infrastructure.Repositories;
 using KSMS.Infrastructure.Services;
-using KSMS.Infrastructure.SignalR;
 using KSMS.Infrastructure.Hubs;
 using KSMS.Application.Services;
+using Microsoft.Extensions.Caching.Distributed;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -43,7 +43,6 @@ builder.Services.AddAuthenticationServicesConfigurations(builder.Configuration);
 builder.Services.AddSwaggerConfigurations();
 builder.Services.AddDbContext();
 builder.Services.AddSignalR();
-builder.Services.AddScoped<INotificationService, NotificationService>();
 
 builder.Services.AddMvc()
                 .AddJsonOptions(x => x.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles);
