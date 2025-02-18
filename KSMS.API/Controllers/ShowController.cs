@@ -1,7 +1,7 @@
 ﻿using KSMS.Application.Services;
 using KSMS.Domain.Dtos;
 using KSMS.Domain.Dtos.Requests.Show;
-using KSMS.Domain.Dtos.Responses.Show;
+using KSMS.Domain.Dtos.Responses.KoiShow;
 using KSMS.Domain.Exceptions;
 using Microsoft.AspNetCore.Mvc;
 

@@ -19,9 +19,6 @@ namespace KSMS.Domain.Dtos.Responses.KoiProfile
         public string? Bloodline { get; set; }
 
         public string? Status { get; set; }
-
-        public string? ImgUrl { get; set; }
-
-        public string? VideoUrl { get; set; }
+        
     }
 }

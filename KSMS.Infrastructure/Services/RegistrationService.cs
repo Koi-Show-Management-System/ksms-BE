@@ -6,6 +6,7 @@ using KSMS.Domain.Dtos.Responses.Registration;
 using KSMS.Domain.Entities;
 using KSMS.Domain.Enums;
 using KSMS.Domain.Exceptions;
+using KSMS.Domain.Models;
 using KSMS.Infrastructure.Database;
 using KSMS.Infrastructure.Utils;
 using Mapster;
@@ -15,6 +16,10 @@ using Microsoft.Extensions.Logging;
 using Net.payOS;
 using Net.payOS.Types;
 using PaymentType = KSMS.Domain.Entities.PaymentType;
+using System.Security.Claims;
+using System.Linq.Expressions;
+using KSMS.Application.Extensions;
+using KSMS.Domain.Pagination;
 
 namespace KSMS.Infrastructure.Services;
 
@@ -274,5 +279,86 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
             Message = "Create payment Successfully",
             Url = createPayment.checkoutUrl
         };
+    }
+
+    public async Task<Paginate<GetRegistrationResponse>> GetAllRegistrationForCurrentMember(RegistrationFilter filter, int page, int size)
+    {
+        var accountId = GetIdFromJwt();
+        var claims = _httpContextAccessor.HttpContext?.User;
+        var role = claims?.FindFirst(ClaimTypes.Role)?.Value;
+        
+        var predicate = await GetRolePredicate(role, accountId);
+        
+        predicate = ApplyFilter(predicate, filter);
+
+        var registrations = await _unitOfWork.GetRepository<Registration>()
+            .GetPagingListAsync(
+                predicate: predicate,
+                orderBy: q => q.OrderByDescending(r => r.CreatedAt),
+                include: q => q
+                    .Include(r => r.Account)
+                    .Include(r => r.KoiShow)
+                    .Include(r => r.KoiProfile)
+                        .ThenInclude(k => k.Variety)
+                    .Include(r => r.CompetitionCategory)
+                    .ThenInclude(c => c.CategoryVarieties)
+                    .Include(r => r.KoiMedia)
+                    .Include(r => r.RegistrationPayment),
+                page: page,
+                size: size
+            );
+
+        return registrations.Adapt<Paginate<GetRegistrationResponse>>();
+    }
+
+    private async Task<Expression<Func<Registration, bool>>> GetRolePredicate(string role, Guid accountId)
+    {
+        Expression<Func<Registration, bool>> predicate = null;
+
+        switch (role?.ToUpper())
+        {
+            case "ADMIN":
+                break;
+            case "MANAGER":
+            case "STAFF":
+                var staffShows = await _unitOfWork.GetRepository<ShowStaff>()
+                    .GetListAsync(predicate: s => s.AccountId == accountId);
+                var showIds = staffShows.Select(s => s.KoiShowId).ToList();
+                predicate = r => showIds.Contains(r.KoiShowId);
+                break;
+
+            default:
+                predicate = r => r.Status == RegistrationStatus.Paid.ToString().ToLower();
+                break;
+        }
+
+        return predicate;
+    }
+
+    private Expression<Func<Registration, bool>> ApplyFilter(Expression<Func<Registration, bool>> basePredicate, RegistrationFilter filter)
+    {
+        if (filter == null) return basePredicate;
+
+        Expression<Func<Registration, bool>> filterQuery = basePredicate ?? (r => true);
+        if (filter.ShowIds.Any())
+        {
+            filterQuery = filterQuery.AndAlso(r => filter.ShowIds.Contains(r.KoiShowId));
+        }
+        if (filter.KoiProfileIds.Any())
+        {
+            filterQuery = filterQuery.AndAlso(r => filter.KoiProfileIds.Contains(r.KoiProfileId));
+        }
+        if (filter.CategoryIds.Any())
+        {
+            filterQuery = filterQuery.AndAlso(r => r.CompetitionCategoryId.HasValue && 
+                filter.CategoryIds.Contains(r.CompetitionCategoryId.Value));
+        }
+        if (filter.Status != null)
+        {
+            var statusString = filter.Status.ToString().ToLower();
+            filterQuery = filterQuery.AndAlso(r => r.Status == statusString);
+        }
+
+        return filterQuery;
     }
 }

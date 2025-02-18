@@ -1,4 +1,4 @@
-﻿using KSMS.Domain.Dtos.Responses.Categorie;
+﻿using KSMS.Domain.Dtos.Responses.CompetitionCategory;
 using KSMS.Domain.Dtos.Responses.Round;
 using KSMS.Domain.Dtos.Responses.ShowRule;
 using KSMS.Domain.Dtos.Responses.ShowStaff;
@@ -12,7 +12,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 
-namespace KSMS.Domain.Dtos.Responses.Show
+namespace KSMS.Domain.Dtos.Responses.KoiShow
 {
     public class KoiShowResponse
     {

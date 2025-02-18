@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using KSMS.Domain.Dtos;
+using KSMS.Domain.Models;
 
 namespace KSMS.API.Controllers
 {
@@ -51,6 +52,13 @@ namespace KSMS.API.Controllers
         {
             await _registrationService.UpdateStatusForRegistration(id, status);
             return Ok(ApiResponse<object>.Success(null, "Update registration status successfully"));
+        }
+        [HttpGet("get-all-registration-for-current-account")]
+        [Authorize(Roles = "Staff, Admin, Manager, Member")]
+        public async Task<ActionResult<ApiResponse<object>>> GetAllRegistration([FromQuery]RegistrationFilter filter, [FromQuery]int page, [FromQuery]int size)
+        {
+            var registrations = await _registrationService.GetAllRegistrationForCurrentMember(filter, page, size);
+            return Ok(ApiResponse<object>.Success(registrations, "Get List successfully"));
         }
     }
 }

@@ -1,4 +1,6 @@
 ﻿
+using KSMS.Domain.Enums;
+
 namespace KSMS.Domain.Models;
 
 public class KoiProfileFilter
@@ -10,4 +12,6 @@ public class KoiProfileFilter
     public decimal EndSize { get; set; }
     
     public string Name { get; set; } = string.Empty;
+    
+    
 }
