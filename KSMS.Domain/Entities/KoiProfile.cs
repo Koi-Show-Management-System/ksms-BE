@@ -23,7 +23,7 @@ public partial class KoiProfile : BaseEntity
     public string Status { get; set; } = null!;
 
     public bool? IsPublic { get; set; }
-    
+
     public virtual ICollection<KoiMedium> KoiMedia { get; set; } = new List<KoiMedium>();
 
     public virtual Account Owner { get; set; } = null!;

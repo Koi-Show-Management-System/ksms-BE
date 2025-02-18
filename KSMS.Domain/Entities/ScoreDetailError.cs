@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace KSMS.Domain.Entities;
 
-public partial class ScoreDetailError 
+public partial class ScoreDetailError
 {
     public Guid Id { get; set; }
 

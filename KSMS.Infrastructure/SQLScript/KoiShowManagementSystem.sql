@@ -180,7 +180,9 @@ CREATE TABLE [dbo].[CriteriaCompetitionCategories](
     [Order] int NULL,
     [CreatedAt] datetime NOT NULL,
     [UpdatedAt] datetime NULL,
-    FOREIGN KEY ([CompetitionCategoryId]) REFERENCES [CompetitionCategories]([Id])
+    FOREIGN KEY ([CompetitionCategoryId]) REFERENCES [CompetitionCategories]([Id]),
+    FOREIGN KEY ([CriteriaId]) REFERENCES [Criteria]([Id])
+                                                  
 )
 GO
 
