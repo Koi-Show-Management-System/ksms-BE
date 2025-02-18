@@ -41,7 +41,7 @@ namespace KSMS.API.Controllers
             if (showResponse == null)
                 return NotFound(ApiResponse<object>.Fail("Show is not existed"));
 
-            return Ok(ApiResponse<ShowResponse>.Success(showResponse, "Get show successfully"));
+            return Ok(ApiResponse<KoiShowResponse>.Success(showResponse, "Get show successfully"));
         }
 
         // <summary>
