@@ -10,10 +10,7 @@ namespace KSMS.Domain.Dtos.Responses.Criterion
     {
 
         public Guid Id { get; set; }
-        public Guid? CriteriaGroupId { get; set; }
-
-         
-
+        public Guid? CriteriaGroupId { get; set; } 
 
         public string Name { get; set; } = null!;
 

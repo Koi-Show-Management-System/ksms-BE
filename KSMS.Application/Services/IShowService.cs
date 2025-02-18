@@ -10,9 +10,9 @@ namespace KSMS.Application.Services
 {
     public interface IShowService
     {
-        Task<IEnumerable<ShowResponse>> GetAllShowsAsync();
-        Task<ShowResponse> GetShowByIdAsync(Guid id);
-        Task<ShowResponse> CreateShowAsync(CreateShowRequest request);
+        Task<IEnumerable<KoiShowResponse>> GetAllShowsAsync();
+        Task<KoiShowResponse> GetShowByIdAsync(Guid id);
+        Task<KoiShowResponse> CreateShowAsync(CreateShowRequest request);
         Task UpdateShowAsync(Guid id, UpdateShowRequest request);
         Task PatchShowStatusAsync(Guid id, string statusName);
     }

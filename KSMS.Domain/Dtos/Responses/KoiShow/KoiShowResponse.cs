@@ -12,9 +12,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+
 namespace KSMS.Domain.Dtos.Responses.Show
 {
-    public class ShowResponse
+    public class KoiShowResponse
     {
         public Guid Id { get; set; }
         public string Name { get; set; } = null!;
@@ -47,13 +48,13 @@ namespace KSMS.Domain.Dtos.Responses.Show
 
         public string? Status { get; set; }
 
-        public virtual ICollection<CategorieResponse> Categories { get; set; } = new List<CategorieResponse>();
+        public virtual ICollection<CompetitionCategoryResponse> Categories { get; set; } = new List<CompetitionCategoryResponse>();
 
         public virtual ICollection<ShowStaffResponse> ShowStaffs { get; set; } = new List<ShowStaffResponse>();
 
         public virtual ICollection<ShowRuleResponse> ShowRules { get; set; } = new List<ShowRuleResponse>();
 
-        public virtual ICollection<ShowStatisticResponse> ShowStatistics { get; set; } = new List<ShowStatisticResponse>();
+      //  public virtual ICollection<ShowStatisticResponse> ShowStatistics { get; set; } = new List<ShowStatisticResponse>();
 
         public virtual ICollection<ShowStatusResponse> ShowStatuses { get; set; } = new List<ShowStatusResponse>();
 

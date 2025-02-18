@@ -2,6 +2,7 @@
 using KSMS.Domain.Dtos.Requests.Round;
 using KSMS.Domain.Dtos.Requests.Variety;
 using KSMS.Domain.Dtos.Responses.Award;
+using KSMS.Domain.Dtos.Responses.CategoryVariety;
 using KSMS.Domain.Dtos.Responses.CriteriaGroupRequest;
 using KSMS.Domain.Dtos.Responses.RefereeAssignment;
 using KSMS.Domain.Dtos.Responses.Registration;
@@ -15,7 +16,7 @@ using System.Threading.Tasks;
 
 namespace KSMS.Domain.Dtos.Responses.Categorie
 {
-    public class CategorieResponse
+    public class CompetitionCategoryResponse
     {
         public Guid Id { get; set; }
         public Guid ShowId { get; set; }
@@ -42,7 +43,7 @@ namespace KSMS.Domain.Dtos.Responses.Categorie
 
         public virtual ICollection<AwardResponse> Awards { get; set; } = new List<AwardResponse>();
 
-        public virtual VarietyResponse Variety { get; set; }
+        public virtual ICollection<CategoryVarietyResponse> CategoryVarieties { get; set; } = new List<CategoryVarietyResponse>();
 
         public virtual ICollection<RegistrationStaffResponse> Registrations { get; set; } = new List<RegistrationStaffResponse>();
 
