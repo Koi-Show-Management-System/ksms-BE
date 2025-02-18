@@ -91,8 +91,7 @@ public class AccountService : BaseService<AccountService>, IAccountService
 
          
         var user = await userRepository.SingleOrDefaultAsync(
-            predicate: u => u.Id == id,
-            include: query => query.Include(u => u.Role)  
+            predicate: u => u.Id == id
         );
 
         if (user == null)
