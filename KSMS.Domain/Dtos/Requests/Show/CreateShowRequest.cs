@@ -26,48 +26,46 @@ namespace KSMS.Domain.Dtos.Requests.Show
         [DateGreaterThan(nameof(StartDate), ErrorMessage = "EndDate must be later than StartDate.")]
         public DateTime? EndDate { get; set; }
 
-        // Ngày triển lãm bắt đầu và kết thúc (không bắt buộc)
+        
         public DateTime? StartExhibitionDate { get; set; }
         public DateTime? EndExhibitionDate { get; set; }
-
-        // Địa điểm có giới hạn độ dài
+ 
         [StringLength(200, ErrorMessage = "Location cannot exceed 200 characters.")]
         public string? Location { get; set; }
 
-        // Mô tả (không giới hạn kích thước)
+         
         public string? Description { get; set; }
-
-        // Deadline đăng ký
+ 
         public DateOnly? RegistrationDeadline { get; set; }
 
-        // Số người tham gia tối thiểu và tối đa
+        
         [Range(0, int.MaxValue, ErrorMessage = "MinParticipants must be a non-negative number.")]
         public int? MinParticipants { get; set; }
 
         [Range(0, int.MaxValue, ErrorMessage = "MaxParticipants must be a non-negative number.")]
         public int? MaxParticipants { get; set; }
 
-        // Có giải Grand Champion và Best in Show
+        
         public bool? HasGrandChampion { get; set; }
         public bool? HasBestInShow { get; set; }
 
-        // Ảnh URL không vượt quá 255 ký tự
+       
         [StringLength(255, ErrorMessage = "ImgUrl cannot exceed 255 characters.")]
         public string? ImgUrl { get; set; }
 
-        // Phí đăng ký
+       
         [Range(0, double.MaxValue, ErrorMessage = "RegistrationFee must be a non-negative value.")]
         public decimal RegistrationFee { get; set; }
 
-        // Trạng thái không vượt quá 20 ký tự
+         
         [StringLength(20, ErrorMessage = "Status cannot exceed 20 characters.")]
         public string? Status { get; set; }
 
-        // Các danh sách liên quan
+        
         public virtual ICollection<CreateCategorieShowRequest> Categories { get; set; } = new List<CreateCategorieShowRequest>();
         public virtual ICollection<CreateShowStaffRequest> ShowStaffs { get; set; } = new List<CreateShowStaffRequest>();
         public virtual ICollection<CreateShowRuleRequest> ShowRules { get; set; } = new List<CreateShowRuleRequest>();
-        public virtual ICollection<CreateShowStatisticRequest> ShowStatistics { get; set; } = new List<CreateShowStatisticRequest>();
+      //  public virtual ICollection<CreateShowStatisticRequest> ShowStatistics { get; set; } = new List<CreateShowStatisticRequest>();
         public virtual ICollection<CreateShowStatusRequest> ShowStatuses { get; set; } = new List<CreateShowStatusRequest>();
         public virtual ICollection<CreateSponsorRequest> Sponsors { get; set; } = new List<CreateSponsorRequest>();
         public virtual ICollection<CreateTicketRequest> Tickets { get; set; } = new List<CreateTicketRequest>();
