@@ -11,6 +11,6 @@ public partial class ErrorType : BaseEntity
     public string Name { get; set; } = null!;
     
     public virtual Criterion Criteria { get; set; } = null!;
-
+    
     public virtual ICollection<ScoreDetailError> ScoreDetailErrors { get; set; } = new List<ScoreDetailError>();
 }

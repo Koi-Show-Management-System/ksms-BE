@@ -23,7 +23,7 @@ public partial class CompetitionCategory : BaseEntity
     public DateTime? EndTime { get; set; }
 
     public string? Status { get; set; }
-    
+
     public virtual ICollection<Award> Awards { get; set; } = new List<Award>();
 
     public virtual ICollection<CategoryVariety> CategoryVarieties { get; set; } = new List<CategoryVariety>();

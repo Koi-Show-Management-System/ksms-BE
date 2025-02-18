@@ -35,7 +35,7 @@ public partial class KoiShow : BaseEntity
     public decimal RegistrationFee { get; set; }
 
     public string? Status { get; set; }
-    
+
     public virtual ICollection<CompetitionCategory> CompetitionCategories { get; set; } = new List<CompetitionCategory>();
 
     public virtual ICollection<Feedback> Feedbacks { get; set; } = new List<Feedback>();

@@ -90,6 +90,10 @@ public partial class KoiShowManagementSystemContext : DbContext
 
     public virtual DbSet<Vote> Votes { get; set; }
 
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
+        => optionsBuilder.UseSqlServer("Server=(local);database=KoiShowManagementSystem;uid=sa;pwd=12345;TrustServerCertificate=True;Command Timeout=300;");
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Account>(entity =>
@@ -117,6 +121,12 @@ public partial class KoiShowManagementSystemContext : DbContext
             entity.Property(e => e.Phone)
                 .HasMaxLength(20)
                 .IsUnicode(false);
+            entity.Property(e => e.ResetPasswordOtp)
+                .HasMaxLength(10)
+                .HasColumnName("ResetPasswordOTP");
+            entity.Property(e => e.ResetPasswordOtpexpiry)
+                .HasColumnType("datetime")
+                .HasColumnName("ResetPasswordOTPExpiry");
             entity.Property(e => e.Role).HasMaxLength(50);
             entity.Property(e => e.Status)
                 .HasMaxLength(20)
@@ -126,11 +136,6 @@ public partial class KoiShowManagementSystemContext : DbContext
             entity.Property(e => e.Username)
                 .HasMaxLength(50)
                 .IsUnicode(false);
-            entity.Property(e => e.ResetPasswordOTP)
-                .HasMaxLength(10)
-                .IsUnicode(false);
-            entity.Property(e => e.ResetPasswordOTPExpiry)
-                .HasColumnType("datetime");
         });
 
         modelBuilder.Entity<Award>(entity =>
@@ -290,6 +295,11 @@ public partial class KoiShowManagementSystemContext : DbContext
                 .HasForeignKey(d => d.CompetitionCategoryId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__CriteriaC__Compe__59FA5E80");
+
+            entity.HasOne(d => d.Criteria).WithMany(p => p.CriteriaCompetitionCategories)
+                .HasForeignKey(d => d.CriteriaId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__CriteriaC__Crite__607251E5");
         });
 
         modelBuilder.Entity<Criterion>(entity =>

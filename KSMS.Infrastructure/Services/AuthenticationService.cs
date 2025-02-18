@@ -82,14 +82,14 @@ public class AuthenticationService : BaseService<AuthenticationService>, IAuthen
             
         if (account == null)
             throw new NotFoundException("Email is not existed.");
-        if (account.ResetPasswordOTP != null && account.ResetPasswordOTPExpiry > DateTime.UtcNow)
+        if (account.ResetPasswordOtp != null && account.ResetPasswordOtpexpiry > DateTime.UtcNow)
         {
-            var remainingTime = (account.ResetPasswordOTPExpiry.Value - DateTime.UtcNow).TotalSeconds;
+            var remainingTime = (account.ResetPasswordOtpexpiry.Value - DateTime.UtcNow).TotalSeconds;
             throw new BadRequestException($"Please wait {(int)remainingTime} seconds before requesting a new OTP code.");
         }
         var otp = Random.Shared.Next(100000, 999999).ToString();
-        account.ResetPasswordOTP = otp;
-        account.ResetPasswordOTPExpiry = DateTime.UtcNow.AddMinutes(OTP_EXPIRY_MINUTES);
+        account.ResetPasswordOtp = otp;
+        account.ResetPasswordOtpexpiry = DateTime.UtcNow.AddMinutes(OTP_EXPIRY_MINUTES);
         
         _unitOfWork.GetRepository<Account>().UpdateAsync(account);
         await _unitOfWork.CommitAsync();
@@ -112,16 +112,16 @@ public class AuthenticationService : BaseService<AuthenticationService>, IAuthen
         if (account == null)
             throw new NotFoundException("Email is not existed.");
         
-        if (account.ResetPasswordOTP != otp)
+        if (account.ResetPasswordOtp != otp)
             throw new BadRequestException("OTP code is incorrect.");
         
-        if (account.ResetPasswordOTPExpiry < DateTime.UtcNow)
+        if (account.ResetPasswordOtpexpiry < DateTime.UtcNow)
             throw new BadRequestException("OTP code has expired.");
 
         // Cập nhật mật khẩu mới
         account.HashedPassword = PasswordUtil.HashPassword(newPassword);
-        account.ResetPasswordOTP = null;
-        account.ResetPasswordOTPExpiry = null;
+        account.ResetPasswordOtp = null;
+        account.ResetPasswordOtpexpiry = null;
 
         _unitOfWork.GetRepository<Account>().UpdateAsync(account);
         await _unitOfWork.CommitAsync();
