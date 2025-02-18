@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace KSMS.Infrastructure.SignalR
+namespace KSMS.Infrastructure.Hubs
 {
     public class ScoreHub : Hub
     {

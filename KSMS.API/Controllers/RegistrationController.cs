@@ -32,9 +32,9 @@ namespace KSMS.API.Controllers
         public async Task<ActionResult<ApiResponse<CheckOutRegistrationResponse>>> CheckOut([FromQuery] Guid registrationId)
         {
             var result = await _registrationService.CheckOut(registrationId);
-            return StatusCode(201, ApiResponse<CheckOutRegistrationResponse>.Created(result, "Payment successfully"));
+            return StatusCode(201, ApiResponse<CheckOutRegistrationResponse>.Created(result, "Create payment successfully"));
         }
-        [HttpGet("success")]
+        [HttpGet("call-back")]
         public async Task<IActionResult> Success([FromQuery] Guid registrationPaymentId,[FromQuery] string status)
         {
             if (status == "CANCELLED")
