@@ -2,7 +2,6 @@
 using KSMS.Domain.Dtos.Requests.Round;
 using KSMS.Domain.Dtos.Requests.ShowRule;
 using KSMS.Domain.Dtos.Requests.ShowStaff;
-using KSMS.Domain.Dtos.Requests.ShowStatistic;
 using KSMS.Domain.Dtos.Requests.ShowStatus;
 using KSMS.Domain.Dtos.Requests.Sponsor;
 using KSMS.Domain.Dtos.Requests.Ticket;
