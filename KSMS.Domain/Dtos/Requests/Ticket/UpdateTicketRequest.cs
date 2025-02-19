@@ -9,9 +9,13 @@ namespace KSMS.Domain.Dtos.Requests.Ticket
     public class UpdateTicketRequest
     {
         public Guid Id { get; set; }
-        public Guid ShowId { get; set; }
-        public string TicketType { get; set; } = null!;
+
+        public Guid KoiShowId { get; set; }
+
+        public string TicketType1 { get; set; } = null!;
+
         public decimal Price { get; set; }
+
         public int AvailableQuantity { get; set; }
     }
 }

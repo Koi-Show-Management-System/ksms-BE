@@ -9,7 +9,7 @@ namespace KSMS.Domain.Dtos.Requests.ShowStatus
     public class UpdateShowStatusRequest
     {
         public Guid Id { get; set; }
-        public Guid ShowId { get; set; }
+        public Guid KoiShowId { get; set; }
         public string StatusName { get; set; } = null!;
         public string? Description { get; set; }
         public DateTime StartDate { get; set; }
