@@ -273,8 +273,8 @@ namespace KSMS.Infrastructure.Services
         {
             var showRepository = _unitOfWork.GetRepository<KoiShow>();
                 
-            var show = await showRepository.GetListAsync(
-                predicate: null,
+            var show = await showRepository.SingleOrDefaultAsync(
+                 predicate: s => s.Id == id,
                 orderBy: q => q.OrderBy(s => s.Name),
                 include: query => query.Include(s => s.ShowStatuses)
                 .Include(s => s.CompetitionCategories)
@@ -312,6 +312,7 @@ namespace KSMS.Infrastructure.Services
                             .ThenInclude(c => c.Criteria)
                                 .ThenInclude(e => e.ErrorTypes)
 
+
             );
 
             if (show == null)
@@ -322,380 +323,370 @@ namespace KSMS.Infrastructure.Services
             return show.Adapt<KoiShowResponse>();
         }
 
-        //public Task PatchShowStatusAsync(Guid id, string statusName)
-        //{
-        //    throw new NotImplementedException();
-        //}
-        //public async Task UpdateShowAsync(Guid id, UpdateShowRequest updateShowRequest)
-        //{
-        //    var showRepository = _unitOfWork.GetRepository<KoiShow>();
-        //    var categoryRepository = _unitOfWork.GetRepository<CompetitionCategory>();
-        //    var roundRepository = _unitOfWork.GetRepository<Round>();
-        //    var criteriaGroupRepository = _unitOfWork.GetRepository<CriteriaCompetitionCategory>();
-        //    var criteriaRepository = _unitOfWork.GetRepository<Criterion>();
-        //    var refereeAssignmentRepository = _unitOfWork.GetRepository<RefereeAssignment>();
-        //    var showStaffRepository = _unitOfWork.GetRepository<ShowStaff>();
-        //    var showRuleRepository = _unitOfWork.GetRepository<ShowRule>();
-        //    var showStatisticRepository = _unitOfWork.GetRepository<ShowStatistic>();
-        //    var showStatusRepository = _unitOfWork.GetRepository<ShowStatus>();
-        //    var sponsorRepository = _unitOfWork.GetRepository<Sponsor>();
-        //    var ticketRepository = _unitOfWork.GetRepository<Ticket>();
-        //    var awardRepository = _unitOfWork.GetRepository<Award>();
-        //    var varietyRepository = _unitOfWork.GetRepository<Variety>();
 
-        //    // Fetch the show from the repository
-        //    var show = await showRepository.SingleOrDefaultAsync(
-        //        predicate: s => s.Id == id,
-        //        include: null // Include related entities if needed
-        //    );
+        public async Task UpdateShowAsync(Guid id, UpdateShowRequest updateShowRequest)
+        {
+            var showStatusRepository = _unitOfWork.GetRepository<ShowStatus>();
+            var showRepository = _unitOfWork.GetRepository<KoiShow>();
+            var categoryRepository = _unitOfWork.GetRepository<CompetitionCategory>();
+            var roundRepository = _unitOfWork.GetRepository<Round>();
+            var criteriaGroupRepository = _unitOfWork.GetRepository<CriteriaCompetitionCategory>();
+            var criteriaRepository = _unitOfWork.GetRepository<Criterion>();
+            var refereeAssignmentRepository = _unitOfWork.GetRepository<RefereeAssignment>();
+            var showStaffRepository = _unitOfWork.GetRepository<ShowStaff>();
+            var showRuleRepository = _unitOfWork.GetRepository<ShowRule>();
+            var sponsorRepository = _unitOfWork.GetRepository<Sponsor>();
+            var ticketRepository = _unitOfWork.GetRepository<TicketType>();
+            var awardRepository = _unitOfWork.GetRepository<Award>();
+            var varietyRepository = _unitOfWork.GetRepository<Variety>();
 
-        //    if (show == null)
-        //    {
-        //        throw new NotFoundException("Show not found.");
-        //    }
+            // Fetch the show from the repository
+            var show = await showRepository.SingleOrDefaultAsync(s => s.Id == id, null, null);
+            if (show == null)
+            {
+                throw new NotFoundException("Show not found.");
+            }
 
-        //    // Validation for DateTime
-        //    DateTime? ValidateDate(DateTime? date)
-        //    {
-        //        if (date.HasValue && date.Value >= new DateTime(1753, 1, 1) && date.Value <= new DateTime(9999, 12, 31))
-        //        {
-        //            return date;
-        //        }
-        //        return null;
-        //    }
+            // Update properties of Show
+            show.StartDate = updateShowRequest.StartDate ?? show.StartDate;
+            show.EndDate = updateShowRequest.EndDate ?? show.EndDate;
+            show.StartExhibitionDate = updateShowRequest.StartExhibitionDate ?? show.StartExhibitionDate;
+            show.EndExhibitionDate = updateShowRequest.EndExhibitionDate ?? show.EndExhibitionDate;
+            show.Location = updateShowRequest.Location ?? show.Location;
+            show.Description = updateShowRequest.Description ?? show.Description;
+            show.RegistrationDeadline = updateShowRequest.RegistrationDeadline ?? show.RegistrationDeadline;
+            show.MinParticipants = updateShowRequest.MinParticipants ?? show.MinParticipants;
+            show.MaxParticipants = updateShowRequest.MaxParticipants ?? show.MaxParticipants;
+            show.HasGrandChampion = updateShowRequest.HasGrandChampion;
+            show.HasBestInShow = updateShowRequest.HasBestInShow;
+            show.ImgUrl = updateShowRequest.ImgUrl ?? show.ImgUrl;
+            show.Name = updateShowRequest.Name ?? show.Name;
+            show.Status = updateShowRequest.Status ?? show.Status;
+            show.UpdatedAt = DateTime.Now;
 
-        //    // Update properties of Show
-        //    show.StartDate = ValidateDate(updateShowRequest.StartDate) ?? show.StartDate;
-        //    show.EndDate = ValidateDate(updateShowRequest.EndDate) ?? show.EndDate;
-        //    show.StartExhibitionDate = ValidateDate(updateShowRequest.StartExhibitionDate) ?? show.StartExhibitionDate;
-        //    show.EndExhibitionDate = ValidateDate(updateShowRequest.EndExhibitionDate) ?? show.EndExhibitionDate;
-        //    show.Location = updateShowRequest.Location;
-        //    show.Description = updateShowRequest.Description;
-        //    show.RegistrationDeadline = updateShowRequest.RegistrationDeadline;
-        //    show.MinParticipants = updateShowRequest.MinParticipants;
-        //    show.MaxParticipants = updateShowRequest.MaxParticipants;
-        //    show.HasGrandChampion = updateShowRequest.HasGrandChampion;
-        //    show.HasBestInShow = updateShowRequest.HasBestInShow;
-        //    show.ImgUrl = updateShowRequest.ImgUrl;
-        //    show.RegistrationFee = updateShowRequest.RegistrationFee;
-        //    show.Name = updateShowRequest.Name;
-        //    show.Status = updateShowRequest.Status;
-        //    show.UpdatedAt = DateTime.Now;
+            // Update Show
+             showRepository.UpdateAsync(show);
 
-        //    // Update Show
-        //    showRepository.UpdateAsync(show);
+            // Update Categories and related entities
+            if (updateShowRequest.Categories != null && updateShowRequest.Categories.Any())
+            {
+                foreach (var categoryRequest in updateShowRequest.Categories)
+                {
+                    var category = await categoryRepository.SingleOrDefaultAsync(c => c.Id == categoryRequest.Id && c.KoiShowId == id, null, null);
+                    if (category != null)
+                    {
+                        category.Name = categoryRequest.Name;
+                        category.SizeMin = categoryRequest.SizeMin;
+                        category.SizeMax = categoryRequest.SizeMax;
+                        category.Description = categoryRequest.Description;
+                        category.MaxEntries = categoryRequest.MaxEntries;
+                        category.StartTime = categoryRequest.StartTime ?? category.StartTime;
+                        category.EndTime = categoryRequest.EndTime ?? category.EndTime;
+                        category.Status = categoryRequest.Status;
 
-        //    // Update Categories and related entities
-        //    if (updateShowRequest.Categories != null && updateShowRequest.Categories.Any())
-        //    {
-        //        foreach (var categoryRequest in updateShowRequest.Categories)
-        //        {
-        //            var category = await categoryRepository.SingleOrDefaultAsync(c => c.Id == categoryRequest.Id && c.ShowId == id, null, null);
+                        // Update Category
+                         categoryRepository.UpdateAsync(category);
 
-        //            if (category != null)
-        //            {
-        //                // Detach entity to avoid tracking errors
-        //                _unitOfWork.Detach(category);
+                        // Update Variety
+                        if (categoryRequest.CategoryVarietys != null && categoryRequest.CategoryVarietys.Any())
+                        {
+                            foreach (var categoryVarietyRequest in categoryRequest.CategoryVarietys)
+                            {
+                                var variety = await varietyRepository.SingleOrDefaultAsync(v => v.Id == categoryVarietyRequest.VarietyId, null, null);
+                                if (variety == null)
+                                {
+                                    variety = new Variety
+                                    {
+                                        Id = categoryVarietyRequest.VarietyId,
+                                        Name = categoryVarietyRequest.Variety.Name,
+                                        Description = categoryVarietyRequest.Variety.Description
+                                    };
+                                    await varietyRepository.InsertAsync(variety);
+                                }
 
-        //                category.Name = categoryRequest.Name;
-        //                category.SizeMin = categoryRequest.SizeMin;
-        //                category.SizeMax = categoryRequest.SizeMax;
-        //                category.VarietyId = categoryRequest.VarietyId;
-        //                category.Description = categoryRequest.Description;
-        //                category.MaxEntries = categoryRequest.MaxEntries;
-        //                category.StartTime = categoryRequest.StartTime ?? category.StartTime;
-        //                category.EndTime = categoryRequest.EndTime ?? category.EndTime;
-        //                category.Status = categoryRequest.Status;
+                                var categoryVariety = new CategoryVariety
+                                {
+                                    CompetitionCategoryId = category.Id,
+                                    VarietyId = variety.Id
+                                };
+                                await _unitOfWork.GetRepository<CategoryVariety>().InsertAsync(categoryVariety);
+                            }
+                        }
 
-        //                // Update Category
-        //                categoryRepository.UpdateAsync(category);
+                        // Update Awards
+                        if (categoryRequest.Awards != null && categoryRequest.Awards.Any())
+                        {
+                            foreach (var awardRequest in categoryRequest.Awards)
+                            {
+                                var award = await awardRepository.SingleOrDefaultAsync(a => a.CompetitionCategoriesId == category.Id && a.Id == awardRequest.Id, null, null);
+                                if (award != null)
+                                {
+                                    award.Name = awardRequest.Name;
+                                    award.AwardType = awardRequest.AwardType;
+                                    award.PrizeValue = awardRequest.PrizeValue;
+                                    award.Description = awardRequest.Description;
 
-        //                // Update Variety
-        //                if (categoryRequest.Variety != null)
-        //                {
-        //                    var variety = await varietyRepository.SingleOrDefaultAsync(v => v.Id == categoryRequest.VarietyId, null, null);
-        //                    if (variety != null)
-        //                    {
-        //                        variety.Name = categoryRequest.Variety.Name;
-        //                        variety.Description = categoryRequest.Variety.Description;
-        //                        varietyRepository.UpdateAsync(variety);
-        //                    }
-        //                    else
-        //                    {
-        //                        var newVariety = new Variety
-        //                        {
-        //                            Name = categoryRequest.Variety.Name,
-        //                            Description = categoryRequest.Variety.Description
-        //                        };
-        //                        await varietyRepository.InsertAsync(newVariety);
-        //                    }
-        //                }
+                                     awardRepository.UpdateAsync(award);
+                                }
+                                else
+                                {
+                                    var newAward = new Award
+                                    {
+                                        CompetitionCategoriesId = category.Id,
+                                        Name = awardRequest.Name,
+                                        AwardType = awardRequest.AwardType,
+                                        PrizeValue = awardRequest.PrizeValue,
+                                        Description = awardRequest.Description
+                                    };
+                                    await awardRepository.InsertAsync(newAward);
+                                }
+                            }
+                        }
 
-        //                // Update Rounds
-        //                if (categoryRequest.Rounds != null && categoryRequest.Rounds.Any())
-        //                {
-        //                    foreach (var roundRequest in categoryRequest.Rounds)
-        //                    {
-        //                        var round = await roundRepository.SingleOrDefaultAsync(r => r.CategoryId == category.Id && r.Id == roundRequest.Id, null, null);
-        //                        if (round != null)
-        //                        {
-        //                            round.Name = roundRequest.Name;
-        //                            round.RoundOrder = roundRequest.RoundOrder;
-        //                            round.RoundType = roundRequest.RoundType;
-        //                            round.StartTime = ValidateDate(roundRequest.StartTime) ?? round.StartTime;
-        //                            round.EndTime = ValidateDate(roundRequest.EndTime) ?? round.EndTime;
-        //                            round.MinScoreToAdvance = roundRequest.MinScoreToAdvance;
-        //                            round.Status = roundRequest.Status;
+                        // Update CriteriaGroups and Criteria
+                        if (categoryRequest.CriteriaGroups != null && categoryRequest.CriteriaGroups.Any())
+                        {
+                            foreach (var criteriaGroupRequest in categoryRequest.CriteriaGroups)
+                            {
+                                var criteriaGroup = await criteriaGroupRepository.SingleOrDefaultAsync(g => g.CompetitionCategoryId == category.Id && g.Id == criteriaGroupRequest.Id, null, null);
+                                if (criteriaGroup != null)
+                                {
+                                    criteriaGroup.RoundType = criteriaGroupRequest.RoundType;
+                                    criteriaGroup.CriteriaId = criteriaGroupRequest.CriteriaId;
+                                    criteriaGroup.RoundType = criteriaGroupRequest.RoundType;
+                                    criteriaGroup.Order = criteriaGroupRequest.Order;
+                                    criteriaGroupRepository.UpdateAsync(criteriaGroup);
 
-        //                            roundRepository.UpdateAsync(round);
-        //                        }
-        //                        else
-        //                        {
-        //                            var newRound = new Round
-        //                            {
-        //                                CategoryId = category.Id,
-        //                                Name = roundRequest.Name,
-        //                                RoundOrder = roundRequest.RoundOrder,
-        //                                RoundType = roundRequest.RoundType,
-        //                                StartTime = roundRequest.StartTime ?? round.StartTime,
-        //                                EndTime = roundRequest.EndTime ?? round.EndTime,
-        //                                MinScoreToAdvance = roundRequest.MinScoreToAdvance,
-        //                                Status = roundRequest.Status
-        //                            };
-        //                            await roundRepository.InsertAsync(newRound);
-        //                        }
-        //                    }
-        //                }
+                                    var criterion = await criteriaRepository.SingleOrDefaultAsync(c => c.Id == criteriaGroupRequest.Criterias.Id, null, null);
+                                    if (criterion == null)
+                                    {
+                                        criterion = new Criterion
+                                        {
+                                            Id = criteriaGroupRequest.Criterias.Id,
+                                            Name = criteriaGroupRequest.Criterias.Name,
+                                            Description = criteriaGroupRequest.Criterias.Description,
+                                          //  MaxScore = criteriaGroupRequest.Criterias.MaxScore ?? 0,
+                                        //    Weight = criteriaGroupRequest.Criterias.Weight ?? 0,
+                                            Order = criteriaGroupRequest.Criterias.Order ?? 0
+                                        };
+                                        await criteriaRepository.InsertAsync(criterion);
+                                    }
 
-        //                // Update Awards
-        //                if (categoryRequest.Awards != null && categoryRequest.Awards.Any())
-        //                {
-        //                    foreach (var awardRequest in categoryRequest.Awards)
-        //                    {
-        //                        var award = await awardRepository.SingleOrDefaultAsync(a => a.CategoryId == category.Id && a.Id == awardRequest.Id, null, null);
-        //                        if (award != null)
-        //                        {
-        //                            award.Name = awardRequest.Name;
-        //                            award.AwardType = awardRequest.AwardType;
-        //                            award.PrizeValue = awardRequest.PrizeValue;
-        //                            award.Description = awardRequest.Description;
+                                    criteriaGroup.CriteriaId = criterion.Id;
+                                     criteriaGroupRepository.UpdateAsync(criteriaGroup);
+                                }
+                            }
+                        }
 
-        //                            awardRepository.UpdateAsync(award);
-        //                        }
-        //                        else
-        //                        {
-        //                            var newAward = new Award
-        //                            {
-        //                                CategoryId = category.Id,
-        //                                Name = awardRequest.Name,
-        //                                AwardType = awardRequest.AwardType,
-        //                                PrizeValue = awardRequest.PrizeValue,
-        //                                Description = awardRequest.Description
-        //                            };
-        //                            await awardRepository.InsertAsync(newAward);
-        //                        }
-        //                    }
-        //                }
+                        // Update Rounds
+                        if (categoryRequest.Rounds != null && categoryRequest.Rounds.Any())
+                        {
+                            foreach (var roundRequest in categoryRequest.Rounds)
+                            {
+                                var round = await roundRepository.SingleOrDefaultAsync(r => r.CompetitionCategoriesId == category.Id && r.Id == roundRequest.Id, null, null);
+                                if (round != null)
+                                {
+                                    round.Name = roundRequest.Name;
+                                    round.RoundOrder = roundRequest.RoundOrder;
+                                    round.RoundType = roundRequest.RoundType;
+                                    round.StartTime = roundRequest.StartTime ?? round.StartTime;
+                                    round.EndTime = roundRequest.EndTime ?? round.EndTime;
+                                    round.MinScoreToAdvance = roundRequest.MinScoreToAdvance;
+                                    round.Status = roundRequest.Status;
 
-        //                // Update CriteriaGroups and Criteria
-        //                if (categoryRequest.CriteriaGroups != null && categoryRequest.CriteriaGroups.Any())
-        //                {
-        //                    foreach (var criteriaGroupRequest in categoryRequest.CriteriaGroups)
-        //                    {
-        //                        var criteriaGroup = await criteriaGroupRepository.SingleOrDefaultAsync(g => g.CategoryId == category.Id && g.Id == criteriaGroupRequest.Id, null, null);
-        //                        if (criteriaGroup != null)
-        //                        {
-        //                            criteriaGroup.Name = criteriaGroupRequest.Name;
-        //                            criteriaGroup.Description = criteriaGroupRequest.Description;
-        //                            criteriaGroup.RoundType = criteriaGroupRequest.RoundType;
+                                     roundRepository.UpdateAsync(round);
+                                }
+                                else
+                                {
+                                    var newRound = new Round
+                                    {
+                                        CompetitionCategoriesId = category.Id,
+                                        Name = roundRequest.Name,
+                                        RoundOrder = roundRequest.RoundOrder,
+                                        RoundType = roundRequest.RoundType,
+                                        StartTime = roundRequest.StartTime ?? round.StartTime,
+                                        EndTime = roundRequest.EndTime ?? round.EndTime,
+                                        MinScoreToAdvance = roundRequest.MinScoreToAdvance,
+                                        Status = roundRequest.Status
+                                    };
+                                    await roundRepository.InsertAsync(newRound);
+                                }
+                            }
+                        }
 
-        //                            criteriaGroupRepository.UpdateAsync(criteriaGroup);
+                        // Update RefereeAssignments
+                        if (categoryRequest.RefereeAssignments != null && categoryRequest.RefereeAssignments.Any())
+                        {
+                            foreach (var refereeRequest in categoryRequest.RefereeAssignments)
+                            {
+                                var refereeAssignment = new RefereeAssignment
+                                {
+                                    CompetitionCategoryId = category.Id,
+                                    RefereeAccountId = refereeRequest.RefereeAccountId,
+                                    AssignedAt = refereeRequest.AssignedAt ?? DateTime.Now,
+                                    RoundType = refereeRequest.RoundType,
+                                    AssignedBy = refereeRequest.AssignedBy
+                                };
+                                 refereeAssignmentRepository.UpdateAsync(refereeAssignment);
+                            }
+                        }
+                    }
+                }
+            }
+            // Update ShowStaffs
+            if (updateShowRequest.ShowStaffs != null && updateShowRequest.ShowStaffs.Any())
+            {
+                foreach (var staffRequest in updateShowRequest.ShowStaffs)
+                {
+                    var staff = await showStaffRepository.SingleOrDefaultAsync(s => s.Id == staffRequest.Id && s.KoiShowId == id, null, null);
 
-        //                            // Update Criteria
-        //                            if (criteriaGroupRequest.Criterias != null && criteriaGroupRequest.Criterias.Any())
-        //                            {
-        //                                foreach (var criteriaRequest in criteriaGroupRequest.Criterias)
-        //                                {
-        //                                    var criteria = await criteriaRepository.SingleOrDefaultAsync(c => c.CriteriaGroupId == criteriaGroup.Id && c.Id == criteriaRequest.Id, null, null);
-        //                                    if (criteria != null)
-        //                                    {
-        //                                        criteria.Name = criteriaRequest.Name;
-        //                                        criteria.Description = criteriaRequest.Description;
-        //                                        criteria.MaxScore = criteriaRequest.MaxScore;
-        //                                        criteria.Weight = criteriaRequest.Weight;
-        //                                        criteria.Order = criteriaRequest.Order;
+                    if (staff != null)
+                    {
+                        // Update existing ShowStaff
+                        staff.AccountId = staffRequest.AccountId;
+                        staff.AssignedBy = staffRequest.AssignedBy;
+                        staff.AssignedAt = staffRequest.AssignedAt ?? staff.AssignedAt;
 
-        //                                        criteriaRepository.UpdateAsync(criteria);
-        //                                    }
-        //                                    else
-        //                                    {
-        //                                        var newCriteria = new Criterion
-        //                                        {
-        //                                            CriteriaGroupId = criteriaGroup.Id,
-        //                                            Name = criteriaRequest.Name,
-        //                                            Description = criteriaRequest.Description,
-        //                                            MaxScore = criteriaRequest.MaxScore,
-        //                                            Weight = criteriaRequest.Weight,
-        //                                            Order = criteriaRequest.Order
-        //                                        };
-        //                                        await criteriaRepository.InsertAsync(newCriteria);
-        //                                    }
-        //                                }
-        //                            }
-        //                        }
-        //                        else
-        //                        {
-        //                            throw new NotFoundException($"CriteriaGroup with ID {criteriaGroupRequest.Id} not found.");
-        //                        }
-        //                    }
-        //                }
+                        // Update ShowStaff in the database
+                         showStaffRepository.UpdateAsync(staff);
+                    }
+                    else
+                    {
+                        // If ShowStaff not found, create a new ShowStaff
+                        var newStaff = new ShowStaff
+                        {
+                            KoiShowId = id,
+                            AccountId = staffRequest.AccountId,
+                            AssignedBy = staffRequest.AssignedBy,
+                            AssignedAt = staffRequest.AssignedAt ?? DateTime.Now
+                        };
 
-        //                // Update RefereeAssignments
-        //                if (categoryRequest.RefereeAssignments != null && categoryRequest.RefereeAssignments.Any())
-        //                {
-        //                    foreach (var refereeRequest in categoryRequest.RefereeAssignments)
-        //                    {
-        //                        var refereeAssignment = new RefereeAssignment
-        //                        {
-        //                            CategoryId = category.Id,
-        //                            RefereeAccountId = refereeRequest.RefereeAccountId,
-        //                            AssignedAt = refereeRequest.AssignedAt ?? DateTime.Now,
-        //                            AssignedBy = refereeRequest.AssignedBy
-        //                        };
-        //                        refereeAssignmentRepository.UpdateAsync(refereeAssignment);
-        //                    }
-        //                }
-        //            }
-        //            else
-        //            {
-        //                throw new NotFoundException($"Category with ID {categoryRequest.Id} not found in Show {id}. Cannot update this Category.");
-        //            }
-        //        }
-        //    }
+                        // Insert new ShowStaff into the database
+                        await showStaffRepository.InsertAsync(newStaff);
+                    }
+                }
+            }
 
-        //    // Handle other entities such as ShowStaff, ShowRule, ShowStatistic, ShowStatus, Sponsor, Ticket
-        //    // Update ShowStaffs
-        //    if (updateShowRequest.ShowStaffs != null && updateShowRequest.ShowStaffs.Any())
-        //    {
-        //        foreach (var staffRequest in updateShowRequest.ShowStaffs)
-        //        {
-        //            var staff = await showStaffRepository.SingleOrDefaultAsync(s => s.Id == staffRequest.Id, null, null);
-        //            if (staff != null)
-        //            {
-        //                staff.AccountId = staffRequest.AccountId;
-        //                staff.AssignedBy = staffRequest.AssignedBy;
-        //                staff.AssignedAt = staffRequest.AssignedAt ?? staff.AssignedAt;
-        //                showStaffRepository.UpdateAsync(staff);
-        //            }
-        //            else
-        //            {
-        //                throw new NotFoundException($"ShowStaff with ID {staffRequest.Id} not found.");
-        //            }
-        //        }
-        //    }
+            // Update TicketTypes
+            if (updateShowRequest.Tickets != null && updateShowRequest.Tickets.Any())
+            {
+                foreach (var ticketRequest in updateShowRequest.Tickets)
+                {
+                    var ticket = await ticketRepository.SingleOrDefaultAsync(t => t.Id == ticketRequest.Id && t.KoiShowId == id, null, null);
+                    if (ticket != null)
+                    {
+                        ticket.TicketType1 = ticketRequest.TicketType1;
+                        ticket.Price = ticketRequest.Price;
+                        ticket.AvailableQuantity = ticketRequest.AvailableQuantity;
+                         ticketRepository.UpdateAsync(ticket);
+                    }
+                    else
+                    {
+                        var newTicket = new TicketType
+                        {
+                            KoiShowId = id,
+                            TicketType1 = ticketRequest.TicketType1,
+                            Price = ticketRequest.Price,
+                            AvailableQuantity = ticketRequest.AvailableQuantity
+                        };
+                        await ticketRepository.InsertAsync(newTicket);
+                    }
+                }
+            }
 
-        //    // Update ShowRules
-        //    if (updateShowRequest.ShowRules != null && updateShowRequest.ShowRules.Any())
-        //    {
-        //        foreach (var ruleRequest in updateShowRequest.ShowRules)
-        //        {
-        //            var rule = await showRuleRepository.SingleOrDefaultAsync(r => r.Id == ruleRequest.Id, null, null);
-        //            if (rule != null)
-        //            {
-        //                rule.Title = ruleRequest.Title;
-        //                rule.Content = ruleRequest.Content;
-        //                showRuleRepository.UpdateAsync(rule);
-        //            }
-        //            else
-        //            {
-        //                throw new NotFoundException($"ShowRule with ID {ruleRequest.Id} not found.");
-        //            }
-        //        }
-        //    }
+            // Update Sponsors
+            if (updateShowRequest.Sponsors != null && updateShowRequest.Sponsors.Any())
+            {
+                foreach (var sponsorRequest in updateShowRequest.Sponsors)
+                {
+                    var sponsor = await sponsorRepository.SingleOrDefaultAsync(s => s.Id == sponsorRequest.Id && s.KoiShowId == id, null, null);
+                    if (sponsor != null)
+                    {
+                        sponsor.Name = sponsorRequest.Name;
+                        sponsor.LogoUrl = sponsorRequest.LogoUrl;
+                         sponsorRepository.UpdateAsync(sponsor);
+                    }
+                    else
+                    {
+                        var newSponsor = new Sponsor
+                        {
+                            KoiShowId = id,
+                            Name = sponsorRequest.Name,
+                            LogoUrl = sponsorRequest.LogoUrl
+                        };
+                        await sponsorRepository.InsertAsync(newSponsor);
+                    }
+                }
+            }
 
-        //    // Update ShowStatistics
-        //    if (updateShowRequest.ShowStatistics != null && updateShowRequest.ShowStatistics.Any())
-        //    {
-        //        foreach (var statisticRequest in updateShowRequest.ShowStatistics)
-        //        {
-        //            var statistic = await showStatisticRepository.SingleOrDefaultAsync(s => s.Id == statisticRequest.Id, null, null);
-        //            if (statistic != null)
-        //            {
-        //                statistic.MetricName = statisticRequest.MetricName;
-        //                statistic.MetricValue = statisticRequest.MetricValue;
-        //                showStatisticRepository.UpdateAsync(statistic);
-        //            }
-        //            else
-        //            {
-        //                throw new NotFoundException($"ShowStatistic with ID {statisticRequest.Id} not found.");
-        //            }
-        //        }
-        //    }
+            // Update ShowRules
+            if (updateShowRequest.ShowRules != null && updateShowRequest.ShowRules.Any())
+            {
+                foreach (var ruleRequest in updateShowRequest.ShowRules)
+                {
+                    var rule = await showRuleRepository.SingleOrDefaultAsync(r => r.Id == ruleRequest.Id && r.KoiShowId == id, null, null);
+                    if (rule != null)
+                    {
+                        rule.Title = ruleRequest.Title;
+                        rule.Content = ruleRequest.Content;
+                         showRuleRepository.UpdateAsync(rule);
+                    }
+                    else
+                    {
+                        var newRule = new ShowRule
+                        {
+                            KoiShowId = id,
+                            Title = ruleRequest.Title,
+                            Content = ruleRequest.Content
+                        };
+                        await showRuleRepository.InsertAsync(newRule);
+                    }
+                }
+            }
 
-        //    // Update ShowStatuses
-        //    if (updateShowRequest.ShowStatuses != null && updateShowRequest.ShowStatuses.Any())
-        //    {
-        //        foreach (var statusRequest in updateShowRequest.ShowStatuses)
-        //        {
-        //            var status = await showStatusRepository.SingleOrDefaultAsync(s => s.Id == statusRequest.Id, null, null);
-        //            if (status != null)
-        //            {
-        //                status.StatusName = statusRequest.StatusName;
-        //                status.Description = statusRequest.Description;
-        //                status.StartDate = statusRequest.StartDate;
-        //                status.EndDate = statusRequest.EndDate;
-        //                status.IsActive = statusRequest.IsActive;
-        //                showStatusRepository.UpdateAsync(status);
-        //            }
-        //            else
-        //            {
-        //                throw new NotFoundException($"ShowStatus with ID {statusRequest.Id} not found.");
-        //            }
-        //        }
-        //    }
+            // Update ShowStatuses
+            if (updateShowRequest.ShowStatuses != null && updateShowRequest.ShowStatuses.Any())
+            {
+                foreach (var statusRequest in updateShowRequest.ShowStatuses)
+                {
+                    var status = await showStatusRepository.SingleOrDefaultAsync(s => s.Id == statusRequest.Id && s.KoiShowId == id, null, null);
+                    if (status != null)
+                    {
+                        status.StatusName = statusRequest.StatusName;
+                        status.Description = statusRequest.Description;
+                        status.StartDate = statusRequest.StartDate;
+                        status.EndDate = statusRequest.EndDate;
+                        status.IsActive = statusRequest.IsActive;
+                         showStatusRepository.UpdateAsync(status);
+                    }
+                    else
+                    {
+                        var newStatus = new ShowStatus
+                        {
+                            KoiShowId = id,
+                            StatusName = statusRequest.StatusName,
+                            Description = statusRequest.Description,
+                            StartDate = statusRequest.StartDate,
+                            EndDate = statusRequest.EndDate,
+                            IsActive = statusRequest.IsActive
+                        };
+                        await showStatusRepository.InsertAsync(newStatus);
+                    }
+                }
+            }
 
-        //    // Update Sponsors
-        //    if (updateShowRequest.Sponsors != null && updateShowRequest.Sponsors.Any())
-        //    {
-        //        foreach (var sponsorRequest in updateShowRequest.Sponsors)
-        //        {
-        //            var sponsor = await sponsorRepository.SingleOrDefaultAsync(s => s.Id == sponsorRequest.Id, null, null);
-        //            if (sponsor != null)
-        //            {
-        //                sponsor.Name = sponsorRequest.Name;
-        //                sponsor.LogoUrl = sponsorRequest.LogoUrl;
-        //                sponsorRepository.UpdateAsync(sponsor);
-        //            }
-        //            else
-        //            {
-        //                throw new NotFoundException($"Sponsor with ID {sponsorRequest.Id} not found.");
-        //            }
-        //        }
-        //    }
+            try
+            {
+                await _unitOfWork.CommitAsync();
+            }
+            catch (Exception ex)
+            {
+                // Lấy inner exception và ghi log hoặc ném lại thông báo lỗi chi tiết
+                Console.WriteLine(ex.InnerException?.Message ?? ex.Message);
+                throw;
+            }
 
-        //    // Update Tickets
-        //    if (updateShowRequest.Tickets != null && updateShowRequest.Tickets.Any())
-        //    {
-        //        foreach (var ticketRequest in updateShowRequest.Tickets)
-        //        {
-        //            var ticket = await ticketRepository.SingleOrDefaultAsync(t => t.Id == ticketRequest.Id, null, null);
-        //            if (ticket != null)
-        //            {
-        //                ticket.TicketType = ticketRequest.TicketType;
-        //                ticket.Price = ticketRequest.Price;
-        //                ticket.AvailableQuantity = ticketRequest.AvailableQuantity;
-        //                ticketRepository.UpdateAsync(ticket);
-        //            }
-        //            else
-        //            {
-        //                throw new NotFoundException($"Ticket with ID {ticketRequest.Id} not found.");
-        //            }
-        //        }
-        //    }
-
-        //    // Commit all changes to the database
-        //    await _unitOfWork.CommitAsync();
-        //}
+        }
 
 
         /// <summary>

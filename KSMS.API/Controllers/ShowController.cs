@@ -54,15 +54,15 @@ namespace KSMS.API.Controllers
             return Ok(ApiResponse<object>.Success(shows, "Get list of show successfully"));
         }
 
-        //[HttpPut("{id:guid}")]
-        //public async Task<ActionResult<ApiResponse<object>>> UpdateShow(Guid id, [FromBody] UpdateShowRequest updateRequest)
-        //{
-        //    if (!ModelState.IsValid)
-        //        return BadRequest(ApiResponse<object>.Fail(ModelState.ToString()));
+        [HttpPut("{id:guid}")]
+        public async Task<ActionResult<ApiResponse<object>>> UpdateShow(Guid id, [FromBody] UpdateShowRequest updateRequest)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ApiResponse<object>.Fail(ModelState.ToString()));
 
-        //    await _showService.UpdateShowAsync(id, updateRequest);
-        //    return Ok(ApiResponse<object>.Success(null, "Update show status successfully"));
-        //}
+            await _showService.UpdateShowAsync(id, updateRequest);
+            return Ok(ApiResponse<object>.Success(null, "Update show status successfully"));
+        }
 
 
 

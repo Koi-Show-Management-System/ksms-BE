@@ -9,7 +9,7 @@ namespace KSMS.Domain.Dtos.Requests.Round
     public class UpdateRoundRequest
     {
         public Guid Id { get; set; }
-        public Guid? CategoryId { get; set; }
+        public Guid? CompetitionCategoryId { get; set; }
         public string Name { get; set; } = null!;
         public int? RoundOrder { get; set; }
         public string RoundType { get; set; } = null!;
