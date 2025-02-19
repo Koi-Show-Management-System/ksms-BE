@@ -5,7 +5,7 @@ namespace KSMS.Domain.Dtos.Requests.Criterion
 {
     public class CriterionRequest
     {
-        [Required(ErrorMessage = "CriteriaGroupId is required.")]
+      
         public Guid? CriteriaGroupId { get; set; }
 
         [Required(ErrorMessage = "Name is required.")]

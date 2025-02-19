@@ -1,4 +1,5 @@
 ﻿
+using KSMS.Domain.Dtos.Requests.CategoryVariety;
 using KSMS.Domain.Dtos.Requests.CriteriaGroup;
 using KSMS.Domain.Dtos.Requests.RefereeAssignment;
 using KSMS.Domain.Dtos.Requests.Round;
@@ -16,10 +17,7 @@ namespace KSMS.Domain.Dtos.Requests.Categorie
     public class CreateCategorieShowRequest
     {
         
-        public Guid ShowId { get; set; }
-
-        
-         
+        public Guid ShowId { get; set; } 
         public string Name { get; set; } = null!;
 
         
@@ -45,7 +43,7 @@ namespace KSMS.Domain.Dtos.Requests.Categorie
 
         public virtual ICollection<CreateRoundRequest> Rounds { get; set; } = new List<CreateRoundRequest>();
 
-        public virtual VarietyRequest? Variety { get; set; }
+        public virtual ICollection<CategoryVarietyRequest> CategoryVarietys { get; set; } = new List<CategoryVarietyRequest>();
 
         public virtual ICollection<CreateAwardCateShowRequest> Awards { get; set; } = new List<CreateAwardCateShowRequest>();
 

@@ -1,4 +1,5 @@
 ﻿using KSMS.Domain.Dtos.Requests.Criterion;
+using KSMS.Domain.Dtos.Requests.ErrorType;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -19,6 +20,8 @@ namespace KSMS.Domain.Dtos.Requests.CriteriaGroup
         public string? Description { get; set; }
 
         public virtual ICollection<CriterionRequest> Criterias { get; set; } = new List<CriterionRequest>();
+
+        public virtual ICollection<ErrorTypeRequest> ErrorTypes { get; set; } = new List<ErrorTypeRequest>();
 
     }
 }

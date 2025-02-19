@@ -1,4 +1,5 @@
-﻿using System;
+﻿using KSMS.Domain.Entities;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -10,13 +11,14 @@ namespace KSMS.Domain.Dtos.Responses.Ticket
     {
         public Guid Id { get; set; }
 
-        public Guid ShowId { get; set; }
+        public Guid TicketOrderDetailId { get; set; }
 
-        public string TicketType { get; set; } = null!;
+        public string? QrcodeData { get; set; }
 
-        public decimal Price { get; set; }
+        public DateTime ExpiredDate { get; set; }
 
-        public int AvailableQuantity { get; set; }
+        public bool? IsUsed { get; set; }
 
+        public virtual CheckInLog? CheckInLog { get; set; }
     }
 }

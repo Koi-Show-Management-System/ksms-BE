@@ -19,7 +19,7 @@ namespace KSMS.Domain.Dtos.Responses.Categorie
     public class CompetitionCategoryResponse
     {
         public Guid Id { get; set; }
-        public Guid ShowId { get; set; }
+        public Guid KoiShowId { get; set; }
 
         public string Name { get; set; } = null!;
 

@@ -10,7 +10,7 @@ namespace KSMS.Domain.Dtos.Responses.ShowStatus
     {
         public Guid Id { get; set; }
 
-        public Guid ShowId { get; set; }
+        public Guid KoiShowId { get; set; }
 
         public string StatusName { get; set; } = null!;
 

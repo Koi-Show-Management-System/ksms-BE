@@ -1,8 +1,7 @@
 ﻿using KSMS.Domain.Dtos.Responses.Categorie;
 using KSMS.Domain.Dtos.Responses.Round;
 using KSMS.Domain.Dtos.Responses.ShowRule;
-using KSMS.Domain.Dtos.Responses.ShowStaff;
-using KSMS.Domain.Dtos.Responses.ShowStatistic;
+using KSMS.Domain.Dtos.Responses.ShowStaff; 
 using KSMS.Domain.Dtos.Responses.ShowStatus;
 using KSMS.Domain.Dtos.Responses.Sponsor;
 using KSMS.Domain.Dtos.Responses.Ticket;
@@ -54,13 +53,11 @@ namespace KSMS.Domain.Dtos.Responses.Show
 
         public virtual ICollection<ShowRuleResponse> ShowRules { get; set; } = new List<ShowRuleResponse>();
 
-      //  public virtual ICollection<ShowStatisticResponse> ShowStatistics { get; set; } = new List<ShowStatisticResponse>();
-
         public virtual ICollection<ShowStatusResponse> ShowStatuses { get; set; } = new List<ShowStatusResponse>();
 
         public virtual ICollection<SponsorResponse> Sponsors { get; set; } = new List<SponsorResponse>();
 
-        public virtual ICollection<TicketResponse> Tickets { get; set; } = new List<TicketResponse>();
+        public virtual ICollection<TicketTypeResponse> Tickets { get; set; } = new List<TicketTypeResponse>();
 
         
     }
