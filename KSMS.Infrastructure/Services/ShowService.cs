@@ -149,7 +149,46 @@ namespace KSMS.Infrastructure.Services
                                 await _unitOfWork.CommitAsync();
                             }
                         }
+                        if (createShowRequest.ShowRules != null && createShowRequest.ShowRules.Any())
+                        {
+                            foreach (var ruleRequest in createShowRequest.ShowRules)
+                            {
+                                var rule = ruleRequest.Adapt<ShowRule>();
+                                rule.KoiShowId = showId;
 
+                                // Save ShowRule to database
+                                await showRuleRepository.InsertAsync(rule);
+                                await _unitOfWork.CommitAsync();
+                            }
+                        }
+
+                        // Process ShowStaff for the Show
+                        if (createShowRequest.ShowStaffs != null && createShowRequest.ShowStaffs.Any())
+                        {
+                            foreach (var staffRequest in createShowRequest.ShowStaffs)
+                            {
+                                var staff = staffRequest.Adapt<ShowStaff>();
+                                staff.KoiShowId = showId;
+
+                                // Save ShowStaff to database
+                                await showStaffRepository.InsertAsync(staff);
+                                await _unitOfWork.CommitAsync();
+                            }
+                        }
+
+                        // Process Sponsors for the Show
+                        if (createShowRequest.Sponsors != null && createShowRequest.Sponsors.Any())
+                        {
+                            foreach (var sponsorRequest in createShowRequest.Sponsors)
+                            {
+                                var sponsor = sponsorRequest.Adapt<Sponsor>();
+                                sponsor.KoiShowId = showId;
+
+                                // Save Sponsor to database
+                                await sponsorRepository.InsertAsync(sponsor);
+                                await _unitOfWork.CommitAsync();
+                            }
+                        }
                         // Process Ticket Types (TicketTypeRequest) associated with the show
                         if (createShowRequest.Tickettypes != null && createShowRequest.Tickettypes.Any())
                         {

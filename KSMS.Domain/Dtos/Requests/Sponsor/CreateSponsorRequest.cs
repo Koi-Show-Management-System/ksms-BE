@@ -15,9 +15,9 @@ namespace KSMS.Domain.Dtos.Requests.Sponsor
 
             [Url(ErrorMessage = "LogoUrl must be a valid URL.")]
             public string? LogoUrl { get; set; }
+        public decimal InvestMoney { get; set; }
+        //[Required(ErrorMessage = "ShowId is required.")]
+        //public Guid KoiShowId { get; set; }
 
-            [Required(ErrorMessage = "ShowId is required.")]
-            public Guid KoiShowId { get; set; }
-       
     }
 }

@@ -9,8 +9,8 @@ namespace KSMS.Domain.Dtos.Requests.ShowRule
 {
     public class CreateShowRuleRequest
     {
-        [Required(ErrorMessage = "ShowId is required.")]
-        public Guid KoiShowId { get; set; }
+        //[Required(ErrorMessage = "ShowId is required.")]
+        //public Guid KoiShowId { get; set; }
 
         [Required(ErrorMessage = "Title is required.")]
         [StringLength(200, ErrorMessage = "Title must not exceed 200 characters.")]

@@ -11,7 +11,7 @@ namespace KSMS.Domain.Dtos.Requests.TicketType
     {
         public Guid Id { get; set; }
 
-        public Guid KoiShowId { get; set; }
+        //public Guid KoiShowId { get; set; }
 
         public string TicketType1 { get; set; } = null!;
 
