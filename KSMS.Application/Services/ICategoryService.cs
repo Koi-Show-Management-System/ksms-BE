@@ -1,4 +1,4 @@
-﻿using KSMS.Domain.Dtos.Responses.Categorie;
+﻿using KSMS.Domain.Dtos.Responses.CompetitionCategory;
 using KSMS.Domain.Dtos.Responses.Registration;
 using KSMS.Domain.Pagination;
 using System;

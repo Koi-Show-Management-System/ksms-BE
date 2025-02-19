@@ -1,7 +1,7 @@
-﻿using KSMS.Domain.Dtos.Responses.Categorie;
+﻿using KSMS.Domain.Dtos.Responses.CompetitionCategory;
 using KSMS.Domain.Dtos.Responses.Round;
 using KSMS.Domain.Dtos.Responses.ShowRule;
-using KSMS.Domain.Dtos.Responses.ShowStaff; 
+using KSMS.Domain.Dtos.Responses.ShowStaff;
 using KSMS.Domain.Dtos.Responses.ShowStatus;
 using KSMS.Domain.Dtos.Responses.Sponsor;
 using KSMS.Domain.Dtos.Responses.Ticket;
@@ -12,7 +12,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 
-namespace KSMS.Domain.Dtos.Responses.Show
+namespace KSMS.Domain.Dtos.Responses.KoiShow
 {
     public class KoiShowResponse
     {
@@ -59,6 +59,6 @@ namespace KSMS.Domain.Dtos.Responses.Show
 
         public virtual ICollection<TicketTypeResponse> Tickets { get; set; } = new List<TicketTypeResponse>();
 
-        
+
     }
 }

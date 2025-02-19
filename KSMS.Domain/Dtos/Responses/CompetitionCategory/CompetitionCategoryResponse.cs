@@ -14,7 +14,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace KSMS.Domain.Dtos.Responses.Categorie
+namespace KSMS.Domain.Dtos.Responses.CompetitionCategory
 {
     public class CompetitionCategoryResponse
     {

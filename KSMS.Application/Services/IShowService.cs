@@ -1,5 +1,5 @@
 ﻿using KSMS.Domain.Dtos.Requests.Show;
-using KSMS.Domain.Dtos.Responses.Show;
+using KSMS.Domain.Dtos.Responses.KoiShow;
 using System;
 using System.Collections.Generic;
 using System.Linq;
