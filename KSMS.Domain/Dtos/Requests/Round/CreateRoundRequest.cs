@@ -7,7 +7,7 @@ namespace KSMS.Domain.Dtos.Requests.Round
     public class CreateRoundRequest
     {
         [Required(ErrorMessage = "CategoryId is required.")]
-        public Guid? CategoryId { get; set; }
+        public Guid CompetitionCategoryId { get; set; }
 
         [Required(ErrorMessage = "Name is required.")]
         [StringLength(100, ErrorMessage = "Name cannot exceed 100 characters.")]

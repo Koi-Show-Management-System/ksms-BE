@@ -9,7 +9,7 @@ namespace KSMS.Domain.Dtos.Responses.ShowRule
     public class ShowRuleResponse
     {
         public Guid Id { get; set; }
-        public Guid ShowId { get; set; }
+        public Guid KoiShowId { get; set; }
 
         public string Title { get; set; } = null!;
 

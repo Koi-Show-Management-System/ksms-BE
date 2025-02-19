@@ -1,4 +1,5 @@
-﻿using System;
+﻿using KSMS.Domain.Entities;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
@@ -9,21 +10,18 @@ namespace KSMS.Domain.Dtos.Requests.Ticket
 {
     public class CreateTicketRequest
     {
-         
 
-        [Required(ErrorMessage = "ShowId is required.")]
-        public Guid ShowId { get; set; }
 
-        [Required(ErrorMessage = "TicketType is required.")]
-        [StringLength(100, ErrorMessage = "TicketType must not exceed 100 characters.")]
-        public string TicketType { get; set; } = null!;
+        public Guid Id { get; set; }
 
-        [Required(ErrorMessage = "Price is required.")]
-        [Range(0.01, double.MaxValue, ErrorMessage = "Price must be greater than 0.")]
-        public decimal Price { get; set; }
+        public Guid TicketOrderDetailId { get; set; }
 
-        [Required(ErrorMessage = "AvailableQuantity is required.")]
-        [Range(1, int.MaxValue, ErrorMessage = "AvailableQuantity must be at least 1.")]
-        public int AvailableQuantity { get; set; }
+        public string? QrcodeData { get; set; }
+
+        public DateTime ExpiredDate { get; set; }
+
+        public bool? IsUsed { get; set; }
+
+        public virtual CheckInLog? CheckInLog { get; set; }
     }
 }

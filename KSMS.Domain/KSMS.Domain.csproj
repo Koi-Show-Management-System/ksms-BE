@@ -18,6 +18,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="Dtos\Requests\NewFolder\" />
     <Folder Include="Entities\" />
   </ItemGroup>
 

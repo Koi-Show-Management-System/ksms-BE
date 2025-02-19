@@ -11,7 +11,7 @@ namespace KSMS.Domain.Dtos.Responses.ShowStaff
     {
         public Guid Id { get; set; }
 
-        public Guid ShowId { get; set; }
+        public Guid KoiShowId { get; set; }
 
         public DateTime AssignedAt { get; set; }
 

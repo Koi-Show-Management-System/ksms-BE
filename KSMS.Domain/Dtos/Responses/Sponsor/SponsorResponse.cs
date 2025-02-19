@@ -8,12 +8,14 @@ namespace KSMS.Domain.Dtos.Responses.Sponsor
 {
     public class SponsorResponse
     {
+
+        public Guid KoiShowId { get; set; }
         public Guid Id { get; set; }
 
         public string Name { get; set; } = null!;
 
         public string? LogoUrl { get; set; }
 
-        public Guid ShowId { get; set; }
+        
     }
 }

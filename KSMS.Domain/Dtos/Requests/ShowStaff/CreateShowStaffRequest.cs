@@ -14,7 +14,7 @@ namespace KSMS.Domain.Dtos.Requests.ShowStaff
         
 
         [Required(ErrorMessage = "ShowId is required.")]
-        public Guid ShowId { get; set; }
+        public Guid KoiShowId { get; set; }
 
         [Required(ErrorMessage = "AccountId is required.")]
         public Guid AccountId { get; set; }

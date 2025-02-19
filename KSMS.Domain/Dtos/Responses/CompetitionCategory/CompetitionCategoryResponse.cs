@@ -19,7 +19,7 @@ namespace KSMS.Domain.Dtos.Responses.CompetitionCategory
     public class CompetitionCategoryResponse
     {
         public Guid Id { get; set; }
-        public Guid ShowId { get; set; }
+        public Guid KoiShowId { get; set; }
 
         public string Name { get; set; } = null!;
 
@@ -48,7 +48,7 @@ namespace KSMS.Domain.Dtos.Responses.CompetitionCategory
         public virtual ICollection<RegistrationStaffResponse> Registrations { get; set; } = new List<RegistrationStaffResponse>();
 
 
-        public virtual ICollection<CriteriaGroupResponse> CriteriaGroups { get; set; } = new List<CriteriaGroupResponse>();
+        public virtual ICollection<CriteriaGroupResponse> CriteriaCompetitionCategories { get; set; } = new List<CriteriaGroupResponse>();
 
         public virtual ICollection<RefereeAssignmentResponse> RefereeAssignments { get; set; } = new List<RefereeAssignmentResponse>();
     }

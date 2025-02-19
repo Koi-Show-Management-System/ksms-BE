@@ -17,7 +17,7 @@ namespace KSMS.Domain.Dtos.Requests.Sponsor
             public string? LogoUrl { get; set; }
 
             [Required(ErrorMessage = "ShowId is required.")]
-            public Guid ShowId { get; set; }
+            public Guid KoiShowId { get; set; }
        
     }
 }

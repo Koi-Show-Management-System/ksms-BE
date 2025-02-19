@@ -47,20 +47,18 @@ namespace KSMS.Domain.Dtos.Responses.KoiShow
 
         public string? Status { get; set; }
 
-        public virtual ICollection<CompetitionCategoryResponse> Categories { get; set; } = new List<CompetitionCategoryResponse>();
+        public virtual ICollection<CompetitionCategoryResponse> CompetitionCategories { get; set; } = new List<CompetitionCategoryResponse>();
 
         public virtual ICollection<ShowStaffResponse> ShowStaffs { get; set; } = new List<ShowStaffResponse>();
 
         public virtual ICollection<ShowRuleResponse> ShowRules { get; set; } = new List<ShowRuleResponse>();
 
-      //  public virtual ICollection<ShowStatisticResponse> ShowStatistics { get; set; } = new List<ShowStatisticResponse>();
-
         public virtual ICollection<ShowStatusResponse> ShowStatuses { get; set; } = new List<ShowStatusResponse>();
 
         public virtual ICollection<SponsorResponse> Sponsors { get; set; } = new List<SponsorResponse>();
 
-        public virtual ICollection<TicketResponse> Tickets { get; set; } = new List<TicketResponse>();
+        public virtual ICollection<TicketTypeResponse> TicketTypes { get; set; } = new List<TicketTypeResponse>();
 
-        
+
     }
 }

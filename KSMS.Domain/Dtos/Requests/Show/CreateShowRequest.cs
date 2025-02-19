@@ -5,22 +5,23 @@ using KSMS.Domain.Dtos.Requests.ShowStaff;
 using KSMS.Domain.Dtos.Requests.ShowStatus;
 using KSMS.Domain.Dtos.Requests.Sponsor;
 using KSMS.Domain.Dtos.Requests.Ticket;
+using KSMS.Domain.Dtos.Requests.TicketType;
 using System.ComponentModel.DataAnnotations;
 
 namespace KSMS.Domain.Dtos.Requests.Show
 {
     public class CreateShowRequest
     {
-        // Tên không được null và giới hạn độ dài
+         
         [Required(ErrorMessage = "Name is required.")]
         [StringLength(200, ErrorMessage = "Name cannot exceed 200 characters.")]
         public string Name { get; set; } = null!;
 
-        // Ngày bắt đầu không được null
+       
         [Required(ErrorMessage = "StartDate is required.")]
         public DateTime? StartDate { get; set; }
 
-        // Ngày kết thúc phải lớn hơn ngày bắt đầu
+        
         [Required(ErrorMessage = "EndDate is required.")]
         [DateGreaterThan(nameof(StartDate), ErrorMessage = "EndDate must be later than StartDate.")]
         public DateTime? EndDate { get; set; }
@@ -64,15 +65,15 @@ namespace KSMS.Domain.Dtos.Requests.Show
         public virtual ICollection<CreateCategorieShowRequest> Categories { get; set; } = new List<CreateCategorieShowRequest>();
         public virtual ICollection<CreateShowStaffRequest> ShowStaffs { get; set; } = new List<CreateShowStaffRequest>();
         public virtual ICollection<CreateShowRuleRequest> ShowRules { get; set; } = new List<CreateShowRuleRequest>();
-      //  public virtual ICollection<CreateShowStatisticRequest> ShowStatistics { get; set; } = new List<CreateShowStatisticRequest>();
+   
         public virtual ICollection<CreateShowStatusRequest> ShowStatuses { get; set; } = new List<CreateShowStatusRequest>();
         public virtual ICollection<CreateSponsorRequest> Sponsors { get; set; } = new List<CreateSponsorRequest>();
-        public virtual ICollection<CreateTicketRequest> Tickets { get; set; } = new List<CreateTicketRequest>();
+        public virtual ICollection<TicketTypeRequest> Tickettypes { get; set; } = new List<TicketTypeRequest>();
 
        
     }
 
-    // Custom validation attribute for comparing dates
+     
     public class DateGreaterThanAttribute : ValidationAttribute
     {
         private readonly string _comparisonProperty;

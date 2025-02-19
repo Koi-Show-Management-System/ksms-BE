@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using KSMS.Domain.Common;
+using KSMS.Domain.Dtos.Responses.ErrorType;
 
 namespace KSMS.Domain.Entities;
 
