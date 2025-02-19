@@ -17,7 +17,7 @@ namespace KSMS.Domain.Dtos.Requests.Categorie
     public class CreateCategorieShowRequest
     {
         
-        public Guid ShowId { get; set; } 
+        public Guid KoiShowId { get; set; } 
         public string Name { get; set; } = null!;
 
         
@@ -26,7 +26,7 @@ namespace KSMS.Domain.Dtos.Requests.Categorie
         
         public decimal? SizeMax { get; set; }
 
-        public Guid? VarietyId { get; set; }
+     //   public Guid? VarietyId { get; set; }
 
          
         public string? Description { get; set; }

@@ -1,4 +1,6 @@
-﻿using System;
+﻿using KSMS.Domain.Dtos.Requests.CriteriaGroup;
+using KSMS.Domain.Dtos.Requests.ErrorType;
+using System;
 using System.ComponentModel.DataAnnotations;
 
 namespace KSMS.Domain.Dtos.Requests.Criterion
@@ -6,7 +8,7 @@ namespace KSMS.Domain.Dtos.Requests.Criterion
     public class CriterionRequest
     {
       
-        public Guid? CriteriaGroupId { get; set; }
+   
 
         [Required(ErrorMessage = "Name is required.")]
         [StringLength(100, ErrorMessage = "Name cannot exceed 100 characters.")]
@@ -26,5 +28,9 @@ namespace KSMS.Domain.Dtos.Requests.Criterion
         [Required(ErrorMessage = "Order is required.")]
         [Range(1, int.MaxValue, ErrorMessage = "Order must be greater than 0.")]
         public int? Order { get; set; }
+
+        public virtual ICollection<ErrorTypeRequest> ErrorTypes { get; set; } = new List<ErrorTypeRequest>();
+
+     //   public virtual ICollection<CriteriaGroupRequest> CriteriaGroup { get; set; } = new List<CriteriaGroupRequest>();
     }
 }

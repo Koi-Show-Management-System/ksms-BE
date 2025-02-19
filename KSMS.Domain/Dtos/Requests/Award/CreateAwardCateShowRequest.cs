@@ -8,7 +8,7 @@ using System.ComponentModel.DataAnnotations;
 public class CreateAwardCateShowRequest
 {
     [Required(ErrorMessage = "CategoryId is required.")]
-    public Guid CategoryId { get; set; }
+    public Guid CompetitionCategoryId { get; set; }
 
     [Required(ErrorMessage = "Name is required.")]
     [StringLength(100, ErrorMessage = "Name must not exceed 100 characters.")]

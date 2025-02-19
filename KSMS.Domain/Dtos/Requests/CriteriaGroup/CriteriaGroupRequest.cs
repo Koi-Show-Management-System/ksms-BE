@@ -10,18 +10,20 @@ namespace KSMS.Domain.Dtos.Requests.CriteriaGroup
 {
     public class CriteriaGroupRequest
     {
-        public Guid Id {  get; set; }
-        public Guid CategoryId { get; set; }
+      //  public Guid Id {  get; set; }
+        public Guid CompetitionCategoryId { get; set; }
 
-        public string Name { get; set; } = null!;
+        public string Name { get; set; } = null!;   
+
+        public Guid CriteriaId { get; set; }
 
         public string? RoundType { get; set; }
 
         public string? Description { get; set; }
 
-        public virtual ICollection<CriterionRequest> Criterias { get; set; } = new List<CriterionRequest>();
+        public CriterionRequest Criterias { get; set; } = null!;
 
-        public virtual ICollection<ErrorTypeRequest> ErrorTypes { get; set; } = new List<ErrorTypeRequest>();
+
 
     }
 }

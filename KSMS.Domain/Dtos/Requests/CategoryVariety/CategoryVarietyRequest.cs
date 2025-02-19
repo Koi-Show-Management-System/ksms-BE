@@ -11,11 +11,10 @@ namespace KSMS.Domain.Dtos.Requests.CategoryVariety
     public class CategoryVarietyRequest
 
     {
+        public Guid CompetitionCategoryId { get; set; }
         public Guid Id { get; set; }
 
-        public Guid VarietyId { get; set; }
-
-        public Guid CompetitionCategoryId { get; set; }
+        public Guid VarietyId { get; set; } 
 
         public virtual VarietyRequest Variety { get; set; }
     }

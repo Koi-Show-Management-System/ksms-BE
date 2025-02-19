@@ -19,7 +19,7 @@ namespace KSMS.Domain.Dtos.Requests.TicketType
 
         public int AvailableQuantity { get; set; }
 
-        public virtual ICollection<TicketOrderDetailResponse> TicketOrderDetails { get; set; } = new List<TicketOrderDetailResponse>();
+    //    public virtual ICollection<TicketOrderDetailResponse> TicketOrderDetails { get; set; } = new List<TicketOrderDetailResponse>();
 
     }
 }

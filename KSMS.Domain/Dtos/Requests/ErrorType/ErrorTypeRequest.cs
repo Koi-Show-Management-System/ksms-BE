@@ -14,6 +14,6 @@ namespace KSMS.Domain.Dtos.Requests.ErrorType
 
         public string Name { get; set; } = null!;
 
-         public virtual ICollection<ScoreDetailErrorRequest> ScoreDetailErrors { get; set; } = new List<ScoreDetailErrorRequest>();
+        // public virtual ICollection<ScoreDetailErrorRequest> ScoreDetailErrors { get; set; } = new List<ScoreDetailErrorRequest>();
     }
 }

@@ -11,19 +11,22 @@ namespace KSMS.Domain.Dtos.Responses.CriteriaGroupRequest
 {
     public class CriteriaGroupResponse
     {
-
         public Guid Id { get; set; }
- 
-        public Guid CategoryId { get; set; }
+        public Guid CompetitionCategoryId { get; set; }
 
-        public string Name { get; set; } = null!;
+        public Guid CriteriaId { get; set; }
 
         public string? RoundType { get; set; }
 
-        public string? Description { get; set; }
+        public decimal? Weight { get; set; }
 
-        public virtual ICollection<CriterionResponse> Criteria { get; set; } = new List<CriterionResponse>();
+        public int? Order { get; set; }
 
-        public virtual ICollection<ErrorTypeResponse> ErrorTypes { get; set; } = new List<ErrorTypeResponse>();
+
+
+        public virtual CriterionResponse Criteria { get; set; } = null!;
+
+
+
     }
 }
