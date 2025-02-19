@@ -11,8 +11,8 @@ namespace KSMS.Domain.Dtos.Requests.ShowStatus
     {
        
 
-        [Required(ErrorMessage = "ShowId is required.")]
-        public Guid KoiShowId { get; set; }
+      //  [Required(ErrorMessage = "ShowId is required.")]
+      ////  public Guid KoiShowId { get; set; }
 
         [Required(ErrorMessage = "StatusName is required.")]
         [StringLength(100, ErrorMessage = "StatusName must not exceed 100 characters.")]
