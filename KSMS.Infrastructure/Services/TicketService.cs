@@ -1,57 +1,78 @@
-﻿// using System.Security.Claims;
-// using KSMS.Application.Extensions;
-// using KSMS.Application.Repositories;
-// using KSMS.Application.Services;
-// using KSMS.Domain.Entities;
-// using KSMS.Domain.Exceptions;
-// using KSMS.Infrastructure.Database;
-// using Microsoft.AspNetCore.Http;
-// using Microsoft.EntityFrameworkCore;
-// using Microsoft.Extensions.Logging;
-//
-// namespace KSMS.Infrastructure.Services
-// {
-//     public class TicketService : BaseService<TicketService>,ITicketService
-//     {
-//         public TicketService(IUnitOfWork<KoiShowManagementSystemContext> unitOfWork, ILogger<TicketService> logger, IHttpContextAccessor httpContextAccessor) : base(unitOfWork, logger, httpContextAccessor)
-//         {
-//         }
-//         public async Task VerifyTicketIdAsync(ClaimsPrincipal claims, Guid qrCodeId)
-//         {
-//             var accountId = claims.GetAccountId();
-//             var qrCode = await _unitOfWork.GetRepository<Qrcode>()
-//                 .SingleOrDefaultAsync(predicate: x => x.Id == qrCodeId,
-//                     include: query =>
-//                         query.Include(x => x.TicketOrderDetail)
-//                             .ThenInclude(x => x.Ticket)
-//                             .ThenInclude(x => x.Show));
-//                 
-//             if (qrCode.IsActive == false)
-//             {
-//                 throw new BadRequestException("QR Code is used");
-//             }
-//             if (qrCode.ExpiryDate < DateTime.Now)
-//             {
-//                 throw new BadRequestException("QR Code has expired");
-//             }
-//
-//             qrCode.IsActive = false;
-//             _unitOfWork.GetRepository<Qrcode>().UpdateAsync(qrCode);
-//             await _unitOfWork.CommitAsync();
-//             var checkinLogs = new CheckInLog()
-//             {
-//                 QrcodeId = qrCode.Id,
-//                 CheckInTime = DateTime.Now,
-//                 CheckedInBy = accountId,
-//                 CheckInLocation = qrCode.TicketOrderDetail.Ticket.Show.Location,
-//                 Status = "confirm",
-//
-//             };
-//             await _unitOfWork.GetRepository<CheckInLog>().InsertAsync(checkinLogs);
-//             await _unitOfWork.CommitAsync();
-//         }
-//
-//
-//         
-//     }
-// }
+﻿using System;
+using System.Security.Claims;
+using System.Threading.Tasks;
+using KSMS.Application.Extensions;
+using KSMS.Application.Repositories;
+using KSMS.Application.Services;
+using KSMS.Domain.Dtos.Responses.Ticket;
+using KSMS.Domain.Entities;
+using KSMS.Domain.Exceptions;
+using KSMS.Infrastructure.Database;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
+using Microsoft.EntityFrameworkCore;
+
+namespace KSMS.Infrastructure.Services
+{
+    public class TicketService : BaseService<TicketService>, ITicketService
+    {
+        public TicketService(IUnitOfWork<KoiShowManagementSystemContext> unitOfWork, ILogger<TicketService> logger, IHttpContextAccessor httpContextAccessor)
+            : base(unitOfWork, logger, httpContextAccessor)
+        {
+        }
+        public async Task<TicketResponse> GetTicketDetailByIdAsync(Guid ticketId)
+        {
+            var ticketRepository = _unitOfWork.GetRepository<Ticket>();
+
+            var ticket = await ticketRepository.SingleOrDefaultAsync(
+            predicate: t => t.Id == ticketId,
+            include: query => query.Include(t => t.CheckInLog) 
+                                   .ThenInclude(t => t.RegistrationPayment));
+            if (ticket == null)
+            {
+                throw new NotFoundException("Ticket not found");
+            }
+
+         //   var ticketDetail = ticket.Adapt<TicketResponse>();
+
+            return null;
+        }
+        //public async Task VerifyTicketIdAsync(ClaimsPrincipal claims, Guid ticketId)
+        //{
+        //    var accountId = claims.GetAccountId();
+
+        //    // Lấy Ticket từ hệ thống
+        //    var ticket = await _unitOfWork.GetRepository<Ticket>()
+        //        .SingleOrDefaultAsync(predicate: x => x.Id == ticketId
+        //        , include: query => query.Include(x => x.Ticket)
+        //                 .ThenInclude(x => x.TicketOrderDetail)
+        //               );
+
+        //    if (ticket == null)
+        //    {
+        //        throw new NotFoundException("Ticket not found");
+        //    }
+
+        //    // Kiểm tra xem Ticket có hợp lệ không
+        //    if (ticket.Status != "Active")
+        //    {
+        //        throw new BadRequestException("Ticket is not active");
+        //    }
+
+        //    // Tạo log check-in
+        //    var checkInLog = new CheckInLog()
+        //    {
+        //        TicketId = ticket.Id,
+        //        RegistrationPaymentId = ticket.RegistrationId,
+        //        CheckInTime = DateTime.Now,
+        //        CheckInLocation = ticket.Show.Location, // Assuming Show has a location field
+        //        CheckedInBy = accountId,
+        //        Notes = "Checked in successfully"
+        //    };
+
+        //    // Lưu log vào bảng CheckInLogs
+        //    await _unitOfWork.GetRepository<CheckInLog>().InsertAsync(checkInLog);
+        //    await _unitOfWork.CommitAsync();
+        //}
+    }
+}

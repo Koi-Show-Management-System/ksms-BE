@@ -24,13 +24,9 @@ namespace KSMS.Domain.Dtos.Requests.Categorie
         public decimal? SizeMin { get; set; }
 
         
-        public decimal? SizeMax { get; set; }
-
-     //   public Guid? VarietyId { get; set; }
-
+        public decimal? SizeMax { get; set; } 
          
-        public string? Description { get; set; }
-
+        public string? Description { get; set; } 
         
         public int? MaxEntries { get; set; }
 
@@ -41,15 +37,15 @@ namespace KSMS.Domain.Dtos.Requests.Categorie
          
         public string? Status { get; set; }
 
-        public virtual ICollection<CreateRoundRequest> Rounds { get; set; } = new List<CreateRoundRequest>();
+        public  ICollection<CreateRoundRequest> Rounds { get; set; } = new List<CreateRoundRequest>();
 
-        public virtual ICollection<CategoryVarietyRequest> CategoryVarietys { get; set; } = new List<CategoryVarietyRequest>();
+        public  ICollection<CategoryVarietyRequest> CategoryVarietys { get; set; } = new List<CategoryVarietyRequest>();
 
-        public virtual ICollection<CreateAwardCateShowRequest> Awards { get; set; } = new List<CreateAwardCateShowRequest>();
+        public  ICollection<CreateAwardCateShowRequest> Awards { get; set; } = new List<CreateAwardCateShowRequest>();
 
-        public virtual ICollection<CriteriaGroupRequest> CriteriaGroups { get; set; } = new List<CriteriaGroupRequest>();
+        public  ICollection<CriteriaGroupRequest> CriteriaGroups { get; set; } = new List<CriteriaGroupRequest>();
 
-        public virtual ICollection<RefereeAssignmentRequest> RefereeAssignments { get; set; } = new List<RefereeAssignmentRequest>();
+        public  ICollection<RefereeAssignmentRequest> RefereeAssignments { get; set; } = new List<RefereeAssignmentRequest>();
     }
 
 }

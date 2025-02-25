@@ -10,21 +10,19 @@ using System.Threading.Tasks;
 
 namespace KSMS.Domain.Dtos.Responses.Score
 {
-    public class ScoreResponse
+    public class ScoreDetailResponse
     {
-        public Guid RegistrationId { get; set; }
-
-        public Guid RoundId { get; set; }
-
         public Guid RefereeAccountId { get; set; }
 
-        public Guid CriteriaId { get; set; }
+        public Guid RegistrationRoundId { get; set; }
 
-        public decimal? Score1 { get; set; }
+        public decimal InitialScore { get; set; }
+
+        public decimal TotalPointMinus { get; set; }
+
+        public bool? IsPublic { get; set; }
 
         public string? Comments { get; set; }
-
-        public string? Status { get; set; }
 
         public virtual CriterionResponse Criteria { get; set; } 
 

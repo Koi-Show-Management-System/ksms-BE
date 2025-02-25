@@ -28,7 +28,7 @@ namespace KSMS.API.Controllers
          
         [Route("Refree/CreateScores")]
         [HttpPost]
-        public async Task<ActionResult<ApiResponse<object>>> CreateScore([FromBody] CreateScoreRequest request)
+        public async Task<ActionResult<ApiResponse<object>>> CreateScore([FromBody] CreateScoreDetailRequest request)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ApiResponse<object>.Fail(ModelState.ToString()));

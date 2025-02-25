@@ -9,8 +9,8 @@ namespace KSMS.Application.Services
 {
     public interface IScoreService
     {
-        Task<ScoreResponse> CreateScoreAsync(CreateScoreRequest request);
+        Task<ScoreDetailResponse> CreateScoreAsync(CreateScoreDetailRequest request);
 
-        Task<Paginate<ScoreResponse>> GetPagedScoresAsync(int page, int size);
+        Task<Paginate<ScoreDetailResponse>> GetPagedScoresAsync(int page, int size);
     }
 }

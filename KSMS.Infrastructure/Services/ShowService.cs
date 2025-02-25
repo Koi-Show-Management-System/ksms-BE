@@ -28,7 +28,7 @@ namespace KSMS.Infrastructure.Services
         }
         public async Task<KoiShowResponse> CreateShowAsync(CreateShowRequest createShowRequest)
         {
-            // Lấy các repository cần thiết với tên mới
+           
             var showRepository = _unitOfWork.GetRepository<KoiShow>();
             var categoryRepository = _unitOfWork.GetRepository<CompetitionCategory>();
             var sponsorRepository = _unitOfWork.GetRepository<Sponsor>();

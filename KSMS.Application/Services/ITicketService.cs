@@ -1,4 +1,5 @@
-﻿using System;
+﻿using KSMS.Domain.Dtos.Responses.Ticket;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
@@ -9,6 +10,8 @@ namespace KSMS.Application.Services
 {
     public interface ITicketService
     {
-        Task VerifyTicketIdAsync(ClaimsPrincipal claims, Guid qrCodeId);
+
+        Task<TicketResponse> GetTicketDetailByIdAsync(Guid ticketId);
+        //  Task VerifyTicketIdAsync(ClaimsPrincipal claims, Guid qrCodeId);
     }
 }

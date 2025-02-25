@@ -36,7 +36,7 @@ public class GetRegistrationResponse // for user
 
     public GetKoiShowResponse KoiShow { get; set; } = null!;
 
-    public RegistrationPayment? RegistrationPayment { get; set; }
+  //  public RegistrationPayment? RegistrationPayment { get; set; }
     
     
     
