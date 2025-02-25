@@ -15,8 +15,6 @@ public partial class TicketOrderDetail
 
     public decimal UnitPrice { get; set; }
 
-    public decimal Amount { get; set; }
-
     public virtual TicketOrder TicketOrder { get; set; } = null!;
 
     public virtual TicketType TicketType { get; set; } = null!;

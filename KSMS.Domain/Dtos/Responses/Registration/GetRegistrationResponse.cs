@@ -2,7 +2,6 @@
 using KSMS.Domain.Dtos.Responses.KoiMedium;
 using KSMS.Domain.Dtos.Responses.KoiProfile;
 using KSMS.Domain.Dtos.Responses.KoiShow;
-using KSMS.Domain.Entities;
 
 namespace KSMS.Domain.Dtos.Responses.Registration;
 
@@ -35,8 +34,7 @@ public class GetRegistrationResponse // for user
     public KoiProfileResponse KoiProfile { get; set; } = null!;
 
     public GetKoiShowResponse KoiShow { get; set; } = null!;
-
-  //  public RegistrationPayment? RegistrationPayment { get; set; }
+ 
     
     
     

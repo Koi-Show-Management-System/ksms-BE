@@ -46,7 +46,8 @@ public static class MailUtil
           "[KOI SHOW SYSTEM] Xác nhận duyệt đơn đăng kí cá koi thành công";
       public readonly static string Title_CheckOutSuccessfully =
           "[KOI SHOW SYSTEM] Xác nhận thanh toán phí tham gia giải cá koi thành công";
-      public readonly static string Title_ForgotPassword = "[KOI SHOW SYSTEM] Mã OTP đặt lại mật khẩu";
+      public readonly static string Title_ForgotPassword =
+          "[KOI SHOW SYSTEM] Mã OTP đặt lại mật khẩu";
         public static string StaffRoleNotification(string staffFullName, string showName, string username, string defaultPassword)
         {
             return $@"

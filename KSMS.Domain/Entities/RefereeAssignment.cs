@@ -22,6 +22,4 @@ public partial class RefereeAssignment
     public virtual CompetitionCategory CompetitionCategory { get; set; } = null!;
 
     public virtual Account RefereeAccount { get; set; } = null!;
-
-    public virtual ICollection<ScoreDetail> ScoreDetails { get; set; } = new List<ScoreDetail>();
 }
