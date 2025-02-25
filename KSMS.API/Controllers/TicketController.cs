@@ -26,13 +26,21 @@ namespace KSMS.API.Controllers
             return Ok(ApiResponse<string>.Success(qrCodeBase64, "Tạo mã QR thành công"));
         }
 
-       
-        [HttpPost("verify-ticket")]
+
+        [HttpGet("get-detail/{ticketId:guid}")]
         [Authorize(Roles = "Staff")]
-        public async Task<ActionResult<ApiResponse<string>>> VerifyTicketId([FromBody] Guid qrCodeId)
+        public async Task<ActionResult<ApiResponse<object>>> GetDetailTicketId(Guid ticketId)
         {
-            await _ticketService.VerifyTicketIdAsync(HttpContext.User, qrCodeId);
-            return Ok(ApiResponse<string>.Success(null, "Xác thực vé thành công"));
+            var ticketDetail = await _ticketService.GetTicketDetailByIdAsync(ticketId);
+            return Ok(ApiResponse<object>.Success(ticketDetail, "Lấy chi tiết vé thành công"));
         }
+
+        //    [HttpPost("verify-ticket")]
+        ////    [Authorize(Roles = "Staff")]
+        //    public async Task<ActionResult<ApiResponse<string>>> VerifyTicketId([FromBody] Guid qrCodeId)
+        //    {
+        //        await _ticketService.VerifyTicketIdAsync(HttpContext.User, qrCodeId);
+        //        return Ok(ApiResponse<string>.Success(null, "Xác thực vé thành công"));
+        //    }
     }
 }

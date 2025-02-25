@@ -34,8 +34,7 @@ public class GetRegistrationResponse // for user
     public KoiProfileResponse KoiProfile { get; set; } = null!;
 
     public GetKoiShowResponse KoiShow { get; set; } = null!;
-
-    //public RegistrationPayment? RegistrationPayment { get; set; }
+ 
     
     
     

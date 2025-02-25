@@ -62,13 +62,12 @@ namespace KSMS.Domain.Dtos.Requests.Show
         public string? Status { get; set; }
 
         
-        public virtual ICollection<CreateCategorieShowRequest> Categories { get; set; } = new List<CreateCategorieShowRequest>();
-        public virtual ICollection<CreateShowStaffRequest> ShowStaffs { get; set; } = new List<CreateShowStaffRequest>();
-        public virtual ICollection<CreateShowRuleRequest> ShowRules { get; set; } = new List<CreateShowRuleRequest>();
-   
-        public virtual ICollection<CreateShowStatusRequest> ShowStatuses { get; set; } = new List<CreateShowStatusRequest>();
-        public virtual ICollection<CreateSponsorRequest> Sponsors { get; set; } = new List<CreateSponsorRequest>();
-        public virtual ICollection<TicketTypeRequest> Tickettypes { get; set; } = new List<TicketTypeRequest>();
+        public  ICollection<CreateCategorieShowRequest> Categories { get; set; } = new List<CreateCategorieShowRequest>();
+        public  ICollection<CreateShowStaffRequest> ShowStaffs { get; set; } = new List<CreateShowStaffRequest>();
+        public  ICollection<CreateShowRuleRequest> ShowRules { get; set; } = new List<CreateShowRuleRequest>(); 
+        public  ICollection<CreateShowStatusRequest> ShowStatuses { get; set; } = new List<CreateShowStatusRequest>();
+        public  ICollection<CreateSponsorRequest> Sponsors { get; set; } = new List<CreateSponsorRequest>();
+        public  ICollection<TicketTypeRequest> Tickettypes { get; set; } = new List<TicketTypeRequest>();
 
        
     }

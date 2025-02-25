@@ -1,4 +1,7 @@
-﻿
+ 
+﻿using KSMS.Domain.Dtos.Responses.CheckInLog;
+ 
+ 
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -19,6 +22,8 @@ namespace KSMS.Domain.Dtos.Responses.Ticket
 
         public bool? IsUsed { get; set; }
 
-        //public virtual CheckInLog? CheckInLog { get; set; }
+ 
+        public virtual CheckInLogResponse? CheckInLog { get; set; }
+ 
     }
 }

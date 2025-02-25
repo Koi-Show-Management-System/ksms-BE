@@ -22,7 +22,7 @@ namespace KSMS.API.Controllers
         }
 
         [HttpPost("create")]
-        [Authorize(Roles = "Member")]
+   //     [Authorize(Roles = "Member")]
         public async Task<ActionResult<ApiResponse<object>>> CreateRegistration([FromForm]CreateRegistrationRequest createRegistrationRequest)
         {
             await _registrationService.CreateRegistration(createRegistrationRequest);

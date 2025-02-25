@@ -21,7 +21,7 @@ namespace KSMS.API.Controllers
             _koiProfileService = koiProfileService;
         }
         [HttpPost]
-        [Authorize(Roles = "Member")]
+  //      [Authorize(Roles = "Member")]
         public async Task<ActionResult<ApiResponse<object>>> CreateKoiProfile([FromForm] CreateKoiProfileRequest createKoiProfileRequest)
         { 
             await _koiProfileService.CreateKoiProfile(HttpContext.User, createKoiProfileRequest);
