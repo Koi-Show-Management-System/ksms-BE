@@ -1,4 +1,4 @@
-﻿using KSMS.Domain.Entities;
+﻿
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -22,6 +22,6 @@ namespace KSMS.Domain.Dtos.Requests.Ticket
 
         public bool? IsUsed { get; set; }
 
-        public virtual CheckInLog? CheckInLog { get; set; }
+        //public virtual CheckInLog? CheckInLog { get; set; }
     }
 }

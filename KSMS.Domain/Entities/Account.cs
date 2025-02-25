@@ -42,13 +42,19 @@ public partial class Account : BaseEntity
 
     public virtual ICollection<RefereeAssignment> RefereeAssignmentRefereeAccounts { get; set; } = new List<RefereeAssignment>();
 
-    public virtual ICollection<Registration> Registrations { get; set; } = new List<Registration>();
+    public virtual ICollection<Registration> RegistrationAccounts { get; set; } = new List<Registration>();
+
+    public virtual ICollection<Registration> RegistrationCheckedInByNavigations { get; set; } = new List<Registration>();
+
+    public virtual ICollection<ScoreDetail> ScoreDetails { get; set; } = new List<ScoreDetail>();
 
     public virtual ICollection<ShowStaff> ShowStaffAccounts { get; set; } = new List<ShowStaff>();
 
     public virtual ICollection<ShowStaff> ShowStaffAssignedByNavigations { get; set; } = new List<ShowStaff>();
 
     public virtual ICollection<TicketOrder> TicketOrders { get; set; } = new List<TicketOrder>();
+
+    public virtual ICollection<Ticket> Tickets { get; set; } = new List<Ticket>();
 
     public virtual ICollection<Vote> Votes { get; set; } = new List<Vote>();
 }

@@ -13,9 +13,17 @@ public partial class Ticket
 
     public DateTime ExpiredDate { get; set; }
 
-    public bool? IsUsed { get; set; }
+    public bool? IsCheckedIn { get; set; }
 
-    public virtual CheckInLog? CheckInLog { get; set; }
+    public DateTime? CheckInTime { get; set; }
+
+    public string? CheckInLocation { get; set; }
+
+    public Guid? CheckedInBy { get; set; }
+
+    public string? Status { get; set; }
+
+    public virtual Account? CheckedInByNavigation { get; set; }
 
     public virtual TicketOrderDetail TicketOrderDetail { get; set; } = null!;
 }
