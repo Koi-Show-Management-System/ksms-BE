@@ -1,6 +1,7 @@
 ﻿
 using System;
 using System.ComponentModel.DataAnnotations;
+using KSMS.Domain.Enums;
 
 namespace KSMS.Domain.Dtos.Requests.Round
 {
@@ -19,6 +20,7 @@ namespace KSMS.Domain.Dtos.Requests.Round
 
         [Required(ErrorMessage = "RoundType is required.")]
         [StringLength(50, ErrorMessage = "RoundType cannot exceed 50 characters.")]
+        [EnumDataType(typeof(RoleName))]
         public string RoundType { get; set; } = null!;
 
         [Required(ErrorMessage = "StartTime is required.")]

@@ -15,7 +15,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Net.payOS;
 using Net.payOS.Types;
-using PaymentType = KSMS.Domain.Entities.PaymentType;
 using System.Security.Claims;
 using System.Linq.Expressions;
 using KSMS.Application.Extensions;
@@ -256,8 +255,6 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
                 RegistrationId = registration.Id,
                 Status = RegistrationPaymentStatus.Pending.ToString().ToLower(),
                 PaymentMethod = PaymentMethod.PayOs.ToString(),
-                PaymentTypeId = (await _unitOfWork.GetRepository<PaymentType>()
-                    .SingleOrDefaultAsync(predicate: x => x.Name == PaymentTypes.Registration.ToString())).Id,
                 PaidAmount = registration.RegistrationFee,
                 PaymentDate = DateTime.Now
             };
@@ -328,7 +325,8 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
                 break;
 
             default:
-                predicate = r => r.Status == RegistrationStatus.Paid.ToString().ToLower();
+                //predicate = r => r.Status == RegistrationStatus.Paid.ToString().ToLower();
+                predicate = r => r.AccountId == accountId;
                 break;
         }
 
@@ -340,6 +338,7 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
         if (filter == null) return basePredicate;
 
         Expression<Func<Registration, bool>> filterQuery = basePredicate ?? (r => true);
+        
         if (filter.ShowIds.Any())
         {
             filterQuery = filterQuery.AndAlso(r => filter.ShowIds.Contains(r.KoiShowId));
@@ -350,12 +349,12 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
         }
         if (filter.CategoryIds.Any())
         {
-            filterQuery = filterQuery.AndAlso(r => r.CompetitionCategoryId.HasValue && 
-                filter.CategoryIds.Contains(r.CompetitionCategoryId.Value));
+            filterQuery = filterQuery.AndAlso(r =>  
+                filter.CategoryIds.Contains(r.CompetitionCategoryId));
         }
-        if (filter.Status != null)
+        if (filter.Status.HasValue)
         {
-            var statusString = filter.Status.ToString().ToLower();
+            var statusString = filter.Status.Value.ToString().ToLower();
             filterQuery = filterQuery.AndAlso(r => r.Status == statusString);
         }
 

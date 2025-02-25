@@ -8,7 +8,7 @@ GO
 
 
 -- Accounts table
-CREATE TABLE [dbo].[Accounts](
+CREATE TABLE [dbo].[Account](
     [Id] UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     [Email] varchar(100) NULL UNIQUE,
     [HashedPassword] varchar(255) NOT NULL,
@@ -28,7 +28,7 @@ CREATE TABLE [dbo].[Accounts](
 GO
 
 -- Varieties table
-CREATE TABLE [dbo].[Varieties](
+CREATE TABLE [dbo].[Variety](
     [Id] UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     [Name] nvarchar(50) NOT NULL,
     [Description] nvarchar(max) NULL,
@@ -38,7 +38,7 @@ CREATE TABLE [dbo].[Varieties](
 GO
 
 -- Shows table
-CREATE TABLE [dbo].[KoiShows](
+CREATE TABLE [dbo].[KoiShow](
     [Id] UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     [Name] nvarchar(100) NOT NULL,
     [StartDate] datetime NULL,
@@ -66,13 +66,13 @@ CREATE TABLE [dbo].[ShowStaff](
   [AccountId] UNIQUEIDENTIFIER NOT NULL,
   [AssignedBy] UNIQUEIDENTIFIER NOT NULL,
   [AssignedAt] datetime NOT NULL DEFAULT GETDATE(),
-  FOREIGN KEY ([KoiShowId]) REFERENCES [KoiShows]([Id]),
-  FOREIGN KEY ([AccountId]) REFERENCES [Accounts]([Id]),
-  FOREIGN KEY ([AssignedBy]) REFERENCES [Accounts]([Id])
+  FOREIGN KEY ([KoiShowId]) REFERENCES [KoiShow]([Id]),
+  FOREIGN KEY ([AccountId]) REFERENCES [Account]([Id]),
+  FOREIGN KEY ([AssignedBy]) REFERENCES [Account]([Id])
 )
 GO
 -- Categories table
-CREATE TABLE [dbo].[CompetitionCategories](
+CREATE TABLE [dbo].[CompetitionCategory](
     [Id] UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     [KoiShowId] UNIQUEIDENTIFIER NOT NULL,
     [Name] nvarchar(100) NOT NULL,
@@ -85,33 +85,33 @@ CREATE TABLE [dbo].[CompetitionCategories](
     [Status] varchar(20) NULL,
 	[CreatedAt] datetime NOT NULL,
     [UpdatedAt] datetime NULL
-    FOREIGN KEY ([KoiShowId]) REFERENCES [KoiShows]([Id]),
+    FOREIGN KEY ([KoiShowId]) REFERENCES [KoiShow]([Id]),
 )
 GO
 --CategoryVarieties table
-CREATE TABLE [dbo].[CategoryVarieties](
+CREATE TABLE [dbo].[CategoryVariety](
   [Id] UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
   [VarietyId] UNIQUEIDENTIFIER NOT NULL,
   [CompetitionCategoryId] UNIQUEIDENTIFIER NOT NULL, 
-      FOREIGN KEY ([VarietyId]) REFERENCES [Varieties]([Id]),
-      FOREIGN KEY ([CompetitionCategoryId]) REFERENCES [CompetitionCategories]([Id]),
+      FOREIGN KEY ([VarietyId]) REFERENCES [Variety]([Id]),
+      FOREIGN KEY ([CompetitionCategoryId]) REFERENCES [CompetitionCategory]([Id]),
 )
 GO
 -- RefereeAssignments table
-CREATE TABLE [dbo].[RefereeAssignments](
+CREATE TABLE [dbo].[RefereeAssignment](
    [Id] UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
    [CompetitionCategoryId] UNIQUEIDENTIFIER NOT NULL,
    [RefereeAccountId] UNIQUEIDENTIFIER NOT NULL,
    [RoundType] varchar(20) NOT NULL,
    [AssignedAt] datetime NOT NULL DEFAULT GETDATE(),
    [AssignedBy] UNIQUEIDENTIFIER NOT NULL,
-   FOREIGN KEY ([RefereeAccountId]) REFERENCES [Accounts]([Id]),
-   FOREIGN KEY ([AssignedBy]) REFERENCES [Accounts]([Id]),
-   FOREIGN KEY ([CompetitionCategoryId]) REFERENCES [CompetitionCategories]([Id])
+   FOREIGN KEY ([RefereeAccountId]) REFERENCES [Account]([Id]),
+   FOREIGN KEY ([AssignedBy]) REFERENCES [Account]([Id]),
+   FOREIGN KEY ([CompetitionCategoryId]) REFERENCES [CompetitionCategory]([Id])
 )
 GO
 -- KoiProfiles table
-CREATE TABLE [dbo].[KoiProfiles](
+CREATE TABLE [dbo].[KoiProfile](
     [Id] UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     [OwnerId] UNIQUEIDENTIFIER NOT NULL,
     [VarietyId] UNIQUEIDENTIFIER NOT NULL,
@@ -124,13 +124,13 @@ CREATE TABLE [dbo].[KoiProfiles](
     [IsPublic] bit DEFAULT 0,
     [CreatedAt] datetime NOT NULL,
     [UpdatedAt] datetime NULL,
-    FOREIGN KEY ([OwnerId]) REFERENCES [Accounts]([Id]),
-    FOREIGN KEY ([VarietyId]) REFERENCES [Varieties]([Id])
+    FOREIGN KEY ([OwnerId]) REFERENCES [Account]([Id]),
+    FOREIGN KEY ([VarietyId]) REFERENCES [Variety]([Id])
 )
 GO
 
 -- Awards table
-CREATE TABLE [dbo].[Awards](
+CREATE TABLE [dbo].[Award](
     [Id] UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     [CompetitionCategoriesId] UNIQUEIDENTIFIER NOT NULL,
     [Name] nvarchar(100) NOT NULL,
@@ -139,12 +139,12 @@ CREATE TABLE [dbo].[Awards](
     [Description] nvarchar(max) NULL,
     [CreatedAt] datetime NOT NULL,
     [UpdatedAt] datetime NULL,
-    FOREIGN KEY ([CompetitionCategoriesId]) REFERENCES [CompetitionCategories]([Id])
+    FOREIGN KEY ([CompetitionCategoriesId]) REFERENCES [CompetitionCategory]([Id])
 )
 GO
 
 -- Rounds table
-CREATE TABLE [dbo].[Rounds](
+CREATE TABLE [dbo].[Round](
     [Id] UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     [CompetitionCategoriesId] UNIQUEIDENTIFIER NULL,
     [Name] nvarchar(50) NULL,
@@ -156,7 +156,7 @@ CREATE TABLE [dbo].[Rounds](
     [Status] varchar(20) NULL,
     [CreatedAt] datetime NOT NULL,
     [UpdatedAt] datetime NULL,
-    FOREIGN KEY ([CompetitionCategoriesId]) REFERENCES [CompetitionCategories]([Id])
+    FOREIGN KEY ([CompetitionCategoriesId]) REFERENCES [CompetitionCategory]([Id])
 )
 GO
 
@@ -171,7 +171,7 @@ CREATE TABLE [dbo].[Criteria](
 )
 GO
 -- CriteriaCompetitionCategories table
-CREATE TABLE [dbo].[CriteriaCompetitionCategories](
+CREATE TABLE [dbo].[CriteriaCompetitionCategory](
     [Id] UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     [CompetitionCategoryId] UNIQUEIDENTIFIER NOT NULL,
     [CriteriaId] UNIQUEIDENTIFIER NOT NULL,
@@ -180,7 +180,7 @@ CREATE TABLE [dbo].[CriteriaCompetitionCategories](
     [Order] int NULL,
     [CreatedAt] datetime NOT NULL,
     [UpdatedAt] datetime NULL,
-    FOREIGN KEY ([CompetitionCategoryId]) REFERENCES [CompetitionCategories]([Id]),
+    FOREIGN KEY ([CompetitionCategoryId]) REFERENCES [CompetitionCategory]([Id]),
     FOREIGN KEY ([CriteriaId]) REFERENCES [Criteria]([Id])
                                                   
 )
@@ -189,7 +189,7 @@ GO
 
 
 -- Registrations table
-CREATE TABLE [dbo].[Registrations](
+CREATE TABLE [dbo].[Registration](
     [Id] UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     [KoiShowId] UNIQUEIDENTIFIER NOT NULL,
     [KoiProfileId] UNIQUEIDENTIFIER NOT NULL,
@@ -197,24 +197,31 @@ CREATE TABLE [dbo].[Registrations](
     [RegisterName] nvarchar(100) NOT NULL,
     [KoiSize] decimal(5,2) NOT NULL,
     [KoiAge] int NOT NULL,
-    [CompetitionCategoryId] UNIQUEIDENTIFIER NULL,
+    [CompetitionCategoryId] UNIQUEIDENTIFIER NOT NULL,
     [AccountId] UNIQUEIDENTIFIER NOT NULL,
     [RegistrationFee] decimal(18,2) NOT NULL,
+    [Rank] int NULL,
     [Status] varchar(20) NULL,
     [QRCodeData] varchar(255) NULL,
     [Notes] nvarchar(max) NULL,
     [ApprovedAt] datetime NULL,
+    [CheckInExpiredDate] datetime NULL,
+    [IsCheckedIn] BIT NOT NULL DEFAULT '0',
+    [CheckInTime] datetime NULL,
+    [CheckInLocation] nvarchar(100) NULL,
+    [CheckedInBy] UNIQUEIDENTIFIER NULL,
     [CreatedAt] datetime NOT NULL,
     [UpdatedAt] datetime NULL,
-    FOREIGN KEY ([AccountId]) REFERENCES [Accounts]([Id]),
-    FOREIGN KEY ([KoiShowId]) REFERENCES [KoiShows]([Id]),
-    FOREIGN KEY ([KoiProfileId]) REFERENCES [KoiProfiles]([Id]),
-    FOREIGN KEY ([CompetitionCategoryId]) REFERENCES [CompetitionCategories]([Id])
+    FOREIGN KEY ([AccountId]) REFERENCES [Account]([Id]),
+    FOREIGN KEY ([KoiShowId]) REFERENCES [KoiShow]([Id]),
+    FOREIGN KEY ([KoiProfileId]) REFERENCES [KoiProfile]([Id]),
+    FOREIGN KEY ([CompetitionCategoryId]) REFERENCES [CompetitionCategory]([Id]),
+    FOREIGN KEY ([CheckedInBy]) REFERENCES [Account]([Id])
 )
 GO
 
 -- Tanks table
-CREATE TABLE [dbo].[Tanks](
+CREATE TABLE [dbo].[Tank](
   [Id] UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
   [KoiShowId] UNIQUEIDENTIFIER NOT NULL,
   [Name] nvarchar(100) NOT NULL,
@@ -228,12 +235,12 @@ CREATE TABLE [dbo].[Tanks](
   [CreatedBy] UNIQUEIDENTIFIER NOT NULL,
   [CreatedAt] datetime NOT NULL,
   [UpdatedAt] datetime NULL,
-  FOREIGN KEY ([KoiShowId]) REFERENCES [KoiShows]([Id]),
+  FOREIGN KEY ([KoiShowId]) REFERENCES [KoiShow]([Id]),
   FOREIGN KEY ([CreatedBy]) REFERENCES [ShowStaff]([Id]),
 )
 GO
 -- RegistrationRounds table
-CREATE TABLE [dbo].[RegistrationRounds](
+CREATE TABLE [dbo].[RegistrationRound](
   [Id] UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
   [RegistrationId] UNIQUEIDENTIFIER NOT NULL,
   [RoundId] UNIQUEIDENTIFIER NOT NULL,
@@ -244,15 +251,15 @@ CREATE TABLE [dbo].[RegistrationRounds](
   [Notes] nvarchar(max) NULL,
   [CreatedAt] datetime NOT NULL,
   [UpdatedAt] datetime NULL,
-  FOREIGN KEY ([RegistrationId]) REFERENCES [Registrations]([Id]),
-  FOREIGN KEY ([RoundId]) REFERENCES [Rounds]([Id]),
-  FOREIGN KEY ([TankId]) REFERENCES [Tanks]([Id]),
+  FOREIGN KEY ([RegistrationId]) REFERENCES [Registration]([Id]),
+  FOREIGN KEY ([RoundId]) REFERENCES [Round]([Id]),
+  FOREIGN KEY ([TankId]) REFERENCES [Tank]([Id]),
 )
 GO
 
 
 -- ScoreDetails table
-CREATE TABLE [dbo].[ScoreDetails](
+CREATE TABLE [dbo].[ScoreDetail](
     [Id] UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     [RefereeAccountId] UNIQUEIDENTIFIER NOT NULL,
     [RegistrationRoundId] UNIQUEIDENTIFIER NOT NULL,
@@ -262,12 +269,12 @@ CREATE TABLE [dbo].[ScoreDetails](
     [Comments] nvarchar(max) NULL,
     [CreatedAt] datetime NOT NULL,
     [UpdatedAt] datetime NULL,
-    FOREIGN KEY ([RegistrationRoundId]) REFERENCES [RegistrationRounds]([Id]),
-    FOREIGN KEY ([RefereeAccountId]) REFERENCES [RefereeAssignments]([Id]),
+    FOREIGN KEY ([RegistrationRoundId]) REFERENCES [RegistrationRound]([Id]),
+    FOREIGN KEY ([RefereeAccountId]) REFERENCES [Account]([Id]),
 )
 GO
 -- ErrorTypes table
-CREATE TABLE [dbo].[ErrorTypes] (
+CREATE TABLE [dbo].[ErrorType] (
     [Id] UNIQUEIDENTIFIER DEFAULT NEWID() PRIMARY KEY,
     [CriteriaId]  UNIQUEIDENTIFIER NOT NULL,
     [Name] NVARCHAR(255) NOT NULL,
@@ -277,19 +284,18 @@ CREATE TABLE [dbo].[ErrorTypes] (
 )
 GO
 -- ScoreDetailErrors table
-CREATE TABLE [dbo].[ScoreDetailErrors] (
+CREATE TABLE [dbo].[ScoreDetailError] (
    [Id] UNIQUEIDENTIFIER DEFAULT NEWID() PRIMARY KEY,
    [ScoreDetailId]  UNIQUEIDENTIFIER NOT NULL,
    [ErrorTypeId]  UNIQUEIDENTIFIER NOT NULL,
    [Severity]  NVARCHAR(20) NOT NULL,
-   [CreatedAt] [datetime] NOT NULL,
    [PointMinus] decimal(5,2) NOT NULL,
-   FOREIGN KEY ([ScoreDetailId]) REFERENCES [ScoreDetails]([Id]),
-   FOREIGN KEY ([ErrorTypeId]) REFERENCES [ErrorTypes]([Id])
+   FOREIGN KEY ([ScoreDetailId]) REFERENCES [ScoreDetail]([Id]),
+   FOREIGN KEY ([ErrorTypeId]) REFERENCES [ErrorType]([Id])
 )
 GO
 -- RoundResults table
-CREATE TABLE [dbo].[RoundResults](
+CREATE TABLE [dbo].[RoundResult](
     [Id] UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     [RegistrationRoundsId] UNIQUEIDENTIFIER NOT NULL,
     [TotalScore] decimal(5,2) NOT NULL,
@@ -298,105 +304,99 @@ CREATE TABLE [dbo].[RoundResults](
     [Status] nvarchar(20) NULL,
     [CreatedAt] datetime NOT NULL,
     [UpdatedAt] datetime NULL,
-    FOREIGN KEY ([RegistrationRoundsId]) REFERENCES [RegistrationRounds]([Id]),
+    FOREIGN KEY ([RegistrationRoundsId]) REFERENCES [RegistrationRound]([Id]),
 )
 GO
 
 
-
-
--- PaymentTypes table
-CREATE TABLE [dbo].[PaymentTypes](
-    [Id] UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
-    [Name] nvarchar(255) NOT NULL,
-    [Description] nvarchar(1000) NULL
-)
-GO
 
 -- TicketType table
-CREATE TABLE [dbo].[TicketTypes](
+CREATE TABLE [dbo].[TicketType](
     [Id] UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     [KoiShowId] UNIQUEIDENTIFIER NOT NULL,
-    [TicketType] nvarchar(50) NOT NULL,
+    [Name] nvarchar(50) NOT NULL,
     [Price] decimal(10,2) NOT NULL,
     [AvailableQuantity] int NOT NULL,
-    FOREIGN KEY ([KoiShowId]) REFERENCES [KoiShows]([Id])
+    FOREIGN KEY ([KoiShowId]) REFERENCES [KoiShow]([Id])
 )
 GO
 
 
 -- TicketOrders table
-CREATE TABLE [dbo].[TicketOrders](
+CREATE TABLE [dbo].[TicketOrder](
     [Id] UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     [FullName] nvarchar(100) NOT NULL,
     [Email] varchar(100) NOT NULL,
     [AccountId] UNIQUEIDENTIFIER NOT NULL,
-    [PaymentTypeId] UNIQUEIDENTIFIER NULL,
     [OrderDate] datetime NOT NULL DEFAULT GETDATE(),
+    [TransactionCode] NVARCHAR(50) NOT NULL UNIQUE ,
     [TotalAmount] decimal(18,2) NOT NULL,
     [PaymentMethod] nvarchar(50) NULL,
     [Status] nvarchar(50) NULL,
     [Notes] nvarchar(max) NULL,
-    FOREIGN KEY ([AccountId]) REFERENCES [Accounts]([Id]),
-    FOREIGN KEY ([PaymentTypeId]) REFERENCES [PaymentTypes]([Id])
+    FOREIGN KEY ([AccountId]) REFERENCES [Account]([Id]),
 )
 GO
 
 -- TicketOrderDetails table
-CREATE TABLE [dbo].[TicketOrderDetails](
+CREATE TABLE [dbo].[TicketOrderDetail](
     [Id] UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     [TicketOrderId] UNIQUEIDENTIFIER NOT NULL,
     [TicketTypeId] UNIQUEIDENTIFIER NOT NULL,
     [Quantity] int NOT NULL,
     [UnitPrice] decimal(18,2) NOT NULL,
-    [Amount] decimal(18,2) NOT NULL,
-    FOREIGN KEY ([TicketOrderId]) REFERENCES [TicketOrders]([Id]),
-    FOREIGN KEY ([TicketTypeId]) REFERENCES [TicketTypes]([Id])
+    FOREIGN KEY ([TicketOrderId]) REFERENCES [TicketOrder]([Id]),
+    FOREIGN KEY ([TicketTypeId]) REFERENCES [TicketType]([Id])
 )
 GO
 
 -- Tickets table
-CREATE TABLE [dbo].[Tickets](
+CREATE TABLE [dbo].[Ticket](
     [Id] UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     [TicketOrderDetailId] UNIQUEIDENTIFIER NOT NULL,
     [QRCodeData] varchar(255) NULL,
     [ExpiredDate] datetime NOT NULL,
-    [IsUsed] BIT NOT NULL DEFAULT '0',
-    FOREIGN KEY ([TicketOrderDetailId]) REFERENCES [TicketOrderDetails]([Id])
+    [IsCheckedIn] BIT NOT NULL DEFAULT '0',
+    [CheckInTime] datetime NULL,
+    [CheckInLocation] nvarchar(100) NULL,
+    [CheckedInBy] UNIQUEIDENTIFIER NULL,
+    [Status] varchar(20) NULL,
+    FOREIGN KEY ([TicketOrderDetailId]) REFERENCES [TicketOrderDetail]([Id]),
+    FOREIGN KEY ([CheckedInBy]) REFERENCES [Account]([Id])
 )
 GO
 
 -- Notifications table
-CREATE TABLE [dbo].[Notifications](
+CREATE TABLE [dbo].[Notification](
     [Id] UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     [AccountId] UNIQUEIDENTIFIER NULL,
     [Content] nvarchar(max) NOT NULL,
     [SentDate] datetime NOT NULL DEFAULT GETDATE(),
-    FOREIGN KEY ([AccountId]) REFERENCES [Accounts]([Id])
+    FOREIGN KEY ([AccountId]) REFERENCES [Account]([Id])
 )
 GO
 
 -- Feedbacks table
-CREATE TABLE [dbo].[Feedbacks](
+CREATE TABLE [dbo].[Feedback](
     [Id] UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     [AccountId] UNIQUEIDENTIFIER NOT NULL,
     [KoiShowId] UNIQUEIDENTIFIER NOT NULL,
     [Content] nvarchar(max) NOT NULL,
     [CreatedAt] datetime NOT NULL,
     [UpdatedAt] datetime NULL,
-    FOREIGN KEY ([AccountId]) REFERENCES [Accounts]([Id]),
-    FOREIGN KEY ([KoiShowId]) REFERENCES [KoiShows]([Id])
+    FOREIGN KEY ([AccountId]) REFERENCES [Account]([Id]),
+    FOREIGN KEY ([KoiShowId]) REFERENCES [KoiShow]([Id])
 )
 GO
 
 -- Sponsors table
-CREATE TABLE [dbo].[Sponsors](
+CREATE TABLE [dbo].[Sponsor](
     [Id] UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     [Name] nvarchar(255) NOT NULL,
     [LogoUrl] nvarchar(500) NULL,
     [InvestMoney] decimal(18,2) NOT NULL,
     [KoiShowId] UNIQUEIDENTIFIER NOT NULL,
-    FOREIGN KEY ([KoiShowId]) REFERENCES [KoiShows]([Id])
+    FOREIGN KEY ([KoiShowId]) REFERENCES [KoiShow]([Id])
 )
 GO
 
@@ -409,36 +409,36 @@ CREATE TABLE [dbo].[ShowStatus](
     [StartDate] datetime NOT NULL,
     [EndDate] datetime NOT NULL,
     [IsActive] bit NOT NULL DEFAULT 0,
-    FOREIGN KEY ([KoiShowId]) REFERENCES [KoiShows]([Id])
+    FOREIGN KEY ([KoiShowId]) REFERENCES [KoiShow]([Id])
 )
 GO
 
 -- Livestreams table
-CREATE TABLE [dbo].[Livestreams](
+CREATE TABLE [dbo].[Livestream](
     [Id] UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     [KoiShowId] UNIQUEIDENTIFIER NOT NULL,
     [StartTime] datetime NOT NULL,
     [EndTime] datetime NULL,
     [StreamUrl] nvarchar(500) NOT NULL,
-    FOREIGN KEY ([KoiShowId]) REFERENCES [KoiShows]([Id])
+    FOREIGN KEY ([KoiShowId]) REFERENCES [KoiShow]([Id])
 )
 GO
 
 -- Votes table
-CREATE TABLE [dbo].[Votes](
+CREATE TABLE [dbo].[Vote](
     [Id] UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     [AccountId] UNIQUEIDENTIFIER NOT NULL,
     [RegistrationId] UNIQUEIDENTIFIER NOT NULL,
     [Prediction] nvarchar(max) NULL,
     [CreatedAt] datetime NOT NULL,
     [UpdatedAt] datetime NULL,
-    FOREIGN KEY ([AccountId]) REFERENCES [Accounts]([Id]),
-    FOREIGN KEY ([RegistrationId]) REFERENCES [Registrations]([Id])
+    FOREIGN KEY ([AccountId]) REFERENCES [Account]([Id]),
+    FOREIGN KEY ([RegistrationId]) REFERENCES [Registration]([Id])
 )
 GO
 
 -- BlogCategory table
-CREATE TABLE [dbo].[BlogCategories](
+CREATE TABLE [dbo].[BlogCategory](
     [Id] UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     [Name] nvarchar(100) NOT NULL,
     [Description] nvarchar(500) NULL
@@ -455,65 +455,46 @@ CREATE TABLE [dbo].[BlogsNews](
     [ImgURL] nvarchar(255) NULL,
     [CreatedAt] datetime NOT NULL,
     [UpdatedAt] datetime NULL,
-	FOREIGN KEY ([AccountId]) REFERENCES [Accounts]([Id]),
-	FOREIGN KEY ([BlogCategoryId]) REFERENCES [BlogCategories]([Id]),
+	FOREIGN KEY ([AccountId]) REFERENCES [Account]([Id]),
+	FOREIGN KEY ([BlogCategoryId]) REFERENCES [BlogCategory]([Id]),
 )
 GO
 -- RegistrationPayments table
-CREATE TABLE [dbo].[RegistrationPayments] (
+CREATE TABLE [dbo].[RegistrationPayment] (
       [Id] UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
       [RegistrationId] UNIQUEIDENTIFIER NOT NULL UNIQUE,
-      [PaymentTypeId] UNIQUEIDENTIFIER NULL,
       [QRCodeData] varchar(255) NULL,
       [PaidAmount] DECIMAL(18,2) NOT NULL,
       [PaymentDate] DATETIME NOT NULL DEFAULT GETDATE(),
+      [TransactionCode] NVARCHAR(50) NOT NULL UNIQUE ,
       [PaymentMethod] NVARCHAR(50) NOT NULL,
       [Status] VARCHAR(20) NOT NULL,
-      FOREIGN KEY ([RegistrationId]) REFERENCES [Registrations]([Id]),
-      FOREIGN KEY ([PaymentTypeId]) REFERENCES [PaymentTypes]([Id])
+      FOREIGN KEY ([RegistrationId]) REFERENCES [Registration]([Id])
+     
 )
 GO
 
--- CheckInLogs table
-CREATE TABLE [dbo].[CheckInLogs](
-    [Id] UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
-    [TicketId] UNIQUEIDENTIFIER NULL UNIQUE ,
-    [RegistrationPaymentId] UNIQUEIDENTIFIER NULL UNIQUE,
-    [CheckInTime] datetime DEFAULT GETDATE(),
-    [CheckInLocation] nvarchar(100) NULL,
-    [CheckedInBy] UNIQUEIDENTIFIER NULL,
-    [Status] varchar(20) NULL,
-    [Notes] nvarchar(255) NULL,
-    FOREIGN KEY ([TicketId]) REFERENCES [Tickets]([Id]),
-    FOREIGN KEY ([RegistrationPaymentId]) REFERENCES [RegistrationPayments]([Id]),
-    FOREIGN KEY ([CheckedInBy]) REFERENCES [ShowStaff]([Id]),
-    CONSTRAINT CHK_CheckInLog_ForeignKey CHECK (
-        (TicketId IS NOT NULL AND RegistrationPaymentId IS NULL)
-            OR (TicketId IS NULL AND RegistrationPaymentId IS NOT NULL)
-        )
-)
-GO
 -- CheckoutLogs table
-CREATE TABLE [dbo].[CheckOutLogs](
+CREATE TABLE [dbo].[CheckOutLog](
     [Id] UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     [RegistrationId] UNIQUEIDENTIFIER NULL UNIQUE,
     [ImgCheckOut] nvarchar(255) NOT NULL,
     [CheckOutTime] datetime DEFAULT GETDATE(),
     [CheckedOutBy] UNIQUEIDENTIFIER NULL,
     [Notes] nvarchar(255) NULL,
-    FOREIGN KEY ([RegistrationId]) REFERENCES [Registrations]([Id]),
+    FOREIGN KEY ([RegistrationId]) REFERENCES [Registration]([Id]),
     FOREIGN KEY ([CheckedOutBy]) REFERENCES [ShowStaff]([Id]),
 )
 GO
 -- ShowRules table
-CREATE TABLE [dbo].[ShowRules](
+CREATE TABLE [dbo].[ShowRule](
     [Id] UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     [KoiShowId] UNIQUEIDENTIFIER NOT NULL,
     [Title] [nvarchar](200) NOT NULL,
     [Content] [nvarchar](max) NOT NULL,
     [CreatedAt] [datetime] NOT NULL,
     [UpdatedAt] [datetime] NULL,
-	FOREIGN KEY ([KoiShowId]) REFERENCES [KoiShows]([Id])
+	FOREIGN KEY ([KoiShowId]) REFERENCES [KoiShow]([Id])
 )
 GO
 -- Media table
@@ -521,8 +502,8 @@ CREATE TABLE [dbo].[KoiMedia] (
    [Id] UNIQUEIDENTIFIER DEFAULT NEWID() PRIMARY KEY,
    [MediaUrl] NVARCHAR(MAX) NOT NULL, -- URL của hình ảnh hoặc video
    [MediaType] NVARCHAR(10) NOT NULL, -- Loại phương tiện: 'Image' hoặc 'Video'
-   [KoiProfileId] UNIQUEIDENTIFIER NULL FOREIGN KEY REFERENCES KoiProfiles(Id),
-   [RegistrationId] UNIQUEIDENTIFIER NULL FOREIGN KEY REFERENCES Registrations(Id),
+   [KoiProfileId] UNIQUEIDENTIFIER NULL FOREIGN KEY REFERENCES KoiProfile(Id),
+   [RegistrationId] UNIQUEIDENTIFIER NULL FOREIGN KEY REFERENCES Registration(Id),
    CONSTRAINT CHK_MediaOf_ForeignKey CHECK (
        (KoiProfileId IS NOT NULL AND RegistrationId IS NULL)
            OR (KoiProfileId IS NULL AND RegistrationId IS NOT NULL)
