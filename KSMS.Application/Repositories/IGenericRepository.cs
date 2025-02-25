@@ -48,7 +48,8 @@ namespace KSMS.Application.Repositories
             int page = 1,
             int size = 10);
 
-
+        Task<int> CountAsync(
+       Expression<Func<T, bool>> predicate = null!);
         Task<T> InsertAsync(T entity);
 
         Task InsertRangeAsync(IEnumerable<T> entities);

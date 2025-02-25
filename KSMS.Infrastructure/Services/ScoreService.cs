@@ -1,4 +1,4 @@
-﻿using KSMS.Application.Repositories;
+﻿    using KSMS.Application.Repositories;
 using KSMS.Application.Services;
 using KSMS.Domain.Dtos.Requests.Score;
 using KSMS.Domain.Dtos.Responses;
@@ -52,16 +52,27 @@ namespace KSMS.Infrastructure.Services
             var scoreRepository = _unitOfWork.GetRepository<ScoreDetail>();
             var scoreDetailErrorRepository = _unitOfWork.GetRepository<ScoreDetailError>();
             var roundresultRepository = _unitOfWork.GetRepository<RoundResult>();
+            var refereeAssignmentRepository = _unitOfWork.GetRepository<RefereeAssignment>();
 
+            // Tìm RefereeAssignment bằng RefereeAccountId
             var referee = await _unitOfWork.GetRepository<RefereeAssignment>()
-                            .SingleOrDefaultAsync(r => r.Id == request.RefereeAccountId, null, null);
+                            .SingleOrDefaultAsync(r => r.RefereeAccountId == request.RefereeAccountId ,null,null);
 
-
-            if (referee == null )
+            if (referee == null)
             {
                 throw new UnauthorizedException("Only referees can create scores.");
             }
 
+            // Đếm số lượng RefereeAssignmentId
+            var refereeAssignmentsCount = await refereeAssignmentRepository
+                .CountAsync(r => r.RefereeAccountId == request.RefereeAccountId);
+
+            if (refereeAssignmentsCount == 0)
+            {
+                throw new NotFoundException($"No referee assignments found for RefereeAccountId '{request.RefereeAccountId}'.");
+            }
+
+            // Lấy thông tin RegistrationRound
             var registrationRound = await _unitOfWork.GetRepository<RegistrationRound>()
                 .SingleOrDefaultAsync(r => r.Id == request.RegistrationRoundId, null, null);
 
@@ -70,33 +81,32 @@ namespace KSMS.Infrastructure.Services
                 throw new NotFoundException($"Registration round with ID '{request.RegistrationRoundId}' not found.");
             }
 
-            
             var score = request.Adapt<ScoreDetail>();
             score.Id = Guid.NewGuid();
             await scoreRepository.InsertAsync(score);
-            var scoreid = score.Id;
-            if (request.CreateScoreDetailErrors.Any())
+
+            var scoreId = score.Id;
+            if (request.CreateScoreDetailErrors != null && request.CreateScoreDetailErrors.Any())
             {
                 foreach (var error in request.CreateScoreDetailErrors)
                 {
                     var scoreDetailError = new ScoreDetailError
                     {
-                        Id = Guid.NewGuid(),   
-                        ScoreDetailId = scoreid,   
+                        Id = Guid.NewGuid(),
+                        ScoreDetailId = scoreId,
                         ErrorTypeId = error.ErrorTypeId,
                         Severity = error.Severity,
                         PointMinus = error.PointMinus,
                         CreatedAt = DateTime.UtcNow
                     };
 
-                    await scoreDetailErrorRepository.InsertAsync(scoreDetailError);  // Lưu ScoreDetailError
+                    await scoreDetailErrorRepository.InsertAsync(scoreDetailError);
                 }
             }
 
-            // Tính toán tổng điểm
-            var totalScore = 100 - score.TotalPointMinus;
+           
+            var totalScore = (100 - score.TotalPointMinus) / refereeAssignmentsCount;
 
-            // Tạo và lưu RoundResult
             var roundResult = new RoundResult
             {
                 RegistrationRoundsId = request.RegistrationRoundId,
@@ -106,16 +116,15 @@ namespace KSMS.Infrastructure.Services
 
             await roundresultRepository.InsertAsync(roundResult);
 
-           
+          
             await _unitOfWork.CommitAsync();
 
-             
+           
             await _scoreHub.Clients.All.SendAsync("ReceiveUpdatedScores");
 
            
             return score.Adapt<ScoreDetailResponse>();
         }
-
 
     }
 }

@@ -147,5 +147,11 @@ namespace KSMS.Infrastructure.Repositories
             _dbSet.RemoveRange(entities);
         }
 
+        public async Task<int> CountAsync(Expression<Func<T, bool>> predicate = null)
+        {
+            return await(predicate == null
+             ? _dbSet.CountAsync()
+             : _dbSet.CountAsync(predicate));
+        }
     }
 }
