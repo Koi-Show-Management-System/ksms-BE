@@ -18,7 +18,7 @@ public partial class ScoreDetail : BaseEntity
 
     public string? Comments { get; set; }
 
-    public virtual RefereeAssignment RefereeAccount { get; set; } = null!;
+    public virtual Account RefereeAccount { get; set; } = null!;
 
     public virtual RegistrationRound RegistrationRound { get; set; } = null!;
 

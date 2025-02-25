@@ -270,6 +270,7 @@ namespace KSMS.Infrastructure.Services
 
         public async Task<IEnumerable<KoiShowResponse>> GetAllShowsAsync()
         {
+            
             var showRepository = _unitOfWork.GetRepository<KoiShow>();
 
             var shows = await showRepository.GetListAsync(
@@ -624,7 +625,7 @@ namespace KSMS.Infrastructure.Services
                     var ticket = await ticketRepository.SingleOrDefaultAsync(t => t.Id == ticketRequest.Id && t.KoiShowId == id, null, null);
                     if (ticket != null)
                     {
-                        ticket.TicketType1 = ticketRequest.TicketType1;
+                        ticket.Name = ticketRequest.Name;
                         ticket.Price = ticketRequest.Price;
                         ticket.AvailableQuantity = ticketRequest.AvailableQuantity;
                          ticketRepository.UpdateAsync(ticket);
@@ -634,7 +635,7 @@ namespace KSMS.Infrastructure.Services
                         var newTicket = new TicketType
                         {
                             KoiShowId = id,
-                            TicketType1 = ticketRequest.TicketType1,
+                            Name = ticketRequest.Name,
                             Price = ticketRequest.Price,
                             AvailableQuantity = ticketRequest.AvailableQuantity
                         };

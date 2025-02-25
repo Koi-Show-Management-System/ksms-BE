@@ -19,8 +19,6 @@ public partial class ShowStaff
 
     public virtual Account AssignedByNavigation { get; set; } = null!;
 
-    public virtual ICollection<CheckInLog> CheckInLogs { get; set; } = new List<CheckInLog>();
-
     public virtual ICollection<CheckOutLog> CheckOutLogs { get; set; } = new List<CheckOutLog>();
 
     public virtual KoiShow KoiShow { get; set; } = null!;

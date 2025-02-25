@@ -12,7 +12,7 @@ namespace KSMS.Domain.Dtos.Requests.Ticket
 
         public Guid KoiShowId { get; set; }
 
-        public string TicketType1 { get; set; } = null!;
+        public string Name { get; set; } = null!;
 
         public decimal Price { get; set; }
 
