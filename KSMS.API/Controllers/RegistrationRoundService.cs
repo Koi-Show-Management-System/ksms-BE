@@ -21,7 +21,7 @@ namespace KSMS.API.Controllers
             _registrationRoundService = registrationRoundService;
         }
         [HttpPost("create")]
-        public async Task<ActionResult<ApiResponse<object>>> CreateRegistrationRound([FromBody] RegistrationRoundRequest request)
+        public async Task<ActionResult<ApiResponse<object>>> CreateRegistrationRound([FromBody] CreateRegistrationRoundRequest request)
         {
             var newRegistrationRound = await _registrationRoundService.CreateRegistrationRoundAsync(request);
             return StatusCode(201, ApiResponse<object>.Created(newRegistrationRound, "Registration round created successfully"));

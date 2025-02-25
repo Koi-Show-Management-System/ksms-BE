@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace KSMS.Domain.Dtos.Requests.Tank
 {
-    public class TankRequest
+    public class CreateTankRequest
     {
         public Guid KoiShowId { get; set; }
         public string Name { get; set; } = null!;

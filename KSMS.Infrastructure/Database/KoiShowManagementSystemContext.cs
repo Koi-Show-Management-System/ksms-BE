@@ -86,8 +86,6 @@ public partial class KoiShowManagementSystemContext : DbContext
 
     public virtual DbSet<Vote> Votes { get; set; }
 
-
-
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Account>(entity =>

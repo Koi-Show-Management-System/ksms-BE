@@ -26,237 +26,247 @@ namespace KSMS.Infrastructure.Services
         public ShowService(IUnitOfWork<KoiShowManagementSystemContext> unitOfWork, ILogger<ShowService> logger, IHttpContextAccessor httpContextAccessor) : base(unitOfWork, logger, httpContextAccessor)
         {
         }
-        public async Task<KoiShowResponse> CreateShowAsync(CreateShowRequest createShowRequest)
-        {
+            public async Task<KoiShowResponse> CreateShowAsync(CreateShowRequest createShowRequest)
+            {
            
-            var showRepository = _unitOfWork.GetRepository<KoiShow>();
-            var categoryRepository = _unitOfWork.GetRepository<CompetitionCategory>();
-            var sponsorRepository = _unitOfWork.GetRepository<Sponsor>();
-            var showStaffRepository = _unitOfWork.GetRepository<ShowStaff>();
-            var showRuleRepository = _unitOfWork.GetRepository<ShowRule>();
-            var showStatusRepository = _unitOfWork.GetRepository<ShowStatus>();
-            var ticketRepository = _unitOfWork.GetRepository<Ticket>();
-            var roundRepository = _unitOfWork.GetRepository<Round>();
-            var criteriaGroupRepository = _unitOfWork.GetRepository<CriteriaCompetitionCategory>();
-            var criteriaRepository = _unitOfWork.GetRepository<Criterion>();
-            var refereeAssignmentRepository = _unitOfWork.GetRepository<RefereeAssignment>();
-            var accountRepository = _unitOfWork.GetRepository<Account>();
-            var categoryVarietyRepository = _unitOfWork.GetRepository<CategoryVariety>();
-            var errorTypeRepository = _unitOfWork.GetRepository<ErrorType>();
-            var scoreDetailErrorRepository = _unitOfWork.GetRepository<ScoreDetailError>();
-            var awardRepository = _unitOfWork.GetRepository<Award>();
-            var varietyRepository = _unitOfWork.GetRepository<Variety>();
+                var showRepository = _unitOfWork.GetRepository<KoiShow>();
+                var categoryRepository = _unitOfWork.GetRepository<CompetitionCategory>();
+                var sponsorRepository = _unitOfWork.GetRepository<Sponsor>();
+                var showStaffRepository = _unitOfWork.GetRepository<ShowStaff>();
+                var showRuleRepository = _unitOfWork.GetRepository<ShowRule>();
+                var showStatusRepository = _unitOfWork.GetRepository<ShowStatus>();
+                var ticketRepository = _unitOfWork.GetRepository<Ticket>();
+                var roundRepository = _unitOfWork.GetRepository<Round>();
+                var criteriaGroupRepository = _unitOfWork.GetRepository<CriteriaCompetitionCategory>();
+                var criteriaRepository = _unitOfWork.GetRepository<Criterion>();
+                var refereeAssignmentRepository = _unitOfWork.GetRepository<RefereeAssignment>();
+                var accountRepository = _unitOfWork.GetRepository<Account>();
+                var categoryVarietyRepository = _unitOfWork.GetRepository<CategoryVariety>();
+                var errorTypeRepository = _unitOfWork.GetRepository<ErrorType>();
+                var scoreDetailErrorRepository = _unitOfWork.GetRepository<ScoreDetailError>();
+                var awardRepository = _unitOfWork.GetRepository<Award>();
+                var varietyRepository = _unitOfWork.GetRepository<Variety>();
 
-            // Validate the input data
-            if (string.IsNullOrWhiteSpace(createShowRequest.Name))
-            {
-                throw new BadRequestException("Show name cannot be empty.");
-            }
-
-            if (createShowRequest.StartDate >= createShowRequest.EndDate)
-            {
-                throw new BadRequestException("Start date must be earlier than end date.");
-            }
-
-            // Create the Show entity
-            var newShow = createShowRequest.Adapt<KoiShow>();
-            newShow.CreatedAt = DateTime.UtcNow;
-
-            using var transaction = await _unitOfWork.BeginTransactionAsync();
-            try
-            {
-                // Save the Show
-                var createdShow = await showRepository.InsertAsync(newShow);
-                await _unitOfWork.CommitAsync();
-                var showId = createdShow.Id;
-
-                // Process Categories and related entities
-                if (createShowRequest.Categories != null && createShowRequest.Categories.Any())
+                // Validate the input data
+                if (string.IsNullOrWhiteSpace(createShowRequest.Name))
                 {
-                    foreach (var categoryRequest in createShowRequest.Categories)
-                    {
-                        // Create Category
-                        var category = categoryRequest.Adapt<CompetitionCategory>();
-                        category.KoiShowId = showId;
-                        var createdCategory = await categoryRepository.InsertAsync(category);
-                        await _unitOfWork.CommitAsync();
+                    throw new BadRequestException("Show name cannot be empty.");
+                }
 
-                        // Process CategoryVariety (CategoryVarietyRequest)
-                        if (categoryRequest.CategoryVarietys != null && categoryRequest.CategoryVarietys.Any())
+                if (createShowRequest.StartDate >= createShowRequest.EndDate)
+                {
+                    throw new BadRequestException("Start date must be earlier than end date.");
+                }
+
+                // Create the Show entity
+                var newShow = createShowRequest.Adapt<KoiShow>();
+                newShow.CreatedAt = DateTime.UtcNow;
+
+                using var transaction = await _unitOfWork.BeginTransactionAsync();
+                try
+                {
+                    // Save the Show
+                    var createdShow = await showRepository.InsertAsync(newShow);
+                    await _unitOfWork.CommitAsync();
+                    var showId = createdShow.Id;
+
+                    // Process Categories and related entities
+                    if (createShowRequest.Categories != null && createShowRequest.Categories.Any())
+                    {
+                        foreach (var categoryRequest in createShowRequest.Categories)
                         {
-                            foreach (var categoryVarietyRequest in categoryRequest.CategoryVarietys)
+                            // Create Category
+                            var category = categoryRequest.Adapt<CompetitionCategory>();
+                            category.KoiShowId = showId;
+                            var createdCategory = await categoryRepository.InsertAsync(category);
+                            await _unitOfWork.CommitAsync();
+
+                            // Process CategoryVariety (CategoryVarietyRequest)
+                            if (categoryRequest.CategoryVarietys != null && categoryRequest.CategoryVarietys.Any())
                             {
-                                // Ensure Variety exists or create a new one if not found
-                                var variety = await varietyRepository.SingleOrDefaultAsync(v => v.Id == categoryVarietyRequest.VarietyId, null, null);
-                                if (variety == null)
+                                foreach (var categoryVarietyRequest in categoryRequest.CategoryVarietys)
                                 {
-                                    // Variety doesn't exist, create a new Variety
-                                    variety = new Variety
+                                    // Ensure Variety exists or create a new one if not found
+                                    var variety = await varietyRepository.SingleOrDefaultAsync(v => v.Id == categoryVarietyRequest.VarietyId, null, null);
+                                    if (variety == null)
                                     {
-                                        Id = categoryVarietyRequest.VarietyId,  // Set ID from request
-                                        Name = categoryVarietyRequest.Variety.Name,
-                                        Description = categoryVarietyRequest.Variety.Description
+                                        // Variety doesn't exist, create a new Variety
+                                        variety = new Variety
+                                        {
+                                            Id = Guid.NewGuid(),  // Set ID from request
+                                            Name = categoryVarietyRequest.Variety.Name,
+                                            Description = categoryVarietyRequest.Variety.Description
+                                        };
+
+                                        // Add new Variety to the database
+                                        await varietyRepository.InsertAsync(variety);
+                                        await _unitOfWork.CommitAsync(); // Save to the database
+                                    }
+
+                                    // Create CategoryVariety entity
+                                    var categoryVariety = new CategoryVariety
+                                    {
+                                        CompetitionCategoryId = createdCategory.Id,
+                                        VarietyId = variety.Id // Use the newly created or existing VarietyId
                                     };
 
-                                    // Add new Variety to the database
-                                    await varietyRepository.InsertAsync(variety);
-                                    await _unitOfWork.CommitAsync(); // Save to the database
+                                    // Save CategoryVariety to database
+                                    await categoryVarietyRepository.InsertAsync(categoryVariety);
+                                    await _unitOfWork.CommitAsync();
                                 }
-
-                                // Create CategoryVariety entity
-                                var categoryVariety = new CategoryVariety
-                                {
-                                    CompetitionCategoryId = createdCategory.Id,
-                                    VarietyId = variety.Id // Use the newly created or existing VarietyId
-                                };
-
-                                // Save CategoryVariety to database
-                                await categoryVarietyRepository.InsertAsync(categoryVariety);
-                                await _unitOfWork.CommitAsync();
                             }
-                        }
 
                         // Process CriteriaGroups and Criterias for Category
                         if (categoryRequest.CriteriaGroups != null && categoryRequest.CriteriaGroups.Any())
                         {
+                            var criteriaIds = categoryRequest.CriteriaGroups.Select(g => g.CriteriaId).ToList();
+                            var existingCriteria = await criteriaRepository.GetListAsync(c => criteriaIds.Contains(c.Id),null,null);
+
                             foreach (var groupRequest in categoryRequest.CriteriaGroups)
                             {
                                 var group = groupRequest.Adapt<CriteriaCompetitionCategory>();
                                 group.CompetitionCategoryId = createdCategory.Id;
 
                                 // Ensure Criterion exists or create a new one if not found
-                                var criterion = await criteriaRepository.SingleOrDefaultAsync(c => c.Id == groupRequest.CriteriaId, null,null);
+                                var criterion = existingCriteria.FirstOrDefault(c => c.Id == groupRequest.CriteriaId);
                                 if (criterion == null)
                                 {
-                                    // Criterion doesn't exist, create a new Criterion
+                                    if (groupRequest.Criterias == null)
+                                    {
+                                        throw new BadRequestException($"Criteria details are missing for CriteriaId: {groupRequest.CriteriaId}");
+                                    }
+
                                     criterion = new Criterion
                                     {
-                                        Id = groupRequest.CriteriaId,  // Set ID from request
+                                        Id = Guid.NewGuid(),
                                         Name = groupRequest.Criterias.Name,
-                                        Description = groupRequest.Criterias.Description
+                                        Description = groupRequest.Criterias.Description,
+                                        ErrorTypes = groupRequest.Criterias.ErrorTypes?.Select(et => new ErrorType
+                                        {
+                                            Name = et.Name
+                                        }).ToList()
                                     };
 
-                                    // Add new Criterion to the database
                                     await criteriaRepository.InsertAsync(criterion);
-                                    await _unitOfWork.CommitAsync(); // Save to the database
+                                    existingCriteria.Add(criterion); // Cache it to avoid duplicate DB lookups
                                 }
 
                                 // Link CriteriaGroup to the created or existing Criterion
                                 group.CriteriaId = criterion.Id;
-
-                                // Save CriteriaGroup to database
                                 await criteriaGroupRepository.InsertAsync(group);
-                                await _unitOfWork.CommitAsync();
                             }
+
+                            await _unitOfWork.CommitAsync(); // Batch commit outside the loop
                         }
+
                         if (createShowRequest.ShowRules != null && createShowRequest.ShowRules.Any())
-                        {
-                            foreach (var ruleRequest in createShowRequest.ShowRules)
                             {
-                                var rule = ruleRequest.Adapt<ShowRule>();
-                                rule.KoiShowId = showId;
+                                foreach (var ruleRequest in createShowRequest.ShowRules)
+                                {
+                                    var rule = ruleRequest.Adapt<ShowRule>();
+                                    rule.KoiShowId = showId;
 
-                                // Save ShowRule to database
-                                await showRuleRepository.InsertAsync(rule);
-                                await _unitOfWork.CommitAsync();
+                                    // Save ShowRule to database
+                                    await showRuleRepository.InsertAsync(rule);
+                                    await _unitOfWork.CommitAsync();
+                                }
                             }
-                        }
 
-                        // Process ShowStaff for the Show
-                        if (createShowRequest.ShowStaffs != null && createShowRequest.ShowStaffs.Any())
-                        {
-                            foreach (var staffRequest in createShowRequest.ShowStaffs)
+                            // Process ShowStaff for the Show
+                            if (createShowRequest.ShowStaffs != null && createShowRequest.ShowStaffs.Any())
                             {
-                                var staff = staffRequest.Adapt<ShowStaff>();
-                                staff.KoiShowId = showId;
+                                foreach (var staffRequest in createShowRequest.ShowStaffs)
+                                {
+                                    var staff = staffRequest.Adapt<ShowStaff>();
+                                    staff.KoiShowId = showId;
 
-                                // Save ShowStaff to database
-                                await showStaffRepository.InsertAsync(staff);
-                                await _unitOfWork.CommitAsync();
+                                    // Save ShowStaff to database
+                                    await showStaffRepository.InsertAsync(staff);
+                                    await _unitOfWork.CommitAsync();
+                                }
                             }
-                        }
 
-                        // Process Sponsors for the Show
-                        if (createShowRequest.Sponsors != null && createShowRequest.Sponsors.Any())
-                        {
-                            foreach (var sponsorRequest in createShowRequest.Sponsors)
+                            // Process Sponsors for the Show
+                            if (createShowRequest.Sponsors != null && createShowRequest.Sponsors.Any())
                             {
-                                var sponsor = sponsorRequest.Adapt<Sponsor>();
-                                sponsor.KoiShowId = showId;
+                                foreach (var sponsorRequest in createShowRequest.Sponsors)
+                                {
+                                    var sponsor = sponsorRequest.Adapt<Sponsor>();
+                                    sponsor.KoiShowId = showId;
 
-                                // Save Sponsor to database
-                                await sponsorRepository.InsertAsync(sponsor);
-                                await _unitOfWork.CommitAsync();
+                                    // Save Sponsor to database
+                                    await sponsorRepository.InsertAsync(sponsor);
+                                    await _unitOfWork.CommitAsync();
+                                }
                             }
-                        }
-                        // Process Ticket Types (TicketTypeRequest) associated with the show
-                        if (createShowRequest.Tickettypes != null && createShowRequest.Tickettypes.Any())
-                        {
-                            foreach (var ticketTypeRequest in createShowRequest.Tickettypes)
+                            // Process Ticket Types (TicketTypeRequest) associated with the show
+                            if (createShowRequest.Tickettypes != null && createShowRequest.Tickettypes.Any())
                             {
-                                var ticketType = ticketTypeRequest.Adapt<TicketType>();
-                                ticketType.KoiShowId = showId;
+                                foreach (var ticketTypeRequest in createShowRequest.Tickettypes)
+                                {
+                                    var ticketType = ticketTypeRequest.Adapt<TicketType>();
+                                    ticketType.KoiShowId = showId;
 
-                                // Create TicketType and save it to the database
-                                await _unitOfWork.GetRepository<TicketType>().InsertAsync(ticketType);
-                                await _unitOfWork.CommitAsync();
+                                    // Create TicketType and save it to the database
+                                    await _unitOfWork.GetRepository<TicketType>().InsertAsync(ticketType);
+                                    await _unitOfWork.CommitAsync();
+                                }
                             }
-                        }
 
-                        // Process Rounds for Category
-                        if (categoryRequest.Rounds != null && categoryRequest.Rounds.Any())
-                        {
-                            foreach (var roundRequest in categoryRequest.Rounds)
+                            // Process Rounds for Category
+                            if (categoryRequest.Rounds != null && categoryRequest.Rounds.Any())
                             {
-                                var round = roundRequest.Adapt<Round>();
-                                round.CompetitionCategoriesId = createdCategory.Id;
-                                await roundRepository.InsertAsync(round);
+                                foreach (var roundRequest in categoryRequest.Rounds)
+                                {
+                                    var round = roundRequest.Adapt<Round>();
+                                    round.CompetitionCategoriesId = createdCategory.Id;
+                                    await roundRepository.InsertAsync(round);
+                                }
                             }
-                        }
 
-                        // Process Referee Assignments for Category
-                        if (categoryRequest.RefereeAssignments != null && categoryRequest.RefereeAssignments.Any())
-                        {
-                            foreach (var refereeAssignmentRequest in categoryRequest.RefereeAssignments)
+                            // Process Referee Assignments for Category
+                            if (categoryRequest.RefereeAssignments != null && categoryRequest.RefereeAssignments.Any())
                             {
-                                var refereeAssignment = refereeAssignmentRequest.Adapt<RefereeAssignment>();
-                                refereeAssignment.CompetitionCategoryId = createdCategory.Id; // Link RefereeAssignment with Category
+                                foreach (var refereeAssignmentRequest in categoryRequest.RefereeAssignments)
+                                {
+                                    var refereeAssignment = refereeAssignmentRequest.Adapt<RefereeAssignment>();
+                                    refereeAssignment.CompetitionCategoryId = createdCategory.Id; // Link RefereeAssignment with Category
 
-                                // Save RefereeAssignment to the database
-                                await refereeAssignmentRepository.InsertAsync(refereeAssignment);
-                                await _unitOfWork.CommitAsync();
+                                    // Save RefereeAssignment to the database
+                                    await refereeAssignmentRepository.InsertAsync(refereeAssignment);
+                                    await _unitOfWork.CommitAsync();
+                                }
                             }
-                        }
 
-                        // Process Awards for Category
-                        if (categoryRequest.Awards != null && categoryRequest.Awards.Any())
-                        {
-                            foreach (var awardRequest in categoryRequest.Awards)
+                            // Process Awards for Category
+                            if (categoryRequest.Awards != null && categoryRequest.Awards.Any())
                             {
-                                var award = awardRequest.Adapt<Award>();
-                                award.CompetitionCategoriesId = createdCategory.Id; // Link the award with the category
+                                foreach (var awardRequest in categoryRequest.Awards)
+                                {
+                                    var award = awardRequest.Adapt<Award>();
+                                    award.CompetitionCategoriesId = createdCategory.Id; // Link the award with the category
 
-                                // Save Award to the database
-                                await awardRepository.InsertAsync(award);
-                                await _unitOfWork.CommitAsync();
+                                    // Save Award to the database
+                                    await awardRepository.InsertAsync(award);
+                                    await _unitOfWork.CommitAsync();
+                                }
                             }
                         }
                     }
+
+                    // Commit the transaction
+                    await _unitOfWork.CommitAsync();
+                    await transaction.CommitAsync();
+
+                    // Return the created show response
+                    return createdShow.Adapt<KoiShowResponse>();
                 }
-
-                // Commit the transaction
-                await _unitOfWork.CommitAsync();
-                await transaction.CommitAsync();
-
-                // Return the created show response
-                return createdShow.Adapt<KoiShowResponse>();
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    throw new Exception("Failed to create show and related data.", ex);
+                }
             }
-            catch (Exception ex)
-            {
-                await transaction.RollbackAsync();
-                throw new Exception("Failed to create show and related data.", ex);
-            }
-        }
 
         public async Task<IEnumerable<KoiShowResponse>> GetAllShowsAsync()
         {

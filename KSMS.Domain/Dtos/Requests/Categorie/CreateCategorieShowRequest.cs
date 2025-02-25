@@ -39,13 +39,13 @@ namespace KSMS.Domain.Dtos.Requests.Categorie
 
         public  ICollection<CreateRoundRequest> Rounds { get; set; } = new List<CreateRoundRequest>();
 
-        public  ICollection<CategoryVarietyRequest> CategoryVarietys { get; set; } = new List<CategoryVarietyRequest>();
+        public  ICollection<CreateCategoryVarietyRequest> CategoryVarietys { get; set; } = new List<CreateCategoryVarietyRequest>();
 
         public  ICollection<CreateAwardCateShowRequest> Awards { get; set; } = new List<CreateAwardCateShowRequest>();
 
-        public  ICollection<CriteriaGroupRequest> CriteriaGroups { get; set; } = new List<CriteriaGroupRequest>();
+        public  ICollection<CreateCriteriaGroupRequest> CriteriaGroups { get; set; } = new List<CreateCriteriaGroupRequest>();
 
-        public  ICollection<RefereeAssignmentRequest> RefereeAssignments { get; set; } = new List<RefereeAssignmentRequest>();
+        public  ICollection<CreateRefereeAssignmentRequest> RefereeAssignments { get; set; } = new List<CreateRefereeAssignmentRequest>();
     }
 
 }

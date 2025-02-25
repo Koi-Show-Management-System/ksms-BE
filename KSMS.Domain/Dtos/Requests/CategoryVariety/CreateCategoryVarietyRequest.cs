@@ -8,14 +8,14 @@ using System.Threading.Tasks;
 
 namespace KSMS.Domain.Dtos.Requests.CategoryVariety
 {
-    public class CategoryVarietyRequest
+    public class CreateCategoryVarietyRequest
 
     {
-        public Guid CompetitionCategoryId { get; set; }
-        public Guid Id { get; set; }
+      //  public Guid CompetitionCategoryId { get; set; }
+     //   public Guid Id { get; set; }
 
         public Guid VarietyId { get; set; } 
 
-        public virtual VarietyRequest Variety { get; set; }
+        public virtual CreateVarietyRequest Variety { get; set; }
     }
 }

@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace KSMS.Domain.Dtos.Requests.Variety
 {
-    public class VarietyRequest
+    public class CreateVarietyRequest
     {
         public string Name { get; set; } = null!;
 

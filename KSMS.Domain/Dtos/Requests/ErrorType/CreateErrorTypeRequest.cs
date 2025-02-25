@@ -8,9 +8,9 @@ using System.Threading.Tasks;
 
 namespace KSMS.Domain.Dtos.Requests.ErrorType
 {
-    public class ErrorTypeRequest
+    public class CreateErrorTypeRequest
     {
-        public Guid CriteriaId { get; set; }
+    //    public Guid CriteriaId { get; set; }
 
         public string Name { get; set; } = null!;
 

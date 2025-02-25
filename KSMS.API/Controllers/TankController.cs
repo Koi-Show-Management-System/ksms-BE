@@ -23,7 +23,7 @@ namespace KSMS.API.Controllers
 
         
         [HttpPost("create")]
-        public async Task<ActionResult<ApiResponse<object>>> CreateTank([FromBody] TankRequest tankRequest)
+        public async Task<ActionResult<ApiResponse<object>>> CreateTank([FromBody] CreateTankRequest tankRequest)
         {
             var newTank = await _tankService.CreateTankAsync(tankRequest);
             return StatusCode(201, ApiResponse<object>.Created(newTank, "Create tank successfully"));

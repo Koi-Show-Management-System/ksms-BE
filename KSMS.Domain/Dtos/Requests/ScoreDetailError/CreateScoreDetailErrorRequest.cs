@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace KSMS.Domain.Dtos.Requests.ScoreDetailError
 {
-    public class ScoreDetailErrorRequest
+    public class CreateScoreDetailErrorRequest
     {
    //     public Guid Id { get; set; }
 

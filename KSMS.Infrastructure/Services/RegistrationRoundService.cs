@@ -24,7 +24,7 @@ namespace KSMS.Infrastructure.Services
         }
 
         // Tạo mới một Registration Round
-        public async Task<RegistrationRoundResponse> CreateRegistrationRoundAsync(RegistrationRoundRequest request)
+        public async Task<RegistrationRoundResponse> CreateRegistrationRoundAsync(CreateRegistrationRoundRequest request)
         {
             var registrationRoundRepository = _unitOfWork.GetRepository<RegistrationRound>();
 

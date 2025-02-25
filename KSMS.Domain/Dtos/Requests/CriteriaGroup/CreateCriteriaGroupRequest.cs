@@ -8,10 +8,10 @@ using System.Threading.Tasks;
 
 namespace KSMS.Domain.Dtos.Requests.CriteriaGroup
 {
-    public class CriteriaGroupRequest
+    public class CreateCriteriaGroupRequest
     {
       //  public Guid Id {  get; set; }
-        public Guid CompetitionCategoryId { get; set; }
+    //    public Guid CompetitionCategoryId { get; set; }
 
         public string Name { get; set; } = null!;   
 
@@ -21,7 +21,7 @@ namespace KSMS.Domain.Dtos.Requests.CriteriaGroup
 
         public string? Description { get; set; }
 
-        public CriterionRequest Criterias { get; set; } = null!;
+        public CreateCriterionRequest Criterias { get; set; } = null!;
 
 
 

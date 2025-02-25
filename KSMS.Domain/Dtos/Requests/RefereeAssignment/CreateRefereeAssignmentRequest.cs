@@ -6,10 +6,10 @@ using System.Threading.Tasks;
 
 namespace KSMS.Domain.Dtos.Requests.RefereeAssignment
 {
-    public class RefereeAssignmentRequest
+    public class CreateRefereeAssignmentRequest
     {
       //  public Guid Id { get; set; }
-        public Guid CompetitionCategoryId { get; set; }
+    //    public Guid CompetitionCategoryId { get; set; }
 
         public Guid RefereeAccountId { get; set; }
 
