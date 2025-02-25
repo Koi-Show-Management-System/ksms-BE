@@ -67,7 +67,7 @@ namespace KSMS.Domain.Dtos.Requests.Show
         public  ICollection<CreateShowRuleRequest> ShowRules { get; set; } = new List<CreateShowRuleRequest>(); 
         public  ICollection<CreateShowStatusRequest> ShowStatuses { get; set; } = new List<CreateShowStatusRequest>();
         public  ICollection<CreateSponsorRequest> Sponsors { get; set; } = new List<CreateSponsorRequest>();
-        public  ICollection<TicketTypeRequest> Tickettypes { get; set; } = new List<TicketTypeRequest>();
+        public  ICollection<CreateTicketTypeRequest> Tickettypes { get; set; } = new List<CreateTicketTypeRequest>();
 
        
     }

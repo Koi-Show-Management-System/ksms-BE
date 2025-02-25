@@ -11,7 +11,7 @@ namespace KSMS.Application.Services
     public interface IRegistrationRoundService
     {
 
-        Task<RegistrationRoundResponse> CreateRegistrationRoundAsync(RegistrationRoundRequest request);
+        Task<RegistrationRoundResponse> CreateRegistrationRoundAsync(CreateRegistrationRoundRequest request);
         Task<RegistrationRoundResponse> GetRegistrationRoundAsync(Guid registrationId, Guid roundId);
     }
 }

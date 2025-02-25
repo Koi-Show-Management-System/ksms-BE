@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace KSMS.Domain.Dtos.Requests.TicketOrderDetail
 {
-    public class TicketOrderDetailResquest
+    public class CreateTicketOrderDetailResquest
     {
         public Guid Id { get; set; }
 

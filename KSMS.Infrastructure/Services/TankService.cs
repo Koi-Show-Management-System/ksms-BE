@@ -25,7 +25,7 @@ namespace KSMS.Infrastructure.Services
         }
 
         // Tạo mới một hồ
-        public async Task<TankResponse> CreateTankAsync(TankRequest request)
+        public async Task<TankResponse> CreateTankAsync(CreateTankRequest request)
         {
             var tankRepository = _unitOfWork.GetRepository<Tank>();
 

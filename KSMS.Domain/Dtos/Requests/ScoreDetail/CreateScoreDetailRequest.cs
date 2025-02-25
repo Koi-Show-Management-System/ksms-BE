@@ -18,7 +18,7 @@ namespace KSMS.Domain.Dtos.Requests.Score
         public string? Comments { get; set; }
 
 
-        public virtual ICollection<ScoreDetailErrorRequest> CreateScoreDetailErrors { get; set; } = new List<ScoreDetailErrorRequest>();
+        public virtual ICollection<CreateScoreDetailErrorRequest> CreateScoreDetailErrors { get; set; } = new List<CreateScoreDetailErrorRequest>();
 
     }
 }
