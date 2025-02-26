@@ -10,7 +10,7 @@ namespace KSMS.Domain.Dtos.Responses.Round
     {
 
         public Guid Id { get; set; }
-        public Guid CategoryId { get; set; }
+        public Guid CompetitionCategoriesId { get; set; }
          
         public string? Name { get; set; }
 

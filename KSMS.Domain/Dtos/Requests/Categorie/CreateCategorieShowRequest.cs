@@ -1,6 +1,6 @@
 ﻿
 using KSMS.Domain.Dtos.Requests.CategoryVariety;
-using KSMS.Domain.Dtos.Requests.CriteriaGroup;
+using KSMS.Domain.Dtos.Requests.CriteriaCompetitionCategory;
 using KSMS.Domain.Dtos.Requests.RefereeAssignment;
 using KSMS.Domain.Dtos.Requests.Round;
 using KSMS.Domain.Dtos.Requests.Variety;
@@ -43,7 +43,7 @@ namespace KSMS.Domain.Dtos.Requests.Categorie
 
         public  ICollection<CreateAwardCateShowRequest> Awards { get; set; } = new List<CreateAwardCateShowRequest>();
 
-        public  ICollection<CreateCriteriaGroupRequest> CriteriaGroups { get; set; } = new List<CreateCriteriaGroupRequest>();
+        public  ICollection<CreateCriteriaCompetitionCategoryRequest> CriteriaCompetitionCategories { get; set; } = new List<CreateCriteriaCompetitionCategoryRequest>();
 
         public  ICollection<CreateRefereeAssignmentRequest> RefereeAssignments { get; set; } = new List<CreateRefereeAssignmentRequest>();
     }

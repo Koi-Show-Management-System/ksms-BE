@@ -1,6 +1,6 @@
 ﻿using KSMS.Domain.Dtos.Requests.Award;
 using KSMS.Domain.Dtos.Requests.CategoryVariety;
-using KSMS.Domain.Dtos.Requests.CriteriaGroup;
+using KSMS.Domain.Dtos.Requests.CriteriaCompetitionCategory;
 using KSMS.Domain.Dtos.Requests.RefereeAssignment;
 using KSMS.Domain.Dtos.Requests.Round;
 using KSMS.Domain.Dtos.Requests.Variety;
@@ -21,12 +21,9 @@ namespace KSMS.Domain.Dtos.Requests.Categorie
         public DateTime? EndTime { get; set; }
         public string? Status { get; set; }
         public virtual ICollection<UpdateRoundRequest> Rounds { get; set; } = new List<UpdateRoundRequest>();
-
-        // public virtual UpdateVarietyRequest? Variety { get; set; } UpdateCategoryVarietyRequest
-
         public virtual ICollection<UpdateCategoryVarietyRequest> CategoryVarietys { get; set; } = new List<UpdateCategoryVarietyRequest>();
         public virtual ICollection<UpdateAwardCateShowRequest> Awards { get; set; } = new List<UpdateAwardCateShowRequest>();
-        public virtual ICollection<UpdateCriteriaGroupRequest> CriteriaGroups { get; set; } = new List<UpdateCriteriaGroupRequest>();
+        public virtual ICollection<UpdateCriteriaCompetitionCategoryRequest> CriteriaGroups { get; set; } = new List<UpdateCriteriaCompetitionCategoryRequest>();
         public virtual ICollection<UpdateRefereeAssignmentRequest> RefereeAssignments { get; set; } = new List<UpdateRefereeAssignmentRequest>();
     }
 }
