@@ -25,8 +25,8 @@ namespace KSMS.API.Controllers
    //     [Authorize(Roles = "Member")]
         public async Task<ActionResult<ApiResponse<object>>> CreateRegistration([FromForm]CreateRegistrationRequest createRegistrationRequest)
         {
-            await _registrationService.CreateRegistration(createRegistrationRequest);
-            return StatusCode(201, ApiResponse<object>.Created(null, "Create registration successfully"));
+            var registration = await _registrationService.CreateRegistration(createRegistrationRequest);
+            return StatusCode(201, ApiResponse<object>.Created(registration, "Create registration successfully"));
         }
         [HttpPost("checkout")]
         [Authorize(Roles = "Member")]

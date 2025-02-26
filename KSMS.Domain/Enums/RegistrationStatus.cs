@@ -2,10 +2,12 @@
 
 public enum RegistrationStatus
 {
-    Pending,
-    NotEnoughQuota,
-    Confirm,
+    WaitToPaid,
     Paid,
-    Reject,
-    Cancelled
+    Cancelled,
+    Pending,
+    Confirm,
+    CheckIn,
+    Rejected,
+    
 }

@@ -11,6 +11,6 @@ public class UpdateKoiProfileRequest
     public string? Gender { get; set; }
     public string? Bloodline { get; set; }
     public string? Status { get; set; }
-    public IFormFile? Img { get; set; }
-    public IFormFile? Video { get; set; }
+    public List<IFormFile> KoiImages { get; set; } = [];
+    public List<IFormFile> KoiVideos { get; set; } = [];
 }

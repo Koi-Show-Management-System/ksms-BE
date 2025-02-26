@@ -1,4 +1,5 @@
-﻿using KSMS.Domain.Dtos.Responses.Variety;
+﻿using KSMS.Domain.Dtos.Responses.KoiMedium;
+using KSMS.Domain.Dtos.Responses.Variety;
 
 namespace KSMS.Domain.Dtos.Responses.KoiProfile;
 
@@ -16,9 +17,7 @@ public class GetAllKoiProfileResponse
 
     public string? Status { get; set; }
 
-    public string? ImgUrl { get; set; }
-
-    public string? VideoUrl { get; set; }
+    public ICollection<GetKoiMediaResponse> KoiMedia { get; set; } = new List<GetKoiMediaResponse>();
     
     public VarietyResponse? Variety { get; set; }
 }

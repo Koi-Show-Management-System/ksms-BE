@@ -105,4 +105,14 @@ public class MediaService : BaseService<MediaService>, IMediaService
         await _unitOfWork.GetRepository<KoiMedium>().InsertRangeAsync(videos);
         await _unitOfWork.CommitAsync();
     }
+
+    public async Task DeleteFiles(IEnumerable<KoiMedium> files)
+    {
+        var urls = files.Select(f => f.MediaUrl);
+
+        await _firebaseService.DeleteImagesAsync(urls.ToList());
+        _unitOfWork.GetRepository<KoiMedium>().DeleteRangeAsync(files);
+    
+        await _unitOfWork.CommitAsync();
+    }
 }
