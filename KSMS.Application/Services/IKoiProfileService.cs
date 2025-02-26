@@ -8,9 +8,9 @@ namespace KSMS.Application.Services;
 
 public interface IKoiProfileService
 {
-    Task CreateKoiProfile(ClaimsPrincipal claimsPrincipal, CreateKoiProfileRequest createKoiProfileRequest);
+    Task<GetAllKoiProfileResponse> CreateKoiProfile(CreateKoiProfileRequest createKoiProfileRequest);
     
-    Task<Paginate<GetAllKoiProfileResponse>> GetPagedKoiProfile(ClaimsPrincipal claims, KoiProfileFilter filter, int page, int size);
+    Task<Paginate<GetAllKoiProfileResponse>> GetPagedKoiProfile(KoiProfileFilter filter, int page, int size);
 
-    Task UpdateKoiProfile(ClaimsPrincipal claims, Guid id, UpdateKoiProfileRequest updateKoiProfileRequest);
+    Task UpdateKoiProfile(Guid id, UpdateKoiProfileRequest updateKoiProfileRequest);
 }

@@ -21,24 +21,24 @@ namespace KSMS.API.Controllers
             _koiProfileService = koiProfileService;
         }
         [HttpPost]
-  //      [Authorize(Roles = "Member")]
+        [Authorize(Roles = "Member")]
         public async Task<ActionResult<ApiResponse<object>>> CreateKoiProfile([FromForm] CreateKoiProfileRequest createKoiProfileRequest)
         { 
-            await _koiProfileService.CreateKoiProfile(HttpContext.User, createKoiProfileRequest);
-            return StatusCode(201, ApiResponse<object>.Created(null, "Created Koi profile successfully"));
+            var koi = await _koiProfileService.CreateKoiProfile(createKoiProfileRequest);
+            return StatusCode(201, ApiResponse<object>.Created(koi, "Created Koi profile successfully"));
         }
         [HttpGet]
         [Authorize(Roles = "Member")]
         public async Task<ActionResult<ApiResponse<object>>> GetPagedKoiProfile([FromQuery] KoiProfileFilter filter, [FromQuery]int page = 1, [FromQuery]int size = 10)
         {
-            var result = await _koiProfileService.GetPagedKoiProfile(HttpContext.User, filter, page, size);
+            var result = await _koiProfileService.GetPagedKoiProfile(filter, page, size);
             return Ok(ApiResponse<object>.Success(result, "Get list of Koi records successfully"));
         }
         [HttpPut("{id:guid}")]
         [Authorize(Roles = "Member")]
         public async Task<ActionResult<ApiResponse<object>>> UpdateKoiProfile(Guid id, [FromForm] UpdateKoiProfileRequest updateKoiProfileRequest)
         {
-            await _koiProfileService.UpdateKoiProfile(HttpContext.User, id, updateKoiProfileRequest);
+            await _koiProfileService.UpdateKoiProfile(id, updateKoiProfileRequest);
             return Ok(ApiResponse<object>.Success(null, "Koi profile updated successfully"));
         }
     }

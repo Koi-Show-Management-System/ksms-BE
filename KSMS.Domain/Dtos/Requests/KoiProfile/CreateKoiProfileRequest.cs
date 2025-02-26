@@ -19,6 +19,6 @@ public class CreateKoiProfileRequest
     public required string Bloodline { get; set; }
     [Required]
     public required string Status { get; set; }
-    public IFormFile? Img { get; set; }
-    public IFormFile? Video { get; set; }
+    public List<IFormFile> KoiImages { get; set; } = [];
+    public List<IFormFile> KoiVideos { get; set; } = [];
 }
