@@ -461,6 +461,118 @@ public static string RejectRegistration(Registration registration)
 </html>";
 }
 
+public static string ConfirmTicketOrder(TicketOrder order)
+{
+    var koiShow = order.TicketOrderDetails.First().TicketType.KoiShow;
+
+    return $@"
+<!DOCTYPE html>
+<html lang='vi'>
+<head>
+    <meta charset='UTF-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <title>KOI SHOW - Xác nhận đơn hàng vé thành công</title>
+</head>
+<body style='margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4;'>
+    <table border='0' cellpadding='0' cellspacing='0' width='100%' style='background-color: #f4f4f4;'>
+        <tr>
+            <td align='center' style='padding: 20px 0;'>
+                <table border='0' cellpadding='0' cellspacing='0' width='600' style='background-color: #ffffff; border-radius: 10px; padding: 20px;'>
+                    <tr>
+                        <td align='center' style='font-family: Arial, sans-serif; color: #1a2a6c;'>
+                            <h1 style='font-size: 36px; margin: 20px 0;'>KOI SHOW</h1>
+                            <hr style='border: none; border-top: 3px solid #b21f1f; width: 60px; margin: 10px auto;'>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style='font-family: Arial, sans-serif; font-size: 16px; line-height: 1.8; padding: 20px; color: #333;'>
+                            <p>Thân gửi <span style='font-weight: bold; color: #b21f1f;'>{order.FullName}</span>,</p>
+                            
+                            <p>Cảm ơn bạn đã đặt vé tham dự sự kiện <span style='font-weight: bold; color: #b21f1f;'>{koiShow.Name}</span>. Đơn hàng của bạn đã được xác nhận thành công!</p>
+
+                            <p><strong>Thông tin sự kiện:</strong></p>
+                            <ul style='margin: 10px 0; padding-left: 20px;'>
+                                <li><strong>Tên sự kiện:</strong> {koiShow.Name}</li>
+                                <li><strong>Thời gian:</strong> {koiShow.StartDate:dd/MM/yyyy HH:mm} - {koiShow.EndDate:dd/MM/yyyy HH:mm}</li>
+                                <li><strong>Địa điểm:</strong> {koiShow.Location}</li>
+                            </ul>
+
+                            <p><strong>Thông tin đơn hàng:</strong></p>
+                            <ul style='margin: 10px 0; padding-left: 20px;'>
+                                <li><strong>Mã đơn hàng:</strong> {order.TransactionCode}</li>
+                                <li><strong>Ngày đặt:</strong> {order.OrderDate:dd/MM/yyyy HH:mm}</li>
+                                <li><strong>Tổng tiền:</strong> {order.TotalAmount:N0} VNĐ</li>
+                            </ul>
+
+                            <p><strong>Chi tiết vé:</strong></p>
+                            <table style='width: 100%; border-collapse: collapse; margin: 10px 0;'>
+                                <tr style='background-color: #f8f8f8;'>
+                                    <th style='padding: 10px; border: 1px solid #ddd; text-align: left;'>Loại vé</th>
+                                    <th style='padding: 10px; border: 1px solid #ddd; text-align: center;'>Số lượng</th>
+                                    <th style='padding: 10px; border: 1px solid #ddd; text-align: right;'>Đơn giá</th>
+                                    <th style='padding: 10px; border: 1px solid #ddd; text-align: right;'>Thành tiền</th>
+                                </tr>
+                                {string.Join("\n", order.TicketOrderDetails.Select(detail => $@"
+                                <tr>
+                                    <td style='padding: 10px; border: 1px solid #ddd;'>{detail.TicketType.Name}</td>
+                                    <td style='padding: 10px; border: 1px solid #ddd; text-align: center;'>{detail.Quantity}</td>
+                                    <td style='padding: 10px; border: 1px solid #ddd; text-align: right;'>{detail.UnitPrice:N0} VNĐ</td>
+                                    <td style='padding: 10px; border: 1px solid #ddd; text-align: right;'>{detail.Quantity * detail.UnitPrice:N0} VNĐ</td>
+                                </tr>"))}
+                            </table>
+
+                            <p><strong>Vé điện tử của bạn:</strong></p>
+                            <div style='margin: 20px 0;'>
+                                {string.Join("\n", order.TicketOrderDetails.SelectMany(detail => detail.Tickets.Select(ticket => $@"
+                                <div style='background-color: #ffffff; border: 2px solid #e0e0e0; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);'>
+                                    <div style='background-color: #1a2a6c; color: white; padding: 15px; border-top-left-radius: 8px; border-top-right-radius: 8px;'>
+                                        <h3 style='margin: 0; font-size: 18px;'>{detail.TicketType.Name}</h3>
+                                    </div>
+                                    <div style='padding: 20px; display: flex; justify-content: space-between; align-items: center;'>
+                                        <div style='flex: 1;'>
+                                            <p style='margin: 5px 0; color: #666;'><strong>Sự kiện:</strong> {koiShow.Name}</p>
+                                            <p style='margin: 5px 0; color: #666;'><strong>Thời gian:</strong> {koiShow.StartDate:dd/MM/yyyy HH:mm}</p>
+                                            <p style='margin: 5px 0; color: #666;'><strong>Địa điểm:</strong> {koiShow.Location}</p>
+                                        </div>
+                                        <div style='margin-left: 20px; text-align: center;'>
+                                            <img src='{ticket.QrcodeData}' alt='QR Code' style='width: 120px; height: 120px; border: 1px solid #ddd; padding: 5px; background-color: white;'>
+                                            <p style='margin: 5px 0; font-size: 12px; color: #666;'>Quét mã để check-in</p>
+                                        </div>
+                                    </div>
+                                    <div style='background-color: #f8f8f8; padding: 10px; border-bottom-left-radius: 8px; border-bottom-right-radius: 8px; text-align: center; border-top: 1px dashed #ddd;'>
+                                        <p style='margin: 0; font-size: 12px; color: #666;'>Vui lòng xuất trình mã QR này khi check-in tại sự kiện</p>
+                                    </div>
+                                </div>")))}
+                            </div>
+
+                            <p style='font-weight: bold; color: #b21f1f;'>Lưu ý quan trọng:</p>
+                            <ul style='margin: 10px 0; padding-left: 20px;'>
+                                <li>Vui lòng xuất trình mã QR khi check-in tại sự kiện</li>
+                                <li>Mỗi mã QR chỉ có thể sử dụng một lần</li>
+                                <li>Không chia sẻ mã QR với người khác</li>
+                            </ul>
+
+                            <p>Nếu bạn cần hỗ trợ thêm hoặc có bất kỳ thắc mắc nào, vui lòng liên hệ với chúng tôi qua:</p>
+                            <ul style='margin: 10px 0; padding-left: 20px;'>
+                                <li><strong>Hotline:</strong> 1900 xxxx</li>
+                                <li><strong>Email:</strong> support@koishow.com</li>
+                            </ul>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td align='center' style='padding: 20px;'>
+                            <p style='font-size: 14px; color: #666; border-top: 1px solid #ddd; padding-top: 10px;'>Trân trọng,</p>
+                            <p style='font-family: Arial, sans-serif; font-size: 18px; font-weight: bold; color: #1a2a6c;'>Đội ngũ Koi Show</p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>";
+}
+
 
     }
 }

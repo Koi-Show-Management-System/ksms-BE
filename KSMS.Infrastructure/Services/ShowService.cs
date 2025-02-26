@@ -283,7 +283,6 @@ namespace KSMS.Infrastructure.Services
         public async Task<IEnumerable<KoiShowResponse>> GetAllShowsAsync()
         {
             var showRepository = _unitOfWork.GetRepository<KoiShow>();
-
             var shows = await showRepository.GetListAsync(
                 predicate: null,
                 orderBy: q => q.OrderBy(s => s.Name),

@@ -6,7 +6,7 @@ public enum RegistrationStatus
     Paid,
     Cancelled,
     Pending,
-    Confirm,
+    Confirmed,
     CheckIn,
     Rejected,
     
