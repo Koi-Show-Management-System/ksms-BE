@@ -11,7 +11,7 @@ namespace KSMS.Domain.Dtos.Requests.CriteriaCompetitionCategory
     public class UpdateCriteriaCompetitionCategoryRequest
     {
         public Guid Id { get; set; }
-        public Guid CompetitionCategoryId { get; set; }
+   //     public Guid CompetitionCategoryId { get; set; }
 
         public Guid CriteriaId { get; set; }
         public string Name { get; set; } = null!;
@@ -20,7 +20,7 @@ namespace KSMS.Domain.Dtos.Requests.CriteriaCompetitionCategory
 
         public int? Order { get; set; }
 
-        public virtual UpdateCriterionRequest? Criterias { get; set; } 
+  //      public virtual UpdateCriterionRequest? Criterias { get; set; } 
  
     }
 }
