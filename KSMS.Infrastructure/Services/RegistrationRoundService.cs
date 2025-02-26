@@ -48,12 +48,12 @@ namespace KSMS.Infrastructure.Services
             return createdRegistrationRound.Adapt<RegistrationRoundResponse>();
         }
 
-        // Lấy thông tin RegistrationRound
+     
         public async Task<RegistrationRoundResponse> GetRegistrationRoundAsync(Guid registrationId, Guid roundId)
         {
             var registrationRoundRepository = _unitOfWork.GetRepository<RegistrationRound>();
 
-            // Lấy thông tin RegistrationRound từ cơ sở dữ liệu
+            
             var registrationRound = await registrationRoundRepository.SingleOrDefaultAsync(
                 predicate: rr => rr.RegistrationId == registrationId && rr.RoundId == roundId
             );

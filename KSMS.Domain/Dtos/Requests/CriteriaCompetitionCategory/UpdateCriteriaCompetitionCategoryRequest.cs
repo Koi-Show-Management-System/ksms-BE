@@ -6,9 +6,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace KSMS.Domain.Dtos.Requests.CriteriaGroup
+namespace KSMS.Domain.Dtos.Requests.CriteriaCompetitionCategory
 {
-    public class UpdateCriteriaGroupRequest
+    public class UpdateCriteriaCompetitionCategoryRequest
     {
         public Guid Id { get; set; }
         public Guid CompetitionCategoryId { get; set; }

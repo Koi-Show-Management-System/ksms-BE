@@ -1,4 +1,5 @@
-﻿using System;
+﻿using KSMS.Domain.Dtos.Requests.Account;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -19,5 +20,7 @@ namespace KSMS.Domain.Dtos.Requests.RefereeAssignment
 
         public Guid AssignedBy { get; set; }
 
-    }
+
+       // public virtual CreateAccountRequest? RefereeAccount { get; set; } 
+        }
 }
