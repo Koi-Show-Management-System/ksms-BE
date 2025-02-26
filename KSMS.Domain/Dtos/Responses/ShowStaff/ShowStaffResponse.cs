@@ -15,8 +15,8 @@ namespace KSMS.Domain.Dtos.Responses.ShowStaff
 
         public DateTime AssignedAt { get; set; }
 
-        public virtual AccountResponse Account { get; set; } = null!;
+        public  AccountResponse Account { get; set; } = null!;
 
-        public virtual AccountResponse AssignedByNavigation { get; set; } = null!;
+        public  AccountResponse AssignedByNavigation { get; set; } = null!;
     }
 }

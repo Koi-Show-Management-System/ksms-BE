@@ -20,23 +20,12 @@ namespace KSMS.Infrastructure.Services
             : base(unitOfWork, logger, httpContextAccessor)
         {
         }
-        public async Task<TicketResponse> GetTicketDetailByIdAsync(Guid ticketId)
+
+        public Task<TicketResponse> GetTicketDetailByIdAsync(Guid ticketId)
         {
-            var ticketRepository = _unitOfWork.GetRepository<Ticket>();
-
-            var ticket = await ticketRepository.SingleOrDefaultAsync(
-            predicate: t => t.Id == ticketId,
-            include: query => query.Include(t => t.CheckInLog) 
-                                   .ThenInclude(t => t.RegistrationPayment));
-            if (ticket == null)
-            {
-                throw new NotFoundException("Ticket not found");
-            }
-
-         //   var ticketDetail = ticket.Adapt<TicketResponse>();
-
-            return null;
+            throw new NotImplementedException();
         }
+
         //public async Task VerifyTicketIdAsync(ClaimsPrincipal claims, Guid ticketId)
         //{
         //    var accountId = claims.GetAccountId();

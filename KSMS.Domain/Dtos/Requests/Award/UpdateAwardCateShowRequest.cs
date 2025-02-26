@@ -10,7 +10,7 @@ namespace KSMS.Domain.Dtos.Requests.Award
     {
 
         public Guid Id {  get; set; }
-        public Guid CompetitionCategoryId { get; set; }
+  //      public Guid CompetitionCategoryId { get; set; }
         public string Name { get; set; } = null!;
         public string? AwardType { get; set; }
         public decimal? PrizeValue { get; set; }

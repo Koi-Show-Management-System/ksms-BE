@@ -97,7 +97,7 @@ namespace KSMS.Infrastructure.Services
                         ErrorTypeId = error.ErrorTypeId,
                         Severity = error.Severity,
                         PointMinus = error.PointMinus,
-                        CreatedAt = DateTime.UtcNow
+                    //    CreatedAt = DateTime.UtcNow
                     };
 
                     await scoreDetailErrorRepository.InsertAsync(scoreDetailError);

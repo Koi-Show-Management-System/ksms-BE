@@ -9,7 +9,7 @@ namespace KSMS.Domain.Dtos.Responses.Award
     public class AwardResponse
     {
         public Guid Id { get; set; }
-        public Guid CategoryId { get; set; }
+        public Guid CompetitionCategoriesId { get; set; }
 
         public string Name { get; set; } = null!;
 

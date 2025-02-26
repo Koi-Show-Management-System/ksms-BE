@@ -6,12 +6,12 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace KSMS.Domain.Dtos.Requests.CriteriaGroup
+namespace KSMS.Domain.Dtos.Requests.CriteriaCompetitionCategory
 {
-    public class UpdateCriteriaGroupRequest
+    public class UpdateCriteriaCompetitionCategoryRequest
     {
         public Guid Id { get; set; }
-        public Guid CompetitionCategoryId { get; set; }
+   //     public Guid CompetitionCategoryId { get; set; }
 
         public Guid CriteriaId { get; set; }
         public string Name { get; set; } = null!;
@@ -20,7 +20,7 @@ namespace KSMS.Domain.Dtos.Requests.CriteriaGroup
 
         public int? Order { get; set; }
 
-        public virtual UpdateCriterionRequest? Criterias { get; set; } 
+  //      public virtual UpdateCriterionRequest? Criterias { get; set; } 
  
     }
 }

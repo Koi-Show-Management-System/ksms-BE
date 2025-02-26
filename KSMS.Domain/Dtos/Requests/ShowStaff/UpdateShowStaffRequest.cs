@@ -11,7 +11,7 @@ namespace KSMS.Domain.Dtos.Requests.ShowStaff
     {
         public Guid Id { get; set; }
         
-        public Guid ShowId { get; set; }
+      //  public Guid ShowId { get; set; }
 
        
         public Guid AccountId { get; set; }

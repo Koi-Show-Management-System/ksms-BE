@@ -71,9 +71,9 @@ namespace KSMS.Infrastructure.Services
                     var showId = createdShow.Id;
 
                     // Process Categories and related entities
-                    if (createShowRequest.Categories != null && createShowRequest.Categories.Any())
+                    if (createShowRequest.CreateCategorieShowRequests  != null && createShowRequest.CreateCategorieShowRequests.Any())
                     {
-                        foreach (var categoryRequest in createShowRequest.Categories)
+                        foreach (var categoryRequest in createShowRequest.CreateCategorieShowRequests)
                         {
                             // Create Category
                             var category = categoryRequest.Adapt<CompetitionCategory>();
@@ -117,51 +117,40 @@ namespace KSMS.Infrastructure.Services
                             }
 
                         // Process CriteriaGroups and Criterias for Category
-                        if (categoryRequest.CriteriaGroups != null && categoryRequest.CriteriaGroups.Any())
+                        // Kiểm tra nếu CriteriaCompetitionCategories có trong dữ liệu
+                        if (categoryRequest.CriteriaCompetitionCategories != null && categoryRequest.CriteriaCompetitionCategories.Any())
                         {
-                            var criteriaIds = categoryRequest.CriteriaGroups.Select(g => g.CriteriaId).ToList();
-                            var existingCriteria = await criteriaRepository.GetListAsync(c => criteriaIds.Contains(c.Id),null,null);
-
-                            foreach (var groupRequest in categoryRequest.CriteriaGroups)
+                            foreach (var groupRequest in categoryRequest.CriteriaCompetitionCategories)
                             {
                                 var group = groupRequest.Adapt<CriteriaCompetitionCategory>();
                                 group.CompetitionCategoryId = createdCategory.Id;
 
-                                // Ensure Criterion exists or create a new one if not found
-                                var criterion = existingCriteria.FirstOrDefault(c => c.Id == groupRequest.CriteriaId);
+                                // Kiểm tra xem criterion có tồn tại trong cơ sở dữ liệu không
+                                var criterion = await criteriaRepository.SingleOrDefaultAsync(c => c.Id == groupRequest.CriteriaId, null, null);
+
+                                // Nếu không tìm thấy, tạo mới Criterion
                                 if (criterion == null)
                                 {
-                                    if (groupRequest.Criterias == null)
-                                    {
+                                   
                                         throw new BadRequestException($"Criteria details are missing for CriteriaId: {groupRequest.CriteriaId}");
-                                    }
-
-                                    criterion = new Criterion
-                                    {
-                                        Id = Guid.NewGuid(),
-                                        Name = groupRequest.Criterias.Name,
-                                        Description = groupRequest.Criterias.Description,
-                                        ErrorTypes = groupRequest.Criterias.ErrorTypes?.Select(et => new ErrorType
-                                        {
-                                            Name = et.Name
-                                        }).ToList()
-                                    };
-
-                                    await criteriaRepository.InsertAsync(criterion);
-                                    existingCriteria.Add(criterion); // Cache it to avoid duplicate DB lookups
+                                    
                                 }
 
-                                // Link CriteriaGroup to the created or existing Criterion
+                                // Gán CriterionId vào CriteriaCompetitionCategory
                                 group.CriteriaId = criterion.Id;
+
+                                // Lưu CriteriaCompetitionCategory vào cơ sở dữ liệu
                                 await criteriaGroupRepository.InsertAsync(group);
                             }
 
-                            await _unitOfWork.CommitAsync(); // Batch commit outside the loop
+                            // Commit lại sau khi xử lý xong
+                            await _unitOfWork.CommitAsync();
                         }
 
-                        if (createShowRequest.ShowRules != null && createShowRequest.ShowRules.Any())
+
+                        if (createShowRequest.CreateShowRuleRequests != null && createShowRequest.CreateShowRuleRequests.Any())
                             {
-                                foreach (var ruleRequest in createShowRequest.ShowRules)
+                                foreach (var ruleRequest in createShowRequest.CreateShowRuleRequests)
                                 {
                                     var rule = ruleRequest.Adapt<ShowRule>();
                                     rule.KoiShowId = showId;
@@ -172,24 +161,21 @@ namespace KSMS.Infrastructure.Services
                                 }
                             }
 
-                            // Process ShowStaff for the Show
-                            if (createShowRequest.ShowStaffs != null && createShowRequest.ShowStaffs.Any())
-                            {
-                                foreach (var staffRequest in createShowRequest.ShowStaffs)
-                                {
-                                    var staff = staffRequest.Adapt<ShowStaff>();
-                                    staff.KoiShowId = showId;
 
-                                    // Save ShowStaff to database
-                                    await showStaffRepository.InsertAsync(staff);
-                                    await _unitOfWork.CommitAsync();
-                                }
+                        if (createShowRequest.CreateShowStatusRequests != null && createShowRequest.CreateShowStatusRequests.Any())
+                        {
+                            foreach (var statusRequest in createShowRequest.CreateShowStatusRequests)
+                            {
+                                var showStatus = statusRequest.Adapt<ShowStatus>();
+                                showStatus.KoiShowId = showId; // Associate the show status with the show
+                                await showStatusRepository.InsertAsync(showStatus);
+                                await _unitOfWork.CommitAsync();
                             }
-
-                            // Process Sponsors for the Show
-                            if (createShowRequest.Sponsors != null && createShowRequest.Sponsors.Any())
+                        }
+                        // Process Sponsors for the Show
+                        if (createShowRequest.CreateSponsorRequests != null && createShowRequest.CreateSponsorRequests.Any())
                             {
-                                foreach (var sponsorRequest in createShowRequest.Sponsors)
+                                foreach (var sponsorRequest in createShowRequest.CreateSponsorRequests)
                                 {
                                     var sponsor = sponsorRequest.Adapt<Sponsor>();
                                     sponsor.KoiShowId = showId;
@@ -200,9 +186,9 @@ namespace KSMS.Infrastructure.Services
                                 }
                             }
                             // Process Ticket Types (TicketTypeRequest) associated with the show
-                            if (createShowRequest.Tickettypes != null && createShowRequest.Tickettypes.Any())
+                            if (createShowRequest.CreateTicketTypeRequests != null && createShowRequest.CreateTicketTypeRequests.Any())
                             {
-                                foreach (var ticketTypeRequest in createShowRequest.Tickettypes)
+                                foreach (var ticketTypeRequest in createShowRequest.CreateTicketTypeRequests)
                                 {
                                     var ticketType = ticketTypeRequest.Adapt<TicketType>();
                                     ticketType.KoiShowId = showId;
@@ -223,23 +209,48 @@ namespace KSMS.Infrastructure.Services
                                     await roundRepository.InsertAsync(round);
                                 }
                             }
-
-                            // Process Referee Assignments for Category
-                            if (categoryRequest.RefereeAssignments != null && categoryRequest.RefereeAssignments.Any())
+                        // Process ShowStaffs
+                        if (createShowRequest.CreateShowStaffRequests != null && createShowRequest.CreateShowStaffRequests.Any())
+                        {
+                            foreach (var staffRequest in createShowRequest.CreateShowStaffRequests)
                             {
-                                foreach (var refereeAssignmentRequest in categoryRequest.RefereeAssignments)
-                                {
-                                    var refereeAssignment = refereeAssignmentRequest.Adapt<RefereeAssignment>();
-                                    refereeAssignment.CompetitionCategoryId = createdCategory.Id; // Link RefereeAssignment with Category
+                                var staff = staffRequest.Adapt<ShowStaff>();
+                                staff.KoiShowId = showId;
 
-                                    // Save RefereeAssignment to the database
-                                    await refereeAssignmentRepository.InsertAsync(refereeAssignment);
-                                    await _unitOfWork.CommitAsync();
+                                await showStaffRepository.InsertAsync(staff);
+                                await _unitOfWork.CommitAsync();
+
+                                // Find the Account for the staff member using the AccountId
+                                var staffAccount = await accountRepository.SingleOrDefaultAsync(a => a.Id == staff.AccountId ,null,null);
+                                if (staffAccount != null)
+                                {
+                                    // Send email notification to the staff
+                                    string emailBody = ContentMailUtil.StaffRoleNotification(staffAccount.FullName, createShowRequest.Name, staffAccount.Email, "DefaultPassword123");
+                                    MailUtil.SendEmail(staffAccount.Email, "[KOI SHOW SYSTEM] New Role Assigned", emailBody, null);
                                 }
                             }
+                        }
+                        if (categoryRequest.RefereeAssignments != null && categoryRequest.RefereeAssignments.Any())
+                        {
+                            foreach (var refereeAssignmentRequest in categoryRequest.RefereeAssignments)
+                            {
+                                var refereeAssignment = refereeAssignmentRequest.Adapt<RefereeAssignment>();
+                                refereeAssignment.CompetitionCategoryId = createdCategory.Id; // Link RefereeAssignment with Category
 
-                            // Process Awards for Category
-                            if (categoryRequest.Awards != null && categoryRequest.Awards.Any())
+                                // Save RefereeAssignment to the database
+                                await refereeAssignmentRepository.InsertAsync(refereeAssignment);
+                                await _unitOfWork.CommitAsync();
+
+                                var refereeAccount = await accountRepository.SingleOrDefaultAsync(a => a.Id == refereeAssignmentRequest.RefereeAccountId, null, null);
+
+                                string emailBody = ContentMailUtil.StaffRoleNotification(refereeAccount.FullName, createShowRequest.Name, refereeAccount.Email, "DefaultPassword123");
+                                MailUtil.SendEmail(refereeAccount.Email, "[KOI SHOW SYSTEM] New Referee Assigned", emailBody, null);
+                            }
+                        }
+
+                        
+                        // Process Awards for Category
+                        if (categoryRequest.Awards != null && categoryRequest.Awards.Any())
                             {
                                 foreach (var awardRequest in categoryRequest.Awards)
                                 {
@@ -270,48 +281,38 @@ namespace KSMS.Infrastructure.Services
 
         public async Task<IEnumerable<KoiShowResponse>> GetAllShowsAsync()
         {
-            
             var showRepository = _unitOfWork.GetRepository<KoiShow>();
 
             var shows = await showRepository.GetListAsync(
                 predicate: null,
                 orderBy: q => q.OrderBy(s => s.Name),
                 include: query => query.Include(s => s.ShowStatuses)
-                .Include(s => s.CompetitionCategories)
-                    .Include(s => s.CompetitionCategories)
-                        .ThenInclude(s => s.Rounds)
-                    .Include(s => s.CompetitionCategories)
-                        .ThenInclude(s => s.Awards)
-                    .Include(s => s.CompetitionCategories)
-                        .ThenInclude(s => s.CriteriaCompetitionCategories)
-                            .ThenInclude(s => s.Criteria)
-                    .Include(s => s.CompetitionCategories)
-                        .ThenInclude(s => s.RefereeAssignments)
-                            .ThenInclude(s => s.RefereeAccount)
-                    .Include(s => s.CompetitionCategories)
-                        .ThenInclude(s => s.Registrations)
-                     .Include(s => s.CompetitionCategories)
-                        .ThenInclude(s => s.CategoryVarieties)
-                            .ThenInclude(s => s.Variety)
-                        
-                    .Include(s => s.CompetitionCategories)
-                        .ThenInclude(s => s.RefereeAssignments)
-                            .ThenInclude(s => s.AssignedByNavigation)
-                               
-                    .Include(s => s.ShowStaffs)
-                        .ThenInclude(s => s.AssignedByNavigation)
-                           
-                    .Include(s => s.ShowStaffs)
-                        .ThenInclude(s => s.Account)
-                        
-                    .Include(s => s.ShowRules)
-                    .Include(s => s.Sponsors)
-                    .Include(s => s.TicketTypes) 
-                    .Include(s => s.CompetitionCategories)
-                        .ThenInclude(s => s.CriteriaCompetitionCategories)
-                            .ThenInclude(c => c.Criteria)
-                                .ThenInclude(e => e.ErrorTypes)
-                              
+                                       .Include(s => s.CompetitionCategories)
+                                           .ThenInclude(s => s.Rounds)
+                                       .Include(s => s.CompetitionCategories)
+                                           .ThenInclude(s => s.Awards)
+                                       .Include(s => s.CompetitionCategories)
+                                           .ThenInclude(s => s.CriteriaCompetitionCategories)
+                                               .ThenInclude(s => s.Criteria)
+                                           .ThenInclude(e => e.ErrorTypes)
+                                       .Include(s => s.CompetitionCategories)
+                                           .ThenInclude(s => s.RefereeAssignments)
+                                               .ThenInclude(s => s.RefereeAccount)
+                                       .Include(s => s.CompetitionCategories)
+                                           .ThenInclude(s => s.RefereeAssignments)
+                                               .ThenInclude(s => s.AssignedByNavigation)
+                                       .Include(s => s.CompetitionCategories)
+                                           .ThenInclude(s => s.Registrations)
+                                       .Include(s => s.CompetitionCategories)
+                                           .ThenInclude(s => s.CategoryVarieties)
+                                               .ThenInclude(s => s.Variety)
+                                       .Include(s => s.ShowStaffs)
+                                           .ThenInclude(s => s.AssignedByNavigation)
+                                       .Include(s => s.ShowStaffs)
+                                           .ThenInclude(s => s.Account)
+                                       .Include(s => s.ShowRules)
+                                       .Include(s => s.Sponsors)
+                                       .Include(s => s.TicketTypes)
             );
 
             var KoiShowResponses = shows.Select(show => show.Adapt<KoiShowResponse>());
@@ -389,6 +390,7 @@ namespace KSMS.Infrastructure.Services
             var ticketRepository = _unitOfWork.GetRepository<TicketType>();
             var awardRepository = _unitOfWork.GetRepository<Award>();
             var varietyRepository = _unitOfWork.GetRepository<Variety>();
+            var categoryVarietyRepository = _unitOfWork.GetRepository<CategoryVariety>();
 
             // Fetch the show from the repository
             var show = await showRepository.SingleOrDefaultAsync(s => s.Id == id, null, null);
@@ -418,9 +420,9 @@ namespace KSMS.Infrastructure.Services
              showRepository.UpdateAsync(show);
 
             // Update Categories and related entities
-            if (updateShowRequest.Categories != null && updateShowRequest.Categories.Any())
+            if (updateShowRequest.UpdateCategorieShowRequests != null && updateShowRequest.UpdateCategorieShowRequests.Any())
             {
-                foreach (var categoryRequest in updateShowRequest.Categories)
+                foreach (var categoryRequest in updateShowRequest.UpdateCategorieShowRequests)
                 {
                     var category = await categoryRepository.SingleOrDefaultAsync(c => c.Id == categoryRequest.Id && c.KoiShowId == id, null, null);
                     if (category != null)
@@ -438,35 +440,57 @@ namespace KSMS.Infrastructure.Services
                          categoryRepository.UpdateAsync(category);
 
                         // Update Variety
-                        if (categoryRequest.CategoryVarietys != null && categoryRequest.CategoryVarietys.Any())
+                        if (categoryRequest.UpdateCategoryVarietyRequests != null && categoryRequest.UpdateCategoryVarietyRequests.Any())
                         {
-                            foreach (var categoryVarietyRequest in categoryRequest.CategoryVarietys)
+                            foreach (var categoryVarietyRequest in categoryRequest.UpdateCategoryVarietyRequests)
                             {
+                                // Check if the variety exists
                                 var variety = await varietyRepository.SingleOrDefaultAsync(v => v.Id == categoryVarietyRequest.VarietyId, null, null);
+
+                                // If variety doesn't exist, create a new one
                                 if (variety == null)
                                 {
                                     variety = new Variety
                                     {
                                         Id = categoryVarietyRequest.VarietyId,
-                                        Name = categoryVarietyRequest.Variety.Name,
-                                        Description = categoryVarietyRequest.Variety.Description
+                                        Name = categoryVarietyRequest.UpdateVarietyRequests.Name,
+                                        Description = categoryVarietyRequest.UpdateVarietyRequests.Description
                                     };
+
+                                    // Insert the new variety
                                     await varietyRepository.InsertAsync(variety);
                                 }
-
-                                var categoryVariety = new CategoryVariety
+                                else
                                 {
-                                    CompetitionCategoryId = category.Id,
-                                    VarietyId = variety.Id
-                                };
-                                await _unitOfWork.GetRepository<CategoryVariety>().InsertAsync(categoryVariety);
+                                    // If variety exists, update it
+                                    variety.Name = categoryVarietyRequest.UpdateVarietyRequests.Name;
+                                    variety.Description = categoryVarietyRequest.UpdateVarietyRequests.Description;
+
+                                    // Update the existing variety
+                                     varietyRepository.UpdateAsync(variety);
+                                }
+
+                                // Now check if CategoryVariety with the given CategoryId and VarietyId exists
+                                var existingCategoryVariety = await categoryVarietyRepository.SingleOrDefaultAsync(cv => cv.CompetitionCategoryId == categoryRequest.Id && cv.VarietyId == variety.Id ,null,null);
+
+                                if (existingCategoryVariety != null)
+                                {
+                                    // If CategoryVariety exists but the VarietyId is different, update the VarietyId
+                                    if (existingCategoryVariety.VarietyId != variety.Id)
+                                    {
+                                        existingCategoryVariety.VarietyId = variety.Id;
+
+                                        // Update the CategoryVariety with the new VarietyId
+                                         categoryVarietyRepository.UpdateAsync(existingCategoryVariety);
+                                    }
+                                }
                             }
                         }
 
                         // Update Awards
-                        if (categoryRequest.Awards != null && categoryRequest.Awards.Any())
+                        if (categoryRequest.UpdateAwardCateShowRequests != null && categoryRequest.UpdateAwardCateShowRequests.Any())
                         {
-                            foreach (var awardRequest in categoryRequest.Awards)
+                            foreach (var awardRequest in categoryRequest.UpdateAwardCateShowRequests)
                             {
                                 var award = await awardRepository.SingleOrDefaultAsync(a => a.CompetitionCategoriesId == category.Id && a.Id == awardRequest.Id, null, null);
                                 if (award != null)
@@ -494,32 +518,23 @@ namespace KSMS.Infrastructure.Services
                         }
 
                         // Update CriteriaGroups and Criteria
-                        if (categoryRequest.CriteriaGroups != null && categoryRequest.CriteriaGroups.Any())
+                        if (categoryRequest.UpdateCriteriaCompetitionCategoryRequests != null && categoryRequest.UpdateCriteriaCompetitionCategoryRequests.Any())
                         {
-                            foreach (var criteriaGroupRequest in categoryRequest.CriteriaGroups)
+                            foreach (var criteriaGroupRequest in categoryRequest.UpdateCriteriaCompetitionCategoryRequests)
                             {
                                 var criteriaGroup = await criteriaGroupRepository.SingleOrDefaultAsync(g => g.CompetitionCategoryId == category.Id && g.Id == criteriaGroupRequest.Id, null, null);
                                 if (criteriaGroup != null)
                                 {
-                                    criteriaGroup.RoundType = criteriaGroupRequest.RoundType;
+                                    criteriaGroup.RoundType      = criteriaGroupRequest.RoundType;
                                     criteriaGroup.CriteriaId = criteriaGroupRequest.CriteriaId;
                                     criteriaGroup.RoundType = criteriaGroupRequest.RoundType;
                                     criteriaGroup.Order = criteriaGroupRequest.Order;
                                     criteriaGroupRepository.UpdateAsync(criteriaGroup);
 
-                                    var criterion = await criteriaRepository.SingleOrDefaultAsync(c => c.Id == criteriaGroupRequest.Criterias.Id, null, null);
+                                    var criterion = await criteriaRepository.SingleOrDefaultAsync(c => c.Id == criteriaGroupRequest.CriteriaId, null, null);
                                     if (criterion == null)
                                     {
-                                        criterion = new Criterion
-                                        {
-                                            Id = criteriaGroupRequest.Criterias.Id,
-                                            Name = criteriaGroupRequest.Criterias.Name,
-                                            Description = criteriaGroupRequest.Criterias.Description,
-                                          //  MaxScore = criteriaGroupRequest.Criterias.MaxScore ?? 0,
-                                        //    Weight = criteriaGroupRequest.Criterias.Weight ?? 0,
-                                            Order = criteriaGroupRequest.Criterias.Order ?? 0
-                                        };
-                                        await criteriaRepository.InsertAsync(criterion);
+                                        throw new BadRequestException(" criterion not found");
                                     }
 
                                     criteriaGroup.CriteriaId = criterion.Id;
@@ -529,9 +544,9 @@ namespace KSMS.Infrastructure.Services
                         }
 
                         // Update Rounds
-                        if (categoryRequest.Rounds != null && categoryRequest.Rounds.Any())
+                        if (categoryRequest.UpdateRoundRequest != null && categoryRequest.UpdateRoundRequest.Any())
                         {
-                            foreach (var roundRequest in categoryRequest.Rounds)
+                            foreach (var roundRequest in categoryRequest.UpdateRoundRequest)
                             {
                                 var round = await roundRepository.SingleOrDefaultAsync(r => r.CompetitionCategoriesId == category.Id && r.Id == roundRequest.Id, null, null);
                                 if (round != null)
@@ -565,9 +580,9 @@ namespace KSMS.Infrastructure.Services
                         }
 
                         // Update RefereeAssignments
-                        if (categoryRequest.RefereeAssignments != null && categoryRequest.RefereeAssignments.Any())
+                        if (categoryRequest.UpdateRefereeAssignmentRequests != null && categoryRequest.UpdateRefereeAssignmentRequests.Any())
                         {
-                            foreach (var refereeRequest in categoryRequest.RefereeAssignments)
+                            foreach (var refereeRequest in categoryRequest.UpdateRefereeAssignmentRequests)
                             {
                                 var refereeAssignment = new RefereeAssignment
                                 {
@@ -584,9 +599,9 @@ namespace KSMS.Infrastructure.Services
                 }
             }
             // Update ShowStaffs
-            if (updateShowRequest.ShowStaffs != null && updateShowRequest.ShowStaffs.Any())
+            if (updateShowRequest.UpdateShowStaffRequests != null && updateShowRequest.UpdateShowStaffRequests.Any())
             {
-                foreach (var staffRequest in updateShowRequest.ShowStaffs)
+                foreach (var staffRequest in updateShowRequest.UpdateShowStaffRequests)
                 {
                     var staff = await showStaffRepository.SingleOrDefaultAsync(s => s.Id == staffRequest.Id && s.KoiShowId == id, null, null);
 
@@ -618,9 +633,9 @@ namespace KSMS.Infrastructure.Services
             }
 
             // Update TicketTypes
-            if (updateShowRequest.Tickets != null && updateShowRequest.Tickets.Any())
+            if (updateShowRequest.UpdateTicketRequests != null && updateShowRequest.UpdateTicketRequests.Any())
             {
-                foreach (var ticketRequest in updateShowRequest.Tickets)
+                foreach (var ticketRequest in updateShowRequest.UpdateTicketRequests)
                 {
                     var ticket = await ticketRepository.SingleOrDefaultAsync(t => t.Id == ticketRequest.Id && t.KoiShowId == id, null, null);
                     if (ticket != null)
@@ -645,9 +660,9 @@ namespace KSMS.Infrastructure.Services
             }
 
             // Update Sponsors
-            if (updateShowRequest.Sponsors != null && updateShowRequest.Sponsors.Any())
+            if (updateShowRequest.UpdateSponsorRequests != null && updateShowRequest.UpdateSponsorRequests.Any())
             {
-                foreach (var sponsorRequest in updateShowRequest.Sponsors)
+                foreach (var sponsorRequest in updateShowRequest.UpdateSponsorRequests)
                 {
                     var sponsor = await sponsorRepository.SingleOrDefaultAsync(s => s.Id == sponsorRequest.Id && s.KoiShowId == id, null, null);
                     if (sponsor != null)
@@ -670,9 +685,9 @@ namespace KSMS.Infrastructure.Services
             }
 
             // Update ShowRules
-            if (updateShowRequest.ShowRules != null && updateShowRequest.ShowRules.Any())
+            if (updateShowRequest.UpdateShowRuleRequests != null && updateShowRequest.UpdateShowRuleRequests.Any())
             {
-                foreach (var ruleRequest in updateShowRequest.ShowRules)
+                foreach (var ruleRequest in updateShowRequest.UpdateShowRuleRequests)
                 {
                     var rule = await showRuleRepository.SingleOrDefaultAsync(r => r.Id == ruleRequest.Id && r.KoiShowId == id, null, null);
                     if (rule != null)
@@ -695,9 +710,9 @@ namespace KSMS.Infrastructure.Services
             }
 
             // Update ShowStatuses
-            if (updateShowRequest.ShowStatuses != null && updateShowRequest.ShowStatuses.Any())
+            if (updateShowRequest.UpdateShowStatusRequests != null && updateShowRequest.UpdateShowStatusRequests.Any())
             {
-                foreach (var statusRequest in updateShowRequest.ShowStatuses)
+                foreach (var statusRequest in updateShowRequest.UpdateShowStatusRequests)
                 {
                     var status = await showStatusRepository.SingleOrDefaultAsync(s => s.Id == statusRequest.Id && s.KoiShowId == id, null, null);
                     if (status != null)

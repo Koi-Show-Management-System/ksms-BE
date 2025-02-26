@@ -6,22 +6,24 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace KSMS.Domain.Dtos.Requests.CriteriaGroup
+namespace KSMS.Domain.Dtos.Requests.CriteriaCompetitionCategory
 {
-    public class CreateCriteriaGroupRequest
+    public class CreateCriteriaCompetitionCategoryRequest
     {
       //  public Guid Id {  get; set; }
     //    public Guid CompetitionCategoryId { get; set; }
 
-        public string Name { get; set; } = null!;   
+     //   public string Name { get; set; } = null!;   
 
         public Guid CriteriaId { get; set; }
 
         public string? RoundType { get; set; }
 
-        public string? Description { get; set; }
+        public decimal? Weight { get; set; }
 
-        public CreateCriterionRequest Criterias { get; set; } = null!;
+        public int? Order { get; set; }
+
+   //    public CreateCriterionRequest CreateCriterionRequests { get; set; } = null!;
 
 
 
