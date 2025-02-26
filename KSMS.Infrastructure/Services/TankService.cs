@@ -23,16 +23,16 @@ namespace KSMS.Infrastructure.Services
             _unitOfWork = unitOfWork;
             _logger = logger;
         }
-
-        // Tạo mới một hồ
+         
         public async Task<TankResponse> CreateTankAsync(CreateTankRequest request)
         {
             var tankRepository = _unitOfWork.GetRepository<Tank>();
 
-            // Kiểm tra nếu đã tồn tại hồ có tên giống vậy trong hệ thống
+           
             var existingTank = await tankRepository.SingleOrDefaultAsync(
                 predicate: t => t.Name == request.Name && t.KoiShowId == request.KoiShowId
             );
+
 
             if (existingTank != null)
             {

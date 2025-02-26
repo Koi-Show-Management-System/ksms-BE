@@ -1,4 +1,5 @@
-﻿using System;
+﻿using KSMS.Domain.Dtos.Requests.ErrorType;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
@@ -11,16 +12,15 @@ namespace KSMS.Domain.Dtos.Requests.Criterion
     {
         public Guid Id { get; set; }
    
-        public Guid? CriteriaGroupId { get; set; }
+     //   public Guid? CriteriaGroupId { get; set; }
 
         public string Name { get; set; } = null!; 
  
         public string? Description { get; set; } 
-        public decimal? MaxScore { get; set; }
-
-        public decimal? Weight { get; set; }
-
+            
        
         public int? Order { get; set; }
+
+        public virtual ICollection<UpdateErrorTypeRequest> UpdateErrorTypeRequests { get; set; } = new List<UpdateErrorTypeRequest>();
     }
 }

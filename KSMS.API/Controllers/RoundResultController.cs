@@ -20,10 +20,10 @@ namespace KSMS.API.Controllers
         [HttpPost("create")]
         public async Task<ActionResult<ApiResponse<object>>> CreateRoundResult([FromBody] CreateRoundResult request)
         {
-            
+
             var createdRoundResult = await _roundResultService.CreateRoundResultAsync(request);
 
-            
+
             return StatusCode(201, ApiResponse<object>.Created(createdRoundResult, "Round result created successfully"));
         }
 
@@ -31,10 +31,10 @@ namespace KSMS.API.Controllers
         [HttpPatch("{id:guid}/update-public-status")]
         public async Task<ActionResult<ApiResponse<object>>> UpdatePublicStatus(Guid id, [FromBody] bool isPublic)
         {
-           
+
             var updatedRoundResult = await _roundResultService.UpdateIsPublicAsync(id, isPublic);
 
-          
+
             return Ok(ApiResponse<object>.Success(updatedRoundResult, "Updated IsPublic status successfully"));
         }
     }
