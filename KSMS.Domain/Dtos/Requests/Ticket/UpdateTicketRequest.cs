@@ -10,7 +10,7 @@ namespace KSMS.Domain.Dtos.Requests.Ticket
     {
         public Guid Id { get; set; }
 
-        public Guid KoiShowId { get; set; }
+    //    public Guid KoiShowId { get; set; }
 
         public string Name { get; set; } = null!;
 

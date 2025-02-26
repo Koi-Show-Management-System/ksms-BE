@@ -390,6 +390,7 @@ namespace KSMS.Infrastructure.Services
             var ticketRepository = _unitOfWork.GetRepository<TicketType>();
             var awardRepository = _unitOfWork.GetRepository<Award>();
             var varietyRepository = _unitOfWork.GetRepository<Variety>();
+            var categoryVarietyRepository = _unitOfWork.GetRepository<CategoryVariety>();
 
             // Fetch the show from the repository
             var show = await showRepository.SingleOrDefaultAsync(s => s.Id == id, null, null);
@@ -419,9 +420,9 @@ namespace KSMS.Infrastructure.Services
              showRepository.UpdateAsync(show);
 
             // Update Categories and related entities
-            if (updateShowRequest.Categories != null && updateShowRequest.Categories.Any())
+            if (updateShowRequest.UpdateCategorieShowRequests != null && updateShowRequest.UpdateCategorieShowRequests.Any())
             {
-                foreach (var categoryRequest in updateShowRequest.Categories)
+                foreach (var categoryRequest in updateShowRequest.UpdateCategorieShowRequests)
                 {
                     var category = await categoryRepository.SingleOrDefaultAsync(c => c.Id == categoryRequest.Id && c.KoiShowId == id, null, null);
                     if (category != null)
@@ -439,35 +440,57 @@ namespace KSMS.Infrastructure.Services
                          categoryRepository.UpdateAsync(category);
 
                         // Update Variety
-                        if (categoryRequest.CategoryVarietys != null && categoryRequest.CategoryVarietys.Any())
+                        if (categoryRequest.UpdateCategoryVarietyRequests != null && categoryRequest.UpdateCategoryVarietyRequests.Any())
                         {
-                            foreach (var categoryVarietyRequest in categoryRequest.CategoryVarietys)
+                            foreach (var categoryVarietyRequest in categoryRequest.UpdateCategoryVarietyRequests)
                             {
+                                // Check if the variety exists
                                 var variety = await varietyRepository.SingleOrDefaultAsync(v => v.Id == categoryVarietyRequest.VarietyId, null, null);
+
+                                // If variety doesn't exist, create a new one
                                 if (variety == null)
                                 {
                                     variety = new Variety
                                     {
                                         Id = categoryVarietyRequest.VarietyId,
-                                        Name = categoryVarietyRequest.Variety.Name,
-                                        Description = categoryVarietyRequest.Variety.Description
+                                        Name = categoryVarietyRequest.UpdateVarietyRequests.Name,
+                                        Description = categoryVarietyRequest.UpdateVarietyRequests.Description
                                     };
+
+                                    // Insert the new variety
                                     await varietyRepository.InsertAsync(variety);
                                 }
-
-                                var categoryVariety = new CategoryVariety
+                                else
                                 {
-                                    CompetitionCategoryId = category.Id,
-                                    VarietyId = variety.Id
-                                };
-                                await _unitOfWork.GetRepository<CategoryVariety>().InsertAsync(categoryVariety);
+                                    // If variety exists, update it
+                                    variety.Name = categoryVarietyRequest.UpdateVarietyRequests.Name;
+                                    variety.Description = categoryVarietyRequest.UpdateVarietyRequests.Description;
+
+                                    // Update the existing variety
+                                     varietyRepository.UpdateAsync(variety);
+                                }
+
+                                // Now check if CategoryVariety with the given CategoryId and VarietyId exists
+                                var existingCategoryVariety = await categoryVarietyRepository.SingleOrDefaultAsync(cv => cv.CompetitionCategoryId == categoryRequest.Id && cv.VarietyId == variety.Id ,null,null);
+
+                                if (existingCategoryVariety != null)
+                                {
+                                    // If CategoryVariety exists but the VarietyId is different, update the VarietyId
+                                    if (existingCategoryVariety.VarietyId != variety.Id)
+                                    {
+                                        existingCategoryVariety.VarietyId = variety.Id;
+
+                                        // Update the CategoryVariety with the new VarietyId
+                                         categoryVarietyRepository.UpdateAsync(existingCategoryVariety);
+                                    }
+                                }
                             }
                         }
 
                         // Update Awards
-                        if (categoryRequest.Awards != null && categoryRequest.Awards.Any())
+                        if (categoryRequest.UpdateAwardCateShowRequests != null && categoryRequest.UpdateAwardCateShowRequests.Any())
                         {
-                            foreach (var awardRequest in categoryRequest.Awards)
+                            foreach (var awardRequest in categoryRequest.UpdateAwardCateShowRequests)
                             {
                                 var award = await awardRepository.SingleOrDefaultAsync(a => a.CompetitionCategoriesId == category.Id && a.Id == awardRequest.Id, null, null);
                                 if (award != null)
@@ -495,9 +518,9 @@ namespace KSMS.Infrastructure.Services
                         }
 
                         // Update CriteriaGroups and Criteria
-                        if (categoryRequest.CriteriaGroups != null && categoryRequest.CriteriaGroups.Any())
+                        if (categoryRequest.UpdateCriteriaCompetitionCategoryRequests != null && categoryRequest.UpdateCriteriaCompetitionCategoryRequests.Any())
                         {
-                            foreach (var criteriaGroupRequest in categoryRequest.CriteriaGroups)
+                            foreach (var criteriaGroupRequest in categoryRequest.UpdateCriteriaCompetitionCategoryRequests)
                             {
                                 var criteriaGroup = await criteriaGroupRepository.SingleOrDefaultAsync(g => g.CompetitionCategoryId == category.Id && g.Id == criteriaGroupRequest.Id, null, null);
                                 if (criteriaGroup != null)
@@ -508,18 +531,10 @@ namespace KSMS.Infrastructure.Services
                                     criteriaGroup.Order = criteriaGroupRequest.Order;
                                     criteriaGroupRepository.UpdateAsync(criteriaGroup);
 
-                                    var criterion = await criteriaRepository.SingleOrDefaultAsync(c => c.Id == criteriaGroupRequest.Criterias.Id, null, null);
+                                    var criterion = await criteriaRepository.SingleOrDefaultAsync(c => c.Id == criteriaGroupRequest.CriteriaId, null, null);
                                     if (criterion == null)
                                     {
-                                        criterion = new Criterion
-                                        {
-                                            Id = criteriaGroupRequest.Criterias.Id,
-                                            Name = criteriaGroupRequest.Criterias.Name,
-                                            Description = criteriaGroupRequest.Criterias.Description,
-                                        
-                                            Order = criteriaGroupRequest.Criterias.Order ?? 0
-                                        };
-                                        await criteriaRepository.InsertAsync(criterion);
+                                        throw new BadRequestException(" criterion not found");
                                     }
 
                                     criteriaGroup.CriteriaId = criterion.Id;
@@ -529,9 +544,9 @@ namespace KSMS.Infrastructure.Services
                         }
 
                         // Update Rounds
-                        if (categoryRequest.Rounds != null && categoryRequest.Rounds.Any())
+                        if (categoryRequest.UpdateRoundRequest != null && categoryRequest.UpdateRoundRequest.Any())
                         {
-                            foreach (var roundRequest in categoryRequest.Rounds)
+                            foreach (var roundRequest in categoryRequest.UpdateRoundRequest)
                             {
                                 var round = await roundRepository.SingleOrDefaultAsync(r => r.CompetitionCategoriesId == category.Id && r.Id == roundRequest.Id, null, null);
                                 if (round != null)
@@ -565,9 +580,9 @@ namespace KSMS.Infrastructure.Services
                         }
 
                         // Update RefereeAssignments
-                        if (categoryRequest.RefereeAssignments != null && categoryRequest.RefereeAssignments.Any())
+                        if (categoryRequest.UpdateRefereeAssignmentRequests != null && categoryRequest.UpdateRefereeAssignmentRequests.Any())
                         {
-                            foreach (var refereeRequest in categoryRequest.RefereeAssignments)
+                            foreach (var refereeRequest in categoryRequest.UpdateRefereeAssignmentRequests)
                             {
                                 var refereeAssignment = new RefereeAssignment
                                 {
@@ -584,9 +599,9 @@ namespace KSMS.Infrastructure.Services
                 }
             }
             // Update ShowStaffs
-            if (updateShowRequest.ShowStaffs != null && updateShowRequest.ShowStaffs.Any())
+            if (updateShowRequest.UpdateShowStaffRequests != null && updateShowRequest.UpdateShowStaffRequests.Any())
             {
-                foreach (var staffRequest in updateShowRequest.ShowStaffs)
+                foreach (var staffRequest in updateShowRequest.UpdateShowStaffRequests)
                 {
                     var staff = await showStaffRepository.SingleOrDefaultAsync(s => s.Id == staffRequest.Id && s.KoiShowId == id, null, null);
 
@@ -618,9 +633,9 @@ namespace KSMS.Infrastructure.Services
             }
 
             // Update TicketTypes
-            if (updateShowRequest.Tickets != null && updateShowRequest.Tickets.Any())
+            if (updateShowRequest.UpdateTicketRequests != null && updateShowRequest.UpdateTicketRequests.Any())
             {
-                foreach (var ticketRequest in updateShowRequest.Tickets)
+                foreach (var ticketRequest in updateShowRequest.UpdateTicketRequests)
                 {
                     var ticket = await ticketRepository.SingleOrDefaultAsync(t => t.Id == ticketRequest.Id && t.KoiShowId == id, null, null);
                     if (ticket != null)
@@ -645,9 +660,9 @@ namespace KSMS.Infrastructure.Services
             }
 
             // Update Sponsors
-            if (updateShowRequest.Sponsors != null && updateShowRequest.Sponsors.Any())
+            if (updateShowRequest.UpdateSponsorRequests != null && updateShowRequest.UpdateSponsorRequests.Any())
             {
-                foreach (var sponsorRequest in updateShowRequest.Sponsors)
+                foreach (var sponsorRequest in updateShowRequest.UpdateSponsorRequests)
                 {
                     var sponsor = await sponsorRepository.SingleOrDefaultAsync(s => s.Id == sponsorRequest.Id && s.KoiShowId == id, null, null);
                     if (sponsor != null)
@@ -670,9 +685,9 @@ namespace KSMS.Infrastructure.Services
             }
 
             // Update ShowRules
-            if (updateShowRequest.ShowRules != null && updateShowRequest.ShowRules.Any())
+            if (updateShowRequest.UpdateShowRuleRequests != null && updateShowRequest.UpdateShowRuleRequests.Any())
             {
-                foreach (var ruleRequest in updateShowRequest.ShowRules)
+                foreach (var ruleRequest in updateShowRequest.UpdateShowRuleRequests)
                 {
                     var rule = await showRuleRepository.SingleOrDefaultAsync(r => r.Id == ruleRequest.Id && r.KoiShowId == id, null, null);
                     if (rule != null)
@@ -695,9 +710,9 @@ namespace KSMS.Infrastructure.Services
             }
 
             // Update ShowStatuses
-            if (updateShowRequest.ShowStatuses != null && updateShowRequest.ShowStatuses.Any())
+            if (updateShowRequest.UpdateShowStatusRequests != null && updateShowRequest.UpdateShowStatusRequests.Any())
             {
-                foreach (var statusRequest in updateShowRequest.ShowStatuses)
+                foreach (var statusRequest in updateShowRequest.UpdateShowStatusRequests)
                 {
                     var status = await showStatusRepository.SingleOrDefaultAsync(s => s.Id == statusRequest.Id && s.KoiShowId == id, null, null);
                     if (status != null)

@@ -27,11 +27,11 @@ namespace KSMS.Domain.Dtos.Requests.Show
         public string? ImgUrl { get; set; }
         public decimal RegistrationFee { get; set; }
         public string? Status { get; set; }
-        public virtual ICollection<UpdateCategorieShowRequest> Categories { get; set; } = new List<UpdateCategorieShowRequest>();
-        public virtual ICollection<UpdateShowStaffRequest> ShowStaffs { get; set; } = new List<UpdateShowStaffRequest>();
-        public virtual ICollection<UpdateShowRuleRequest> ShowRules { get; set; } = new List<UpdateShowRuleRequest>();
-        public virtual ICollection<UpdateShowStatusRequest> ShowStatuses { get; set; } = new List<UpdateShowStatusRequest>();
-        public virtual ICollection<UpdateSponsorRequest> Sponsors { get; set; } = new List<UpdateSponsorRequest>();
-        public virtual ICollection<UpdateTicketRequest> Tickets { get; set; } = new List<UpdateTicketRequest>();
+        public virtual ICollection<UpdateCategorieShowRequest> UpdateCategorieShowRequests { get; set; } = new List<UpdateCategorieShowRequest>();
+        public virtual ICollection<UpdateShowStaffRequest> UpdateShowStaffRequests { get; set; } = new List<UpdateShowStaffRequest>();
+        public virtual ICollection<UpdateShowRuleRequest> UpdateShowRuleRequests { get; set; } = new List<UpdateShowRuleRequest>();
+        public virtual ICollection<UpdateShowStatusRequest> UpdateShowStatusRequests { get; set; } = new List<UpdateShowStatusRequest>();
+        public virtual ICollection<UpdateSponsorRequest> UpdateSponsorRequests { get; set; } = new List<UpdateSponsorRequest>();
+        public virtual ICollection<UpdateTicketRequest> UpdateTicketRequests { get; set; } = new List<UpdateTicketRequest>();
     }
 }
