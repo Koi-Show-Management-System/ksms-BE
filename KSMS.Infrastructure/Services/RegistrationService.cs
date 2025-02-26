@@ -56,7 +56,7 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
         }
         
         var registrations = await _unitOfWork.GetRepository<Registration>()
-            .GetListAsync(predicate: x => x.KoiShowId == koiShow.Id && x.Status == RegistrationStatus.Confirm.ToString().ToLower());
+            .GetListAsync(predicate: x => x.KoiShowId == koiShow.Id && x.Status == RegistrationStatus.Confirmed.ToString().ToLower());
         if (registrations.Count > koiShow.MaxParticipants)
         {
             throw new NotFoundException("");
@@ -76,7 +76,7 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
         {
             var registrationCount =
                 await _unitOfWork.GetRepository<Registration>()
-                    .GetListAsync(predicate: x => x.CompetitionCategoryId == bestCategory.Id && x.Status == RegistrationStatus.Confirm.ToString().ToLower());
+                    .GetListAsync(predicate: x => x.CompetitionCategoryId == bestCategory.Id && x.Status == RegistrationStatus.Confirmed.ToString().ToLower());
             if (registrationCount.Count > bestCategory.MaxEntries)
             {
                 throw new NotFoundException("The number of participants in the category exceeds the limit");
@@ -196,7 +196,7 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
         }
         registration.Status = status switch
         {
-            RegistrationStatus.Confirm => RegistrationStatus.Confirm.ToString().ToLower(),
+            RegistrationStatus.Confirmed => RegistrationStatus.Confirmed.ToString().ToLower(),
             RegistrationStatus.Rejected => RegistrationStatus.Rejected.ToString().ToLower(),
             //RegistrationStatus.NotEnoughQuota => RegistrationStatus.NotEnoughQuota.ToString().ToLower(),
             //RegistrationStatus.Cancelled => RegistrationStatus.Cancelled.ToString().ToLower(),
@@ -204,6 +204,8 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
         };
         if (registration.Status == RegistrationStatus.Rejected.ToString().ToLower())
         {
+            _unitOfWork.GetRepository<Registration>().UpdateAsync(registration);
+            await _unitOfWork.CommitAsync();
             var sendMail = MailUtil.SendEmail(registration.Account.Email,
                 "KOI SHOW - Thông báo từ chối đơn đăng ký",
                 MailUtil.ContentMailUtil.RejectRegistration(registration), "");
@@ -213,7 +215,7 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
                 throw new BadRequestException("Error sending rejection email.");
             }
         }
-        if (registration.Status == RegistrationStatus.Confirm.ToString().ToLower())
+        if (registration.Status == RegistrationStatus.Confirmed.ToString().ToLower())
         {
             registration.ApprovedAt = DateTime.UtcNow;
             

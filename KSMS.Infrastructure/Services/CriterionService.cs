@@ -45,6 +45,7 @@ namespace KSMS.Infrastructure.Services
                 {
                     var errorType = errorTypeRequest.Adapt<ErrorType>();
                     criterion.ErrorTypes.Add(errorType);
+                    
                 }
             }
 
