@@ -13,6 +13,6 @@ namespace KSMS.Domain.Dtos.Responses.ErrorType
 
         public string Name { get; set; } = null!;
 
-         public virtual ICollection<ScoreDetailErrorResponse> ScoreDetailErrors { get; set; } = new List<ScoreDetailErrorResponse>();
+       //  public virtual ICollection<ScoreDetailErrorResponse> ScoreDetailErrors { get; set; } = new List<ScoreDetailErrorResponse>();
     }
 }

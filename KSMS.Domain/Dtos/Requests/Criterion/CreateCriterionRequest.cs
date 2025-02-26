@@ -21,7 +21,7 @@ namespace KSMS.Domain.Dtos.Requests.Criterion
         [Range(1, int.MaxValue, ErrorMessage = "Order must be greater than 0.")]
         public int? Order { get; set; }
 
-      //  public virtual ICollection<CreateErrorTypeRequest> ErrorTypes { get; set; } = new List<CreateErrorTypeRequest>();
+       public virtual ICollection<CreateErrorTypeRequest> CreateErrorTypeRequests { get; set; } = new List<CreateErrorTypeRequest>();
 
    
     }

@@ -25,7 +25,7 @@ namespace KSMS.API.Controllers
             var pagedScores = await _scoreService.GetPagedScoresAsync(page, size);
             return Ok(ApiResponse<object>.Success(pagedScores, "Get the list of score successfully"));
         }
-         
+
         [Route("Refree/CreateScores")]
         [HttpPost]
         public async Task<ActionResult<ApiResponse<object>>> CreateScore([FromBody] CreateScoreDetailRequest request)

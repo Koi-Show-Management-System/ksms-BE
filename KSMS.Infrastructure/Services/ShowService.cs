@@ -23,7 +23,8 @@ namespace KSMS.Infrastructure.Services
     public class ShowService : BaseService<ShowService>, IShowService
     {
 
-        public ShowService(IUnitOfWork<KoiShowManagementSystemContext> unitOfWork, ILogger<ShowService> logger, IHttpContextAccessor httpContextAccessor) : base(unitOfWork, logger, httpContextAccessor)
+        public ShowService(IUnitOfWork<KoiShowManagementSystemContext> unitOfWork, ILogger<ShowService> logger, IHttpContextAccessor httpContextAccessor)
+            : base(unitOfWork, logger, httpContextAccessor)
         {
         }
             public async Task<KoiShowResponse> CreateShowAsync(CreateShowRequest createShowRequest)
