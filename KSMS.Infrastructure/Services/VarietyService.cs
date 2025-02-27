@@ -1,7 +1,9 @@
 ﻿using KSMS.Application.Repositories;
 using KSMS.Application.Services;
 using KSMS.Domain.Dtos.Requests.Variety;
+using KSMS.Domain.Dtos.Responses.Variety;
 using KSMS.Domain.Entities;
+using KSMS.Domain.Pagination;
 using KSMS.Infrastructure.Database;
 using Mapster;
 using Microsoft.AspNetCore.Http;
@@ -19,5 +21,11 @@ public class VarietyService : BaseService<VarietyService>, IVarieryService
     {
         await _unitOfWork.GetRepository<Variety>().InsertAsync(createVarietyRequest.Adapt<Variety>());
         await _unitOfWork.CommitAsync();
+    }
+
+    public async Task<Paginate<VarietyResponse>> GetPagingVariety(int page, int size)
+    {
+        return (await _unitOfWork.GetRepository<Variety>().GetPagingListAsync(page: page, size: size))
+            .Adapt<Paginate<VarietyResponse>>();
     }
 }

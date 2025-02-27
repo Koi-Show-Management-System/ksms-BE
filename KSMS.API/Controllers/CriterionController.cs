@@ -46,7 +46,7 @@ namespace KSMS.API.Controllers
         }
         
         [HttpGet("get-all")]
-        public async Task<ActionResult<ApiResponse<object>>> GetPagedCriteria([FromQuery]int page = 1, [FromQuery]int size = 10)
+        public async Task<ActionResult<ApiResponse<object>>> GetPagingCriteria([FromQuery]int page = 1, [FromQuery]int size = 10)
         {
             var criteria = await _criterionService.GetAllCriteria(page, size);
             return Ok(ApiResponse<object>.Success(criteria, "Get list  successfully"));

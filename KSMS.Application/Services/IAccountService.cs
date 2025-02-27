@@ -10,7 +10,7 @@ public interface IAccountService
 {
     Task UpdateAccount(Guid id, UpdateAccountRequest updateAccountRequest);
 
-    Task<Paginate<AccountResponse>> GetPagedUsersAsync(int page, int pageSize);
+    Task<Paginate<AccountResponse>> GetPagedUsersAsync(RoleName? roleName, int page, int pageSize);
     Task<AccountResponse> GetUserByIdAsync(Guid id);
     Task<AccountResponse> CreateUserAsync(CreateAccountRequest createAccountRequest);
     Task<AccountResponse> UpdateStatus(Guid id, AccountStatus status);

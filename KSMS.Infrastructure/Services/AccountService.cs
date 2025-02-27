@@ -1,4 +1,5 @@
-﻿using KSMS.Application.GoogleServices;
+﻿using System.Linq.Expressions;
+using KSMS.Application.GoogleServices;
 using KSMS.Application.Repositories;
 using KSMS.Application.Services;
 using KSMS.Domain.Dtos.Requests.Account;
@@ -12,6 +13,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
  
 using BCrypt.Net;
+using KSMS.Application.Extensions;
 using KSMS.Domain.Dtos.Responses.Account;
 using KSMS.Domain.Exceptions;
 using KSMS.Infrastructure.Utils;
@@ -26,12 +28,18 @@ public class AccountService : BaseService<AccountService>, IAccountService
     {
         _firebaseService = firebaseService;
     }
-    public async Task<Paginate<AccountResponse>> GetPagedUsersAsync(int page, int size)
+    public async Task<Paginate<AccountResponse>> GetPagedUsersAsync(RoleName? roleName, int page, int size)
     { 
         var userRepository = _unitOfWork.GetRepository<Account>();
 
-        
-       var pagedUsers = await userRepository.GetPagingListAsync(
+        Expression<Func<Account, bool>> filterQuery = account => true;
+        if (roleName.HasValue)
+        {
+            var roleString = roleName.Value.ToString();
+            filterQuery = filterQuery.AndAlso(r => r.Role == roleString);
+        } 
+        var pagedUsers = await userRepository.GetPagingListAsync(
+            predicate: filterQuery,
             orderBy: query => query.OrderBy(a => a.Username),  
             page: page,  
             size: size   
