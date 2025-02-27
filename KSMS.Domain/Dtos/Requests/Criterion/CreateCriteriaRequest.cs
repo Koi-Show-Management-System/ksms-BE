@@ -5,7 +5,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace KSMS.Domain.Dtos.Requests.Criterion
 {
-    public class CreateCriterionRequest
+    public class CreateCriteriaRequest
     {
       
         [Required(ErrorMessage = "Name is required.")]

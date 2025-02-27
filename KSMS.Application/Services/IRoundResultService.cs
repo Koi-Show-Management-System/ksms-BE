@@ -11,8 +11,8 @@ namespace KSMS.Application.Services
 {
     public interface IRoundResultService
     {
-        Task<GetAllRoundResultResponse> CreateRoundResultAsync(CreateRoundResult request);
+        Task<RoundResultResponse> CreateRoundResultAsync(CreateRoundResult request);
 
-        Task<GetAllRoundResultResponse> UpdateIsPublicAsync(Guid id, bool isPublic);
+        Task<RoundResultResponse> UpdateIsPublicAsync(Guid id, bool isPublic);
     }
 }

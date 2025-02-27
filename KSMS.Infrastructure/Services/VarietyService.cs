@@ -17,22 +17,6 @@ public class VarietyService : BaseService<VarietyService>, IVarieryService
     public VarietyService(IUnitOfWork<KoiShowManagementSystemContext> unitOfWork, ILogger<VarietyService> logger, IHttpContextAccessor httpContextAccessor) : base(unitOfWork, logger, httpContextAccessor)
     {
     }
-    public async Task<IEnumerable<VarietyResponse>> GetAllVarietyAsync()
-    {
-      
-        var userId = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-        if (string.IsNullOrEmpty(userId) || !Guid.TryParse(userId, out Guid accountId))
-        {
-            throw new UnauthorizedAccessException("User is not authenticated.");
-        }
-
-        var varietyRepository = _unitOfWork.GetRepository<Variety>();
-
-        var varieties = await varietyRepository.GetListAsync();
-
-        return varieties.Adapt<IEnumerable<VarietyResponse>>();
-    }
     public async Task CreateVariety(CreateVarietyRequest createVarietyRequest)
     {
         await _unitOfWork.GetRepository<Variety>().InsertAsync(createVarietyRequest.Adapt<Variety>());

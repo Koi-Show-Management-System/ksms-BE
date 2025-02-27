@@ -17,32 +17,32 @@ using Microsoft.EntityFrameworkCore;
 
 namespace KSMS.Infrastructure.Services
 {
-    public class CriterionService : BaseService<CriterionService>, ICriterionService
+    public class CriteriaService : BaseService<CriteriaService>, ICriterionService
     {
-        public CriterionService(IUnitOfWork<KoiShowManagementSystemContext> unitOfWork, ILogger<CriterionService> logger, IHttpContextAccessor httpContextAccessor)
+        public CriteriaService(IUnitOfWork<KoiShowManagementSystemContext> unitOfWork, ILogger<CriteriaService> logger, IHttpContextAccessor httpContextAccessor)
           : base(unitOfWork, logger, httpContextAccessor)
         {
         }
 
         
-        public async Task<GetAllCriterionResponse> CreateCriterionAsync(CreateCriterionRequest createCriterionRequest)
+        public async Task<CriteriaResponse> CreateCriteriaAsync(CreateCriteriaRequest createCriteriaRequest)
         {
             var criterionRepository = _unitOfWork.GetRepository<Criterion>();
             var errorTypeRepository = _unitOfWork.GetRepository<ErrorType>();
 
-            var existingCriterion = await criterionRepository.SingleOrDefaultAsync(c => c.Name == createCriterionRequest.Name ,null,null);
+            var existingCriterion = await criterionRepository.SingleOrDefaultAsync(c => c.Name == createCriteriaRequest.Name ,null,null);
             if (existingCriterion != null)
             {
-                throw new BadRequestException($"Criterion with name '{createCriterionRequest.Name}' already exists.");
+                throw new BadRequestException($"Criterion with name '{createCriteriaRequest.Name}' already exists.");
             }
 
            
-            var criterion = createCriterionRequest.Adapt<Criterion>();
+            var criterion = createCriteriaRequest.Adapt<Criterion>();
 
             
-            if (createCriterionRequest.CreateErrorTypeRequests != null && createCriterionRequest.CreateErrorTypeRequests.Any())
+            if (createCriteriaRequest.CreateErrorTypeRequests != null && createCriteriaRequest.CreateErrorTypeRequests.Any())
             {
-                foreach (var errorTypeRequest in createCriterionRequest.CreateErrorTypeRequests)
+                foreach (var errorTypeRequest in createCriteriaRequest.CreateErrorTypeRequests)
                 {
                     var errorType = errorTypeRequest.Adapt<ErrorType>();
                     criterion.ErrorTypes.Add(errorType);
@@ -52,11 +52,11 @@ namespace KSMS.Infrastructure.Services
             var createdCriterion = await criterionRepository.InsertAsync(criterion);
             await _unitOfWork.CommitAsync();
 
-            return createdCriterion.Adapt<GetAllCriterionResponse>();
+            return createdCriterion.Adapt<CriteriaResponse>();
         }
 
   
-        public async Task<GetAllCriterionResponse> GetCriterionByIdAsync(Guid id)
+        public async Task<CriteriaResponse> GetCriteriaByIdAsync(Guid id)
         {
             var criterionRepository = _unitOfWork.GetRepository<Criterion>();
              
@@ -70,10 +70,10 @@ namespace KSMS.Infrastructure.Services
                 throw new NotFoundException("Criterion not found");
             }
 
-            return criterion.Adapt<GetAllCriterionResponse>();
+            return criterion.Adapt<CriteriaResponse>();
         }
 
-        public async Task<GetAllCriterionResponse> UpdateCriterionAsync(Guid id, UpdateCriterionRequest updateCriterionRequest)
+        public async Task<CriteriaResponse> UpdateCriteriaAsync(Guid id, UpdateCriteriaRequest updateCriteriaRequest)
         {
             var criterionRepository = _unitOfWork.GetRepository<Criterion>();
 
@@ -83,12 +83,12 @@ namespace KSMS.Infrastructure.Services
                 throw new NotFoundException("Criterion not found");
             }
 
-            updateCriterionRequest.Adapt(criterion);
+            updateCriteriaRequest.Adapt(criterion);
 
      
-            if (updateCriterionRequest.UpdateErrorTypeRequests != null && updateCriterionRequest.UpdateErrorTypeRequests.Any())
+            if (updateCriteriaRequest.UpdateErrorTypeRequests != null && updateCriteriaRequest.UpdateErrorTypeRequests.Any())
             {
-                foreach (var errorTypeRequest in updateCriterionRequest.UpdateErrorTypeRequests)
+                foreach (var errorTypeRequest in updateCriteriaRequest.UpdateErrorTypeRequests)
                 {
                     var existingErrorType = await _unitOfWork.GetRepository<ErrorType>()
                         .SingleOrDefaultAsync(e => e.Id == errorTypeRequest.CriteriaId ,null,null);
@@ -104,17 +104,17 @@ namespace KSMS.Infrastructure.Services
             criterionRepository.UpdateAsync(criterion);
             await _unitOfWork.CommitAsync();
 
-            return criterion.Adapt<GetAllCriterionResponse>();
+            return criterion.Adapt<CriteriaResponse>();
         }
 
-        public async Task<Paginate<GetAllCriteriaResponse>> GetAllCriteria(int page, int size)
+        public async Task<Paginate<GetAllCriteriaResponse>> GetPagingCriteria(int page, int size)
         {
             return (await _unitOfWork.GetRepository<Criterion>().GetPagingListAsync(page: page, size: size))
                 .Adapt<Paginate<GetAllCriteriaResponse>>();
         }
 
 
-        public async Task DeleteCriterionAsync(Guid id)
+        public async Task DeleteCriteriaAsync(Guid id)
         {
             var criterionRepository = _unitOfWork.GetRepository<Criterion>();
             var criterion = await criterionRepository.SingleOrDefaultAsync(c => c.Id == id,null,null);

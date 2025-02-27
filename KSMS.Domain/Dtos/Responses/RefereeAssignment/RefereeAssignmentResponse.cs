@@ -7,7 +7,7 @@ using KSMS.Domain.Dtos.Responses.Account;
 
 namespace KSMS.Domain.Dtos.Responses.RefereeAssignment
 {
-    public class GetAllRefereeAssignmentResponse
+    public class RefereeAssignmentResponse
     {
         public Guid Id { get; set; }
         public Guid CompetitionCategoryId { get; set; }
@@ -18,8 +18,8 @@ namespace KSMS.Domain.Dtos.Responses.RefereeAssignment
 
          public Guid AssignedBy { get; set; }
 
-        public GetALLAccountResponse RefereeAccount { get; set; } = null!;
+        public AccountResponse RefereeAccount { get; set; } = null!;
 
-        public GetALLAccountResponse AssignedByNavigation { get; set; } = null!;
+        public AccountResponse AssignedByNavigation { get; set; } = null!;
     }
 }

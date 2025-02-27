@@ -1,4 +1,4 @@
-﻿using KSMS.Domain.Dtos.Responses.TicketOrderDetail;
+﻿
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace KSMS.Domain.Dtos.Responses.Ticket
 {
-    public class GetAllTicketTypeResponse
+    public class TicketTypeResponse
     {
         public Guid Id { get; set; }
 
@@ -18,8 +18,6 @@ namespace KSMS.Domain.Dtos.Responses.Ticket
         public decimal Price { get; set; }
 
         public int AvailableQuantity { get; set; }
-
-        public virtual ICollection<TicketOrderDetailResponse> TicketOrderDetails { get; set; } = new List<TicketOrderDetailResponse>();
 
     }
 }

@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace KSMS.Domain.Dtos.Responses.CriteriaGroupRequest
 {
-    public class GetAllCriteriaGroupResponse
+    public class CriteriaCompetitionCategoryResponse
     {
         public Guid Id { get; set; }
         public Guid CompetitionCategoryId { get; set; }
@@ -24,7 +24,7 @@ namespace KSMS.Domain.Dtos.Responses.CriteriaGroupRequest
 
 
 
-        public virtual GetAllCriterionResponse Criteria { get; set; } = null!;
+        public virtual CriteriaResponse Criteria { get; set; } = null!;
 
 
 

@@ -11,9 +11,9 @@ namespace KSMS.Application.Services
     public interface ITankService
     {
        
-        Task<GetAllTankResponse> CreateTankAsync(CreateTankRequest request);
+        Task<TankResponse> CreateTankAsync(CreateTankRequest request);
 
       
-        Task<List<GetAllTankResponse>> GetTanksByKoiShowIdAsync(Guid koiShowId);
+        Task<List<TankResponse>> GetTanksByKoiShowIdAsync(Guid koiShowId);
     }
 }

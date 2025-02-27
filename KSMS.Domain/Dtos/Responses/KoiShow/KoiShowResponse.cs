@@ -14,7 +14,7 @@ using System.Threading.Tasks;
 
 namespace KSMS.Domain.Dtos.Responses.KoiShow
 {
-    public class GetAllKoiShowResponse
+    public class KoiShowResponse
     {
         public Guid Id { get; set; }
         public string Name { get; set; } = null!;
@@ -47,17 +47,17 @@ namespace KSMS.Domain.Dtos.Responses.KoiShow
 
         public string? Status { get; set; }
 
-        public virtual ICollection<GetAllCompetitionCategoryResponse> CompetitionCategories { get; set; } = new List<GetAllCompetitionCategoryResponse>();
+        public virtual ICollection<CompetitionCategoryResponse> CompetitionCategories { get; set; } = new List<CompetitionCategoryResponse>();
 
-        public virtual ICollection<GetAllShowStaffResponse> ShowStaffs { get; set; } = new List<GetAllShowStaffResponse>();
+        public virtual ICollection<ShowStaffResponse> ShowStaffs { get; set; } = new List<ShowStaffResponse>();
 
-        public virtual ICollection<GetAllShowRuleResponse> ShowRules { get; set; } = new List<GetAllShowRuleResponse>();
+        public virtual ICollection<ShowRuleResponse> ShowRules { get; set; } = new List<ShowRuleResponse>();
 
-        public virtual ICollection<GetAllShowStatusResponse> ShowStatuses { get; set; } = new List<GetAllShowStatusResponse>();
+        public virtual ICollection<ShowStatusResponse> ShowStatuses { get; set; } = new List<ShowStatusResponse>();
 
-        public virtual ICollection<GetAllSponsorResponse> Sponsors { get; set; } = new List<GetAllSponsorResponse>();
+        public virtual ICollection<SponsorResponse> Sponsors { get; set; } = new List<SponsorResponse>();
 
-        public virtual ICollection<GetAllTicketTypeResponse> TicketTypes { get; set; } = new List<GetAllTicketTypeResponse>();
+        public virtual ICollection<TicketTypeResponse> TicketTypes { get; set; } = new List<TicketTypeResponse>();
 
 
     }

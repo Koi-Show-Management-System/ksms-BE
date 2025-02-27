@@ -12,20 +12,20 @@ namespace KSMS.API.Controllers
 {
     [Route("api/criteria")]
     [ApiController]
-    public class CriterionController : ControllerBase
+    public class CriteriaController : ControllerBase
     {
         private readonly ICriterionService _criterionService;
 
-        public CriterionController(ICriterionService criterionService)
+        public CriteriaController(ICriterionService criterionService)
         {
             _criterionService = criterionService;
         }
 
      
         [HttpPost("create")]
-        public async Task<ActionResult<ApiResponse<object>>> CreateCriterion([FromBody] CreateCriterionRequest createCriterionRequest)
+        public async Task<ActionResult<ApiResponse<object>>> CreateCriterion([FromBody] CreateCriteriaRequest createCriteriaRequest)
         {
-            var createdCriterion = await _criterionService.CreateCriterionAsync(createCriterionRequest);
+            var createdCriterion = await _criterionService.CreateCriteriaAsync(createCriteriaRequest);
             return StatusCode(201, ApiResponse<object>.Created(createdCriterion, "Criterion created successfully"));
         }
 
@@ -33,22 +33,22 @@ namespace KSMS.API.Controllers
         [HttpGet("{id:guid}")]
         public async Task<ActionResult<ApiResponse<object>>> GetCriterionById(Guid id)
         {
-            var criterion = await _criterionService.GetCriterionByIdAsync(id);
+            var criterion = await _criterionService.GetCriteriaByIdAsync(id);
             return Ok(ApiResponse<object>.Success(criterion, "Criterion retrieved successfully"));
         }
 
    
         [HttpPut("{id:guid}")]
-        public async Task<ActionResult<ApiResponse<object>>> UpdateCriterion(Guid id, [FromBody] UpdateCriterionRequest updateCriterionRequest)
+        public async Task<ActionResult<ApiResponse<object>>> UpdateCriterion(Guid id, [FromBody] UpdateCriteriaRequest updateCriteriaRequest)
         {
-            var updatedCriterion = await _criterionService.UpdateCriterionAsync(id, updateCriterionRequest);
+            var updatedCriterion = await _criterionService.UpdateCriteriaAsync(id, updateCriteriaRequest);
             return Ok(ApiResponse<object>.Success(updatedCriterion, "Criterion updated successfully"));
         }
         
-        [HttpGet("get-all")]
+        [HttpGet("get-page")]
         public async Task<ActionResult<ApiResponse<object>>> GetPagingCriteria([FromQuery]int page = 1, [FromQuery]int size = 10)
         {
-            var criteria = await _criterionService.GetAllCriteria(page, size);
+            var criteria = await _criterionService.GetPagingCriteria(page, size);
             return Ok(ApiResponse<object>.Success(criteria, "Get list  successfully"));
         }
    
