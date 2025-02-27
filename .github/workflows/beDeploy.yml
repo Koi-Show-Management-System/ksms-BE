@@ -98,6 +98,55 @@ jobs:
         mkdir -p /var/log/$APP_NAME
         chown -R www-data:www-data /var/log/$APP_NAME
         
+        # Tạo script sửa lỗi để sử dụng trong tương lai nếu cần
+        cat > /usr/local/bin/ksms-fix-tokens << 'SCRIPT'
+        #!/bin/bash
+        # Tải và cài đặt phiên bản 8.2.1 của các thư viện Identity Model
+        
+        # Tạo thư mục tạm
+        mkdir -p /tmp/nuget-latest
+        cd /tmp/nuget-latest
+        
+        echo "Đang tải các package Identity Model phiên bản 8.2.1..."
+        wget -q https://www.nuget.org/api/v2/package/Microsoft.IdentityModel.Protocols/8.2.1 -O protocols.nupkg
+        wget -q https://www.nuget.org/api/v2/package/Microsoft.IdentityModel.Logging/8.2.1 -O logging.nupkg
+        wget -q https://www.nuget.org/api/v2/package/Microsoft.IdentityModel.Tokens/8.2.1 -O tokens.nupkg
+        wget -q https://www.nuget.org/api/v2/package/Microsoft.IdentityModel.JsonWebTokens/8.2.1 -O jwt.nupkg
+        wget -q https://www.nuget.org/api/v2/package/Microsoft.IdentityModel.Protocols.OpenIdConnect/8.2.1 -O openidconnect.nupkg
+        wget -q https://www.nuget.org/api/v2/package/System.IdentityModel.Tokens.Jwt/8.2.1 -O systemjwt.nupkg
+        
+        echo "Giải nén các package..."
+        mkdir -p protocols logging tokens jwt openidconnect systemjwt
+        unzip -q protocols.nupkg -d protocols
+        unzip -q logging.nupkg -d logging
+        unzip -q tokens.nupkg -d tokens
+        unzip -q jwt.nupkg -d jwt
+        unzip -q openidconnect.nupkg -d openidconnect
+        unzip -q systemjwt.nupkg -d systemjwt
+        
+        echo "Sao chép DLL vào thư mục ứng dụng..."
+        cp -v protocols/lib/net8.0/*.dll /var/www/ksms-api/current/
+        cp -v logging/lib/net8.0/*.dll /var/www/ksms-api/current/
+        cp -v tokens/lib/net8.0/*.dll /var/www/ksms-api/current/
+        cp -v jwt/lib/net8.0/*.dll /var/www/ksms-api/current/
+        cp -v openidconnect/lib/net8.0/*.dll /var/www/ksms-api/current/
+        cp -v systemjwt/lib/net8.0/*.dll /var/www/ksms-api/current/
+        
+        echo "Cập nhật quyền..."
+        chown -R www-data:www-data /var/www/ksms-api/current
+        
+        echo "Khởi động lại ứng dụng..."
+        supervisorctl restart ksms-api
+        
+        # Dọn dẹp
+        cd /
+        rm -rf /tmp/nuget-latest
+        
+        echo "Hoàn tất!"
+        SCRIPT
+        
+        chmod +x /usr/local/bin/ksms-fix-tokens
+        
         echo "Environment setup completed!"
         EOL
         chmod +x setup.sh
@@ -207,24 +256,18 @@ jobs:
         # Kiểm tra cấu hình Nginx
         nginx -t
         
-        # Hướng dẫn khởi chạy SSL
-        echo "=== IMPORTANT ==="
-        echo "After deployment, run the following command to set up SSL:"
-        echo "sudo certbot --nginx -d api.ksms.news"
-        echo "================="
-
         # Download và cài đặt các thư viện Identity Model cần thiết
         echo "Kiểm tra và cài đặt các thư viện Identity Model..."
         mkdir -p /tmp/nuget
         
         # Tải xuống tất cả các package cần thiết
         echo "Tải xuống các package Identity Model..."
-        wget -q https://www.nuget.org/api/v2/package/Microsoft.IdentityModel.Protocols/7.1.2 -O /tmp/nuget/protocols.nupkg
-        wget -q https://www.nuget.org/api/v2/package/Microsoft.IdentityModel.Logging/7.1.2 -O /tmp/nuget/logging.nupkg
-        wget -q https://www.nuget.org/api/v2/package/Microsoft.IdentityModel.Tokens/7.1.2 -O /tmp/nuget/tokens.nupkg
-        wget -q https://www.nuget.org/api/v2/package/Microsoft.IdentityModel.JsonWebTokens/7.1.2 -O /tmp/nuget/jwt.nupkg
-        wget -q https://www.nuget.org/api/v2/package/Microsoft.IdentityModel.Protocols.OpenIdConnect/7.1.2 -O /tmp/nuget/openidconnect.nupkg
-        wget -q https://www.nuget.org/api/v2/package/System.IdentityModel.Tokens.Jwt/7.1.2 -O /tmp/nuget/systemjwt.nupkg
+        wget -q https://www.nuget.org/api/v2/package/Microsoft.IdentityModel.Protocols/8.2.1 -O /tmp/nuget/protocols.nupkg
+        wget -q https://www.nuget.org/api/v2/package/Microsoft.IdentityModel.Logging/8.2.1 -O /tmp/nuget/logging.nupkg
+        wget -q https://www.nuget.org/api/v2/package/Microsoft.IdentityModel.Tokens/8.2.1 -O /tmp/nuget/tokens.nupkg
+        wget -q https://www.nuget.org/api/v2/package/Microsoft.IdentityModel.JsonWebTokens/8.2.1 -O /tmp/nuget/jwt.nupkg
+        wget -q https://www.nuget.org/api/v2/package/Microsoft.IdentityModel.Protocols.OpenIdConnect/8.2.1 -O /tmp/nuget/openidconnect.nupkg
+        wget -q https://www.nuget.org/api/v2/package/System.IdentityModel.Tokens.Jwt/8.2.1 -O /tmp/nuget/systemjwt.nupkg
         
         # Giải nén các packages
         echo "Giải nén các package..."
@@ -238,18 +281,28 @@ jobs:
         
         # Sao chép tất cả DLL vào thư mục ứng dụng
         echo "Sao chép DLL vào thư mục ứng dụng..."
-        cp -v /tmp/nuget/protocols/lib/netstandard2.0/*.dll $RELEASE_PATH/
-        cp -v /tmp/nuget/logging/lib/netstandard2.0/*.dll $RELEASE_PATH/
-        cp -v /tmp/nuget/tokens/lib/netstandard2.0/*.dll $RELEASE_PATH/
-        cp -v /tmp/nuget/jwt/lib/netstandard2.0/*.dll $RELEASE_PATH/
-        cp -v /tmp/nuget/openidconnect/lib/netstandard2.0/*.dll $RELEASE_PATH/
-        cp -v /tmp/nuget/systemjwt/lib/netstandard2.0/*.dll $RELEASE_PATH/
+        cp -v /tmp/nuget/protocols/lib/net8.0/*.dll $RELEASE_PATH/
+        cp -v /tmp/nuget/logging/lib/net8.0/*.dll $RELEASE_PATH/
+        cp -v /tmp/nuget/tokens/lib/net8.0/*.dll $RELEASE_PATH/
+        cp -v /tmp/nuget/jwt/lib/net8.0/*.dll $RELEASE_PATH/
+        cp -v /tmp/nuget/openidconnect/lib/net8.0/*.dll $RELEASE_PATH/
+        cp -v /tmp/nuget/systemjwt/lib/net8.0/*.dll $RELEASE_PATH/
         
         # Cập nhật quyền
         chown -R www-data:www-data $RELEASE_PATH
         
         # Dọn dẹp
         rm -rf /tmp/nuget
+        
+        # Hướng dẫn khởi chạy SSL
+        echo "=== IMPORTANT ==="
+        echo "After deployment, run the following command to set up SSL:"
+        echo "sudo certbot --nginx -d api.ksms.news"
+        echo "================="
+        
+        # Kiểm tra các DLL quan trọng đã được cài đặt
+        echo "Kiểm tra các DLL Identity Model..."
+        ls -la $RELEASE_PATH/Microsoft.IdentityModel.*.dll || echo "WARNING: Missing Identity Model DLLs!"
         
         # Khởi động lại các dịch vụ
         supervisorctl reread
