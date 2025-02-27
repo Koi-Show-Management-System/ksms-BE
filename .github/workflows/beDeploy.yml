@@ -2,9 +2,9 @@ name: CI/CD Pipeline - C# Backend to Fresh Ubuntu VPS
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main ]
   pull_request:
-    branches: [ main, master ]
+    branches: [ main ]
   workflow_dispatch:
     # Cho phép chạy workflow thủ công từ giao diện GitHub
 
@@ -36,7 +36,7 @@ jobs:
       run: dotnet publish --configuration Release --output ./publish
       
     - name: Upload build artifacts
-      uses: actions/upload-artifact@v4  # Đã cập nhật từ v3 lên v4
+      uses: actions/upload-artifact@v4
       with:
         name: app-build
         path: ./publish/
@@ -49,7 +49,7 @@ jobs:
     
     steps:
     - name: Download build artifacts
-      uses: actions/download-artifact@v4  # Đã cập nhật từ v3 lên v4
+      uses: actions/download-artifact@v4
       with:
         name: app-build
         path: ./publish/
@@ -188,25 +188,28 @@ jobs:
         EOL
         chmod +x deploy.sh
 
-    - name: Install SSH key
-      uses: shimataro/ssh-key-action@v2
-      with:
-        key: ${{ secrets.SSH_PRIVATE_KEY }}
-        if_key_exists: replace
+    # Thay thế cách cài đặt SSH key
+    - name: Setup SSH Config
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+        chmod 644 ~/.ssh/known_hosts
         
     - name: Setup environment and deploy to VPS
       run: |
         # Tạo thư mục tạm trên VPS và sao chép các tệp
-        ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "mkdir -p /tmp/app-build"
-        scp -o StrictHostKeyChecking=no -r ./publish/* ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/tmp/app-build/
-        scp -o StrictHostKeyChecking=no setup.sh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/tmp/
-        scp -o StrictHostKeyChecking=no deploy.sh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/tmp/
+        ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "mkdir -p /tmp/app-build"
+        scp -r ./publish/* ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/tmp/app-build/
+        scp setup.sh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/tmp/
+        scp deploy.sh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/tmp/
         
         # Chạy script thiết lập môi trường
-        ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "sudo bash /tmp/setup.sh"
+        ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "sudo bash /tmp/setup.sh"
         
         # Chạy script triển khai ứng dụng
-        ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "sudo bash /tmp/deploy.sh"
+        ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "sudo bash /tmp/deploy.sh"
         
         # Dọn dẹp
-        ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "rm -rf /tmp/app-build /tmp/setup.sh /tmp/deploy.sh"
+        ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "rm -rf /tmp/app-build /tmp/setup.sh /tmp/deploy.sh"
