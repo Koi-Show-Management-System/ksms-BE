@@ -2,6 +2,7 @@
 using KSMS.Domain.Dtos;
 using KSMS.Domain.Dtos.Requests.TicketOrder;
 using KSMS.Domain.Enums;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace KSMS.API.Controllers;
@@ -17,6 +18,7 @@ public class TicketOrderController : ControllerBase
     }
 
     [HttpPost("create-order")]
+    [Authorize(Roles = "Member")]
     public async Task<ActionResult<ApiResponse<object>>> CreateOrder([FromBody] CreateTicketOrderRequest createTicketOrderRequest)
     {
         var createOrder = await _ticketOrderService.CreateTicketOrder(createTicketOrderRequest);
@@ -32,5 +34,26 @@ public class TicketOrderController : ControllerBase
         }
         await _ticketOrderService.UpdateTicketOrder(ticketOrderId, OrderStatus.Paid); 
         return Redirect("http://localhost:5173/success");
+    }
+
+    [HttpGet("get-all-orders")]
+    [Authorize(Roles = "Member, Staff, Manager, Admin")]
+    public async Task<ActionResult<ApiResponse<object>>> GetAllOrders([FromQuery]Guid? koiShowId, [FromQuery]OrderStatus? orderStatus,
+        [FromQuery] int page = 1, [FromQuery]int size  = 10)
+    {
+        var orders = await _ticketOrderService.GetAllOrder(koiShowId, orderStatus, page, size);
+        return Ok(ApiResponse<object>.Success(orders, "Get list successfully"));
+    }
+    [HttpGet("get-order-details/{orderId:guid}")]
+    public async Task<ActionResult<ApiResponse<object>>> GetOrderDetails(Guid orderId)
+    {
+        var orderDetails = await _ticketOrderService.GetOrderDetailByOrderId(orderId);
+        return Ok(ApiResponse<object>.Success(orderDetails, "Get list successfully"));
+    }
+    [HttpGet("get-all-tickets/{orderDetailId:guid}")]
+    public async Task<ActionResult<ApiResponse<object>>> GetTicketByOrderDetailId(Guid orderDetailId)
+    {
+        var orderDetails = await _ticketOrderService.GetTicketByOrderDetailId(orderDetailId);
+        return Ok(ApiResponse<object>.Success(orderDetails, "Get list successfully"));
     }
 }
