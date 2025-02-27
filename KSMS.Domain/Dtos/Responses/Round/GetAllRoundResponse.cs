@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace KSMS.Domain.Dtos.Responses.Round
 {
-    public class RoundResponse
+    public class GetAllRoundResponse
     {
 
         public Guid Id { get; set; }
