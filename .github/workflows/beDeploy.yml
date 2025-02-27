@@ -33,7 +33,7 @@ jobs:
       run: dotnet test --no-build --verbosity normal --configuration Release
       
     - name: Publish
-      run: dotnet publish --configuration Release --output ./publish
+      run: dotnet publish --configuration Release --runtime linux-x64 --self-contained true --output ./publish
       
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
@@ -212,6 +212,16 @@ jobs:
         echo "After deployment, run the following command to set up SSL:"
         echo "sudo certbot --nginx -d api.ksms.news"
         echo "================="
+
+        # Copy các assembly dependencies về nếu chưa có
+        if [ ! -f "$RELEASE_PATH/Microsoft.IdentityModel.Protocols.dll" ]; then
+        mkdir -p /tmp/nuget
+        wget https://www.nuget.org/api/v2/package/Microsoft.IdentityModel.Protocols/7.1.2 -O /tmp/nuget/protocols.nupkg
+        mkdir -p /tmp/nuget/protocols
+        unzip -o /tmp/nuget/protocols.nupkg -d /tmp/nuget/protocols
+        cp /tmp/nuget/protocols/lib/netstandard2.0/*.dll $RELEASE_PATH/
+        rm -rf /tmp/nuget
+        fi
         
         # Khởi động lại các dịch vụ
         supervisorctl reread
