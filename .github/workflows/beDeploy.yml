@@ -1,4 +1,4 @@
-name: CI/CD Pipeline - C# Backend to Fresh Ubuntu VPS
+name: CI/CD Pipeline - C# Backend to Ubuntu VPS with Swagger Support
 
 on:
   push:
@@ -82,6 +82,9 @@ jobs:
         systemctl enable supervisor
         systemctl start supervisor
         
+        # Cài đặt Certbot nếu chưa có
+        apt-get install -y certbot python3-certbot-nginx
+        
         # Tạo cấu trúc thư mục cho ứng dụng
         APP_NAME="ksms-api"
         APP_PATH="/var/www/$APP_NAME"
@@ -145,11 +148,12 @@ jobs:
         stopsignal=INT
         EOF
         
-        # Cập nhật cấu hình Nginx
+        # Cập nhật cấu hình Nginx cho API domain
         cat > /etc/nginx/sites-available/$APP_NAME << EOF
+        # Server block cho API (api.ksms.news)
         server {
             listen 80;
-            server_name _;  # Thay bằng tên miền của bạn khi có
+            server_name api.ksms.news;
         
             location / {
                 proxy_pass http://localhost:5000;
@@ -160,8 +164,36 @@ jobs:
                 proxy_cache_bypass \$http_upgrade;
                 proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
                 proxy_set_header X-Forwarded-Proto \$scheme;
+                proxy_set_header X-Real-IP \$remote_addr;
+                
+                # Tăng buffer size cho Swagger
+                proxy_buffers 16 16k;
+                proxy_buffer_size 16k;
+                
+                # Tăng timeout cho các request lâu
+                proxy_read_timeout 300s;
+                proxy_connect_timeout 300s;
             }
         }
+        
+        # Server block cho website chính (ksms.news và www.ksms.news)
+        # Bỏ comment phần này nếu frontend và backend chạy trên cùng server
+        # server {
+        #     listen 80;
+        #     server_name ksms.news www.ksms.news;
+        #
+        #     location / {
+        #         proxy_pass http://localhost:3000; # Thay đổi port nếu cần
+        #         proxy_http_version 1.1;
+        #         proxy_set_header Upgrade \$http_upgrade;
+        #         proxy_set_header Connection keep-alive;
+        #         proxy_set_header Host \$host;
+        #         proxy_cache_bypass \$http_upgrade;
+        #         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        #         proxy_set_header X-Forwarded-Proto \$scheme;
+        #         proxy_set_header X-Real-IP \$remote_addr;
+        #     }
+        # }
         EOF
         
         # Kích hoạt site nếu chưa có
@@ -174,6 +206,12 @@ jobs:
         
         # Kiểm tra cấu hình Nginx
         nginx -t
+        
+        # Hướng dẫn khởi chạy SSL
+        echo "=== IMPORTANT ==="
+        echo "After deployment, run the following command to set up SSL:"
+        echo "sudo certbot --nginx -d api.ksms.news"
+        echo "================="
         
         # Khởi động lại các dịch vụ
         supervisorctl reread
