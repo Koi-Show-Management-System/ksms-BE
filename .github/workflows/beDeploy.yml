@@ -183,20 +183,26 @@ jobs:
     # 2. Sau đó mới thực hiện deploy
     - name: Setup environment and deploy to VPS
       run: |
+        # Lưu vị trí thư mục hiện tại
+        CURRENT_DIR=$(pwd)
+        
         # Nén thư mục publish để tăng tốc quá trình transfer
         cd ./publish && tar czf ../app.tar.gz .
+        cd $CURRENT_DIR
         
-        # Debug: Kiểm tra nội dung thư mục publish
-        echo "=== Checking publish directory content ==="
+        # Debug: Kiểm tra nội dung thư mục publish và scripts
+        echo "=== Checking files ==="
         ls -la
-        find . -name "*.dll"
+        echo "=== Checking publish directory content ==="
+        ls -la ./publish/
+        find ./publish -name "*.dll"
         
         # Tạo thư mục và copy file nén
         ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "mkdir -p /tmp/app-build"
-        scp ../app.tar.gz ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/tmp/app-build/
+        scp app.tar.gz ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/tmp/app-build/
         
-        # Copy scripts
-        scp setup.sh deploy.sh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/tmp/
+        # Copy scripts từ thư mục gốc
+        scp ./setup.sh ./deploy.sh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/tmp/
         
         # Giải nén và kiểm tra files trên server
         ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "cd /tmp/app-build && \
