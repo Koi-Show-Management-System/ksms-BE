@@ -1,0 +1,151 @@
+name: CI/CD Pipeline 
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+    # Cho phép chạy workflow thủ công từ giao diện GitHub
+
+jobs:
+  build:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '7.0.x'  # Thay đổi phiên bản .NET phù hợp với dự án của bạn
+        
+    - name: Restore dependencies
+      run: dotnet restore
+      
+    - name: Build
+      run: dotnet build --configuration Release --no-restore
+      
+    - name: Test
+      run: dotnet test --no-build --verbosity normal --configuration Release
+      
+    - name: Publish
+      run: dotnet publish --configuration Release --output ./publish
+      
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: app-build
+        path: ./publish/
+        
+  deploy:
+    name: Deploy to VPS
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    
+    steps:
+    - name: Download build artifacts
+      uses: actions/download-artifact@v3
+      with:
+        name: app-build
+        path: ./publish/
+        
+    - name: Create deploy script
+      run: |
+        cat > deploy.sh << 'EOL'
+        #!/bin/bash
+        
+        # Thiết lập các biến môi trường
+        APP_NAME="ksms-BE"
+        APP_PATH="/var/www/$APP_NAME"
+        TIMESTAMP=$(date +%Y%m%d%H%M%S)
+        RELEASE_PATH="$APP_PATH/releases/$TIMESTAMP"
+        
+        # Tạo thư mục release mới
+        mkdir -p $RELEASE_PATH
+        
+        # Cài đặt thư mục release mới
+        cp -R /tmp/app-build/* $RELEASE_PATH/
+        
+        # Cập nhật symbolic link
+        ln -sfn $RELEASE_PATH $APP_PATH/current
+        
+        # Cấu hình quyền
+        chown -R www-data:www-data $RELEASE_PATH
+        
+        # Tạo hoặc cập nhật file cấu hình supervisor
+        cat > /etc/supervisor/conf.d/$APP_NAME.conf << EOF
+        [program:$APP_NAME]
+        command=dotnet $APP_PATH/current/$APP_NAME.dll
+        directory=$APP_PATH/current
+        autostart=true
+        autorestart=true
+        stderr_logfile=/var/log/$APP_NAME.err.log
+        stdout_logfile=/var/log/$APP_NAME.out.log
+        environment=ASPNETCORE_ENVIRONMENT=Production
+        user=www-data
+        stopsignal=INT
+        EOF
+        
+        # Cập nhật cấu hình Nginx
+        cat > /etc/nginx/sites-available/$APP_NAME << EOF
+        server {
+            listen 80;
+            server_name ksms.news;  # Thay bằng tên miền của bạn
+        
+            location / {
+                proxy_pass http://localhost:5000;
+                proxy_http_version 1.1;
+                proxy_set_header Upgrade \$http_upgrade;
+                proxy_set_header Connection keep-alive;
+                proxy_set_header Host \$host;
+                proxy_cache_bypass \$http_upgrade;
+                proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto \$scheme;
+            }
+        }
+        EOF
+        
+        # Kích hoạt site nếu chưa có
+        if [ ! -f /etc/nginx/sites-enabled/$APP_NAME ]; then
+            ln -s /etc/nginx/sites-available/$APP_NAME /etc/nginx/sites-enabled/
+        fi
+        
+        # Kiểm tra cấu hình Nginx
+        nginx -t
+        
+        # Khởi động lại các dịch vụ
+        supervisorctl reread
+        supervisorctl update
+        supervisorctl restart $APP_NAME
+        systemctl restart nginx
+        
+        # Xóa các bản release cũ (giữ lại 5 bản gần nhất)
+        cd $APP_PATH/releases && ls -t | tail -n +6 | xargs -I {} rm -rf {}
+        
+        echo "Deployment completed successfully!"
+        EOL
+        chmod +x deploy.sh
+
+    - name: Install SSH key
+      uses: shimataro/ssh-key-action@v2
+      with:
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        known_hosts: ${{ secrets.SSH_KNOWN_HOSTS }}
+        
+    - name: Deploy to VPS
+      run: |
+        # Tạo thư mục tạm trên VPS và sao chép các tệp
+        ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "mkdir -p /tmp/app-build"
+        scp -r ./publish/* ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/tmp/app-build/
+        scp deploy.sh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/tmp/
+        
+        # Chạy script triển khai trên VPS
+        ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "sudo bash /tmp/deploy.sh"
+        
+        # Dọn dẹp
+        ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "rm -rf /tmp/app-build /tmp/deploy.sh"
