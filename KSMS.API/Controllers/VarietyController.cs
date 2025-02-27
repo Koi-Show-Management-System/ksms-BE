@@ -4,7 +4,7 @@ using KSMS.Domain.Dtos.Requests.Variety;
 using Microsoft.AspNetCore.Mvc;
 
 namespace KSMS.API.Controllers;
-[Route("api/account")]
+[Route("api/variety")]
 [ApiController]
 public class VarietyController : ControllerBase
 {
