@@ -26,7 +26,7 @@ public class AccountService : BaseService<AccountService>, IAccountService
     {
         _firebaseService = firebaseService;
     }
-    public async Task<Paginate<AccountResponse>> GetPagedUsersAsync(int page, int size)
+    public async Task<Paginate<GetALLAccountResponse>> GetPagedUsersAsync(int page, int size)
     { 
         var userRepository = _unitOfWork.GetRepository<Account>();
 
@@ -36,9 +36,9 @@ public class AccountService : BaseService<AccountService>, IAccountService
             page: page,  
             size: size   
         );
-        return pagedUsers.Adapt<Paginate<AccountResponse>>();
+        return pagedUsers.Adapt<Paginate<GetALLAccountResponse>>();
     }
-    public async Task<AccountResponse> GetUserByIdAsync(Guid id)
+    public async Task<GetALLAccountResponse> GetUserByIdAsync(Guid id)
     {
         var user = await _unitOfWork.GetRepository<Account>()
             .SingleOrDefaultAsync(
@@ -50,11 +50,11 @@ public class AccountService : BaseService<AccountService>, IAccountService
             throw new NotFoundException("User not found");
         }
 
-        return user.Adapt<AccountResponse>();
+        return user.Adapt<GetALLAccountResponse>();
         
     }
 
-    public async Task<AccountResponse> CreateUserAsync(CreateAccountRequest createAccountRequest)
+    public async Task<GetALLAccountResponse> CreateUserAsync(CreateAccountRequest createAccountRequest)
     {
          
         var userRepository = _unitOfWork.GetRepository<Account>();
@@ -79,13 +79,13 @@ public class AccountService : BaseService<AccountService>, IAccountService
         user.IsConfirmed = true;
         var createdUser = await userRepository.InsertAsync(user);
         await _unitOfWork.CommitAsync();
-        return createdUser.Adapt<AccountResponse>();
+        return createdUser.Adapt<GetALLAccountResponse>();
     }
 
 
 
 
-    public async Task<AccountResponse> UpdateStatus(Guid id, AccountStatus status)
+    public async Task<GetALLAccountResponse> UpdateStatus(Guid id, AccountStatus status)
     {
         var userRepository = _unitOfWork.GetRepository<Account>();
 
@@ -107,7 +107,7 @@ public class AccountService : BaseService<AccountService>, IAccountService
         };
         userRepository.UpdateAsync(user);
         await _unitOfWork.CommitAsync();
-        return user.Adapt<AccountResponse>();
+        return user.Adapt<GetALLAccountResponse>();
     }
 
 

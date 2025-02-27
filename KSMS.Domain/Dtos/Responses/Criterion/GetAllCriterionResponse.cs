@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace KSMS.Domain.Dtos.Responses.Criterion
 {
-    public class CriterionResponse
+    public class GetAllCriterionResponse
     {
         public Guid Id { get; set; }
         public string Name { get; set; } = null!;
@@ -17,7 +17,7 @@ namespace KSMS.Domain.Dtos.Responses.Criterion
 
         public int? Order { get; set; }
 
-        public  ICollection<ErrorTypeResponse> ErrorTypes { get; set; } = new List<ErrorTypeResponse>();
+        public  ICollection<GetAllErrorTypeResponse> ErrorTypes { get; set; } = new List<GetAllErrorTypeResponse>();
 
     }
 }

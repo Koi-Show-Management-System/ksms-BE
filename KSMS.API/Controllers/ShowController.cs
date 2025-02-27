@@ -2,7 +2,9 @@
 using KSMS.Domain.Dtos;
 using KSMS.Domain.Dtos.Requests.Show;
 using KSMS.Domain.Dtos.Responses.KoiShow;
+using KSMS.Domain.Dtos.Responses.Variety;
 using KSMS.Domain.Exceptions;
+using KSMS.Infrastructure.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace KSMS.API.Controllers
@@ -12,12 +14,22 @@ namespace KSMS.API.Controllers
     public class ShowController : ControllerBase
     {
         private readonly IShowService _showService;
+        private readonly IVarieryService _varietyService;
 
-        public ShowController(IShowService showService)
+        public ShowController(IShowService showService, IVarieryService varietyService)
         {
             _showService = showService;
+            _varietyService = varietyService;
         }
-
+        /// <summary>
+        /// Get all varieties for the logged-in account.
+        /// </summary>
+        [HttpGet("varieties")]
+        public async Task<ActionResult<ApiResponse<IEnumerable<VarietyResponse>>>> GetAllVarietiesByAccount()
+        {
+            var varieties = await _varietyService.GetAllVarietyAsync();
+            return Ok(ApiResponse<IEnumerable<VarietyResponse>>.Success(varieties, "Get all varieties successfully"));
+        }
         /// <summary>
         /// Create a new show with related entities.
         /// </summary>
@@ -41,7 +53,7 @@ namespace KSMS.API.Controllers
             if (showResponse == null)
                 return NotFound(ApiResponse<object>.Fail("Show is not existed"));
 
-            return Ok(ApiResponse<KoiShowResponse>.Success(showResponse, "Get show successfully"));
+            return Ok(ApiResponse<GetAllKoiShowResponse>.Success(showResponse, "Get show successfully"));
         }
 
         // <summary>

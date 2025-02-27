@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace KSMS.Domain.Dtos.Responses.Ticket
 {
-    public class TicketTypeResponse
+    public class GetAllTicketTypeResponse
     {
         public Guid Id { get; set; }
 

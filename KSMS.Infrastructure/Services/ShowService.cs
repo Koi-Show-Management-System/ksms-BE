@@ -27,7 +27,7 @@ namespace KSMS.Infrastructure.Services
             : base(unitOfWork, logger, httpContextAccessor)
         {
         }
-            public async Task<KoiShowResponse> CreateShowAsync(CreateShowRequest createShowRequest)
+            public async Task<GetAllKoiShowResponse> CreateShowAsync(CreateShowRequest createShowRequest)
             {
            
                 var showRepository = _unitOfWork.GetRepository<KoiShow>();
@@ -91,18 +91,8 @@ namespace KSMS.Infrastructure.Services
                                     var variety = await varietyRepository.SingleOrDefaultAsync(v => v.Id == categoryVarietyRequest.VarietyId, null, null);
                                     if (variety == null)
                                     {
-                                        // Variety doesn't exist, create a new Variety
-                                        variety = new Variety
-                                        {
-                                            Id = Guid.NewGuid(),  // Set ID from request
-                                            Name = categoryVarietyRequest.Variety.Name,
-                                            Description = categoryVarietyRequest.Variety.Description
-                                        };
-
-                                        // Add new Variety to the database
-                                        await varietyRepository.InsertAsync(variety);
-                                        await _unitOfWork.CommitAsync(); // Save to the database
-                                    }
+                                    throw new BadRequestException($"Criteria details are missing for CriteriaId: {categoryVarietyRequest.VarietyId}");
+                                      }
 
                                     // Create CategoryVariety entity
                                     var categoryVariety = new CategoryVariety
@@ -271,7 +261,7 @@ namespace KSMS.Infrastructure.Services
                     await transaction.CommitAsync();
 
                     // Return the created show response
-                    return createdShow.Adapt<KoiShowResponse>();
+                    return createdShow.Adapt<GetAllKoiShowResponse>();
                 }
                 catch (Exception ex)
                 {
@@ -280,7 +270,7 @@ namespace KSMS.Infrastructure.Services
                 }
             }
 
-        public async Task<IEnumerable<KoiShowResponse>> GetAllShowsAsync()
+        public async Task<IEnumerable<GetAllKoiShowResponse>> GetAllShowsAsync()
         {
             var showRepository = _unitOfWork.GetRepository<KoiShow>();
             var shows = await showRepository.GetListAsync(
@@ -315,12 +305,12 @@ namespace KSMS.Infrastructure.Services
                                        .Include(s => s.TicketTypes)
             );
 
-            var KoiShowResponses = shows.Select(show => show.Adapt<KoiShowResponse>());
+            var KoiShowResponses = shows.Select(show => show.Adapt<GetAllKoiShowResponse>());
 
             return KoiShowResponses;
         }
 
-        public async Task<KoiShowResponse> GetShowByIdAsync(Guid id)
+        public async Task<GetAllKoiShowResponse> GetShowByIdAsync(Guid id)
         {
             var showRepository = _unitOfWork.GetRepository<KoiShow>();
                 
@@ -371,7 +361,7 @@ namespace KSMS.Infrastructure.Services
                 throw new NotFoundException("Show not found.");
             }
 
-            return show.Adapt<KoiShowResponse>();
+            return show.Adapt<GetAllKoiShowResponse>();
         }
 
 
@@ -450,25 +440,9 @@ namespace KSMS.Infrastructure.Services
                                 // If variety doesn't exist, create a new one
                                 if (variety == null)
                                 {
-                                    variety = new Variety
-                                    {
-                                        Id = categoryVarietyRequest.VarietyId,
-                                        Name = categoryVarietyRequest.UpdateVarietyRequests.Name,
-                                        Description = categoryVarietyRequest.UpdateVarietyRequests.Description
-                                    };
-
-                                    // Insert the new variety
-                                    await varietyRepository.InsertAsync(variety);
+                                    throw new NotFoundException("Variety not found.");
                                 }
-                                else
-                                {
-                                    // If variety exists, update it
-                                    variety.Name = categoryVarietyRequest.UpdateVarietyRequests.Name;
-                                    variety.Description = categoryVarietyRequest.UpdateVarietyRequests.Description;
-
-                                    // Update the existing variety
-                                     varietyRepository.UpdateAsync(variety);
-                                }
+                                 
 
                                 // Now check if CategoryVariety with the given CategoryId and VarietyId exists
                                 var existingCategoryVariety = await categoryVarietyRepository.SingleOrDefaultAsync(cv => cv.CompetitionCategoryId == categoryRequest.Id && cv.VarietyId == variety.Id ,null,null);

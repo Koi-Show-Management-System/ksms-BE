@@ -10,13 +10,13 @@ namespace KSMS.Application.Services
 {
     public interface ICriterionService
     {
-        Task<CriterionResponse> CreateCriterionAsync(CreateCriterionRequest createCriterionRequest);
+        Task<GetAllCriterionResponse> CreateCriterionAsync(CreateCriterionRequest createCriterionRequest);
 
         
-        Task<CriterionResponse> GetCriterionByIdAsync(Guid id);
+        Task<GetAllCriterionResponse> GetCriterionByIdAsync(Guid id);
 
        
-        Task<CriterionResponse> UpdateCriterionAsync(Guid id, UpdateCriterionRequest updateCriterionRequest);
+        Task<GetAllCriterionResponse> UpdateCriterionAsync(Guid id, UpdateCriterionRequest updateCriterionRequest);
 
     
         Task DeleteCriterionAsync(Guid id);

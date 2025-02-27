@@ -26,7 +26,7 @@ namespace KSMS.Infrastructure.Services
             _logger = logger;
         }
 
-        public async Task<RoundResultResponse> UpdateIsPublicAsync(Guid id, bool isPublic)
+        public async Task<GetAllRoundResultResponse> UpdateIsPublicAsync(Guid id, bool isPublic)
         {
             var roundResultRepository = _unitOfWork.GetRepository<RoundResult>();
 
@@ -45,10 +45,10 @@ namespace KSMS.Infrastructure.Services
             roundResultRepository.UpdateAsync(roundResult);
             await _unitOfWork.CommitAsync();
 
-            return roundResult.Adapt<RoundResultResponse>();
+            return roundResult.Adapt<GetAllRoundResultResponse>();
         }
 
-        public async Task<RoundResultResponse> CreateRoundResultAsync(CreateRoundResult request)
+        public async Task<GetAllRoundResultResponse> CreateRoundResultAsync(CreateRoundResult request)
         {
             var roundResultRepository = _unitOfWork.GetRepository<RoundResult>();
 
@@ -70,7 +70,7 @@ namespace KSMS.Infrastructure.Services
             await _unitOfWork.CommitAsync();
 
              
-            return createdRoundResult.Adapt<RoundResultResponse>();
+            return createdRoundResult.Adapt<GetAllRoundResultResponse>();
         }
     }
 }
