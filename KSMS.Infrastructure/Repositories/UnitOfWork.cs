@@ -70,9 +70,9 @@ namespace KSMS.Infrastructure.Repositories
 
         private void UpdateEntites()
         {
-            IEnumerable<EntityEntry<BaseEntity>> entries = Context.ChangeTracker.Entries<BaseEntity>();
+            var entries = Context.ChangeTracker.Entries<BaseEntity>();
 
-            foreach (EntityEntry<BaseEntity> entityEntry in entries)
+            foreach (var entityEntry in entries)
             {
                 if (entityEntry.State == EntityState.Added)
                 {
@@ -80,7 +80,9 @@ namespace KSMS.Infrastructure.Repositories
                         .CurrentValue = DateTime.UtcNow;
                 }
 
-                if (entityEntry.State == EntityState.Modified)
+                if (entityEntry.State == EntityState.Modified 
+                    && entityEntry.Properties.Any(p => p.IsModified 
+                        && p.Metadata.Name != nameof(BaseEntity.UpdatedAt)))
                 {
                     entityEntry.Property(x => x.UpdatedAt)
                         .CurrentValue = DateTime.UtcNow;

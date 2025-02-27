@@ -2,6 +2,7 @@
 using KSMS.Application.Repositories;
 using KSMS.Application.Services;
 using KSMS.Domain.Dtos.Requests.TicketOrder;
+using KSMS.Domain.Dtos.Responses.Ticket;
 using KSMS.Domain.Dtos.Responses.TicketOrder;
 using KSMS.Domain.Entities;
 using KSMS.Domain.Enums;
@@ -13,6 +14,10 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Net.payOS;
 using Net.payOS.Types;
+using System.Linq.Expressions;
+using System.Security.Claims;
+using KSMS.Domain.Pagination;
+using Mapster;
 
 namespace KSMS.Infrastructure.Services;
 
@@ -20,10 +25,12 @@ public class TicketOrderService : BaseService<TicketOrder>, ITicketOrderService
 {
     private readonly PayOS _payOs;
     private readonly IFirebaseService _firebaseService;
+    private readonly IHttpContextAccessor _httpContextAccessor;
     public TicketOrderService(IUnitOfWork<KoiShowManagementSystemContext> unitOfWork, ILogger<TicketOrder> logger, IHttpContextAccessor httpContextAccessor, PayOS payOs, IFirebaseService firebaseService) : base(unitOfWork, logger, httpContextAccessor)
     {
         _payOs = payOs;
         _firebaseService = firebaseService;
+        _httpContextAccessor = httpContextAccessor;
     }
 
     public async Task<CheckOutTicketResponse> CreateTicketOrder(CreateTicketOrderRequest createTicketOrderRequest)
@@ -184,5 +191,72 @@ public class TicketOrderService : BaseService<TicketOrder>, ITicketOrderService
             _unitOfWork.GetRepository<TicketOrder>().UpdateAsync(order);
             await _unitOfWork.CommitAsync();
         }
+    }
+
+    public async Task<Paginate<GetAllOrderResponse>> GetAllOrder(Guid? koiShowId, OrderStatus? orderStatus, int page, int size)
+    {
+        var accountId = GetIdFromJwt();
+        var claims = _httpContextAccessor.HttpContext?.User;
+        var role = claims?.FindFirst(ClaimTypes.Role)?.Value;
+        
+        Expression<Func<TicketOrder, bool>> predicate = role?.ToUpper() switch
+        {
+            "ADMIN" => x => true,
+            
+            "MANAGER" or "STAFF" => x => x.TicketOrderDetails
+                .Any(d => d.TicketType.KoiShow.ShowStaffs
+                    .Any(s => s.AccountId == accountId)),
+            
+            "REFEREE" => x => false,
+            
+            _ => x => x.AccountId == accountId
+        };
+        if (koiShowId.HasValue)
+        {
+            var koiShowPredicate = PredicateBuilder.New<TicketOrder>(x => 
+                x.TicketOrderDetails.Any(d => d.TicketType.KoiShowId == koiShowId));
+            predicate = predicate.And(koiShowPredicate);
+        }
+        if (orderStatus.HasValue)
+        {
+            var statusString = orderStatus.Value.ToString().ToLower();
+            var statusPredicate = PredicateBuilder.New<TicketOrder>(x => 
+                x.Status == statusString);
+            predicate = predicate.And(statusPredicate);
+        }
+        var orders = await _unitOfWork.GetRepository<TicketOrder>()
+            .GetPagingListAsync(
+                predicate: predicate,
+                orderBy: q => q.OrderByDescending(x => x.OrderDate),
+                include: q => q
+                    .Include(x => x.Account)
+                    .Include(x => x.TicketOrderDetails)
+                        .ThenInclude(x => x.TicketType)
+                            .ThenInclude(x => x.KoiShow)
+                                .ThenInclude(x => x.ShowStaffs),
+                page: page,
+                size: size
+            );
+
+        // Map sang response
+        return orders.Adapt<Paginate<GetAllOrderResponse>>();
+        
+    }
+
+    public async Task<List<GetOrderDetailResponse>> GetOrderDetailByOrderId(Guid orderId)
+    {
+        var orderDetails = await _unitOfWork.GetRepository<TicketOrderDetail>()
+            .GetListAsync(predicate: x => x.TicketOrderId == orderId,
+                include: query => query.Include(x => x.TicketType)
+                    .ThenInclude(x => x.KoiShow));
+        return orderDetails.Adapt<List<GetOrderDetailResponse>>();
+    }
+
+    public async Task<List<GetTicketByOrderDetailResponse>> GetTicketByOrderDetailId(Guid orderDetailId)
+    {
+        var tickets = await _unitOfWork.GetRepository<Ticket>().GetListAsync(
+            predicate: x => x.TicketOrderDetailId == orderDetailId,
+            include: query => query.Include(x => x.CheckedInByNavigation));
+        return tickets.Adapt<List<GetTicketByOrderDetailResponse>>();
     }
 }
