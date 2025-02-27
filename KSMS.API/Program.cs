@@ -31,7 +31,10 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowAll", builder =>
     {
         builder
-            .WithOrigins("http://localhost:3000") // Thêm domain của frontend
+            .WithOrigins("http://localhost:3000", 
+                "https://ksms.news", 
+                "https://www.ksms.news",
+                "https://api.ksms.news")
             .AllowAnyMethod()
             .AllowAnyHeader()
             .AllowCredentials(); // Cần thiết cho SignalR
@@ -49,12 +52,17 @@ builder.Services.AddMvc()
 ConfigureFireBase.AddFirebase();
 var app = builder.Build();
 
+// BỎ đoạn if (app.Environment.IsDevelopment()) và thay bằng đoạn sau:
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+// Bật Swagger cho cả môi trường Production và Development
+app.UseSwagger();
+app.UseSwaggerUI(c =>
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "KSMS API v1");
+    c.DocExpansion(Swashbuckle.AspNetCore.SwaggerUI.DocExpansion.None);
+    // c.RoutePrefix = string.Empty; // Uncomment nếu muốn đặt Swagger làm trang chủ
+});
+
 app.UseCors("AllowAll");
 
 app.UseMiddleware<GlobalExceptionMiddleware>();
