@@ -60,44 +60,8 @@ jobs:
         echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
         chmod 600 ~/.ssh/id_rsa
         ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
-        
-    - name: Setup environment and deploy to VPS
-      run: |
-        # Nén thư mục publish để tăng tốc quá trình transfer
-        cd ./publish && tar czf ../app.tar.gz .
-        
-        # Debug: Kiểm tra nội dung thư mục publish
-        echo "=== Checking publish directory content ==="
-        ls -la
-        find . -name "*.dll"
-        
-        # Tạo thư mục và copy file nén
-        ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "mkdir -p /tmp/app-build"
-        scp ../app.tar.gz ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/tmp/app-build/
-        
-        # Giải nén và kiểm tra files trên server
-        ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "cd /tmp/app-build && \
-          tar xzf app.tar.gz && \
-          rm app.tar.gz && \
-          echo '=== Server files after extraction ===' && \
-          ls -la && \
-          find . -name '*.dll'"
-        
-        # Copy và chạy scripts với debug info
-        scp {setup,deploy}.sh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/tmp/
-        
-        # Chạy setup
-        ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "sudo bash /tmp/setup.sh"
-        
-        # Sửa lại phần tìm DLL trong deploy script
-        ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "sudo sed -i 's/DLL_FILE=\$(find \$RELEASE_PATH -name \"KSMS.API.dll\")/DLL_FILE=\$(find \$RELEASE_PATH -name \"*.dll\" -type f -print0 | xargs -0 ls -t | head -1)/' /tmp/deploy.sh"
-        
-        # Chạy deploy với debug info
-        ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "set -x && sudo bash /tmp/deploy.sh"
-        
-        # Dọn dẹp
-        ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "rm -f /tmp/{setup,deploy}.sh"
 
+    # 1. Tạo scripts trước
     - name: Create setup script
       run: |
         cat > setup.sh << 'EOL'
@@ -215,3 +179,35 @@ jobs:
         echo "Deployment completed successfully!"
         EOL
         chmod +x deploy.sh
+
+    # 2. Sau đó mới thực hiện deploy
+    - name: Setup environment and deploy to VPS
+      run: |
+        # Nén thư mục publish để tăng tốc quá trình transfer
+        cd ./publish && tar czf ../app.tar.gz .
+        
+        # Debug: Kiểm tra nội dung thư mục publish
+        echo "=== Checking publish directory content ==="
+        ls -la
+        find . -name "*.dll"
+        
+        # Tạo thư mục và copy file nén
+        ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "mkdir -p /tmp/app-build"
+        scp ../app.tar.gz ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/tmp/app-build/
+        
+        # Copy scripts
+        scp setup.sh deploy.sh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/tmp/
+        
+        # Giải nén và kiểm tra files trên server
+        ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "cd /tmp/app-build && \
+          tar xzf app.tar.gz && \
+          rm app.tar.gz && \
+          echo '=== Server files after extraction ===' && \
+          ls -la && \
+          find . -name '*.dll'"
+        
+        # Chạy setup và deploy
+        ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "sudo bash /tmp/setup.sh && sudo bash /tmp/deploy.sh"
+        
+        # Dọn dẹp
+        ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "rm -f /tmp/{setup,deploy}.sh"
