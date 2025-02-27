@@ -342,3 +342,25 @@ jobs:
         
         # Dọn dẹp
         ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "rm -rf /tmp/app-build /tmp/setup.sh /tmp/deploy.sh"
+
+    - name: Copy files to VPS
+      uses: appleboy/scp-action@master
+      with:
+        host: ${{ secrets.HOST }}
+        username: ${{ secrets.USERNAME }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        source: "./publish/*"
+        target: "/tmp/app-build/"
+        strip_components: 1
+        # Thêm bước tạo thư mục trước
+        script: |
+          mkdir -p /tmp/app-build/ja
+
+    - name: Create required directories
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.HOST }}
+        username: ${{ secrets.USERNAME }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        script: |
+          mkdir -p /tmp/app-build/ja
