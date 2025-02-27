@@ -33,7 +33,7 @@ jobs:
       run: dotnet test --no-build --verbosity normal --configuration Release
       
     - name: Publish
-      run: dotnet publish --configuration Release --runtime linux-x64 --self-contained true --output ./publish
+      run: dotnet publish --configuration Release --runtime linux-x64 --self-contained true -p:PublishTrimmed=false -p:PublishSingleFile=false --output ./publish
       
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
@@ -213,15 +213,43 @@ jobs:
         echo "sudo certbot --nginx -d api.ksms.news"
         echo "================="
 
-        # Copy các assembly dependencies về nếu chưa có
-        if [ ! -f "$RELEASE_PATH/Microsoft.IdentityModel.Protocols.dll" ]; then
+        # Download và cài đặt các thư viện Identity Model cần thiết
+        echo "Kiểm tra và cài đặt các thư viện Identity Model..."
         mkdir -p /tmp/nuget
-        wget https://www.nuget.org/api/v2/package/Microsoft.IdentityModel.Protocols/7.1.2 -O /tmp/nuget/protocols.nupkg
-        mkdir -p /tmp/nuget/protocols
-        unzip -o /tmp/nuget/protocols.nupkg -d /tmp/nuget/protocols
-        cp /tmp/nuget/protocols/lib/netstandard2.0/*.dll $RELEASE_PATH/
+        
+        # Tải xuống tất cả các package cần thiết
+        echo "Tải xuống các package Identity Model..."
+        wget -q https://www.nuget.org/api/v2/package/Microsoft.IdentityModel.Protocols/7.1.2 -O /tmp/nuget/protocols.nupkg
+        wget -q https://www.nuget.org/api/v2/package/Microsoft.IdentityModel.Logging/7.1.2 -O /tmp/nuget/logging.nupkg
+        wget -q https://www.nuget.org/api/v2/package/Microsoft.IdentityModel.Tokens/7.1.2 -O /tmp/nuget/tokens.nupkg
+        wget -q https://www.nuget.org/api/v2/package/Microsoft.IdentityModel.JsonWebTokens/7.1.2 -O /tmp/nuget/jwt.nupkg
+        wget -q https://www.nuget.org/api/v2/package/Microsoft.IdentityModel.Protocols.OpenIdConnect/7.1.2 -O /tmp/nuget/openidconnect.nupkg
+        wget -q https://www.nuget.org/api/v2/package/System.IdentityModel.Tokens.Jwt/7.1.2 -O /tmp/nuget/systemjwt.nupkg
+        
+        # Giải nén các packages
+        echo "Giải nén các package..."
+        mkdir -p /tmp/nuget/protocols /tmp/nuget/logging /tmp/nuget/tokens /tmp/nuget/jwt /tmp/nuget/openidconnect /tmp/nuget/systemjwt
+        unzip -q /tmp/nuget/protocols.nupkg -d /tmp/nuget/protocols
+        unzip -q /tmp/nuget/logging.nupkg -d /tmp/nuget/logging
+        unzip -q /tmp/nuget/tokens.nupkg -d /tmp/nuget/tokens
+        unzip -q /tmp/nuget/jwt.nupkg -d /tmp/nuget/jwt
+        unzip -q /tmp/nuget/openidconnect.nupkg -d /tmp/nuget/openidconnect
+        unzip -q /tmp/nuget/systemjwt.nupkg -d /tmp/nuget/systemjwt
+        
+        # Sao chép tất cả DLL vào thư mục ứng dụng
+        echo "Sao chép DLL vào thư mục ứng dụng..."
+        cp -v /tmp/nuget/protocols/lib/netstandard2.0/*.dll $RELEASE_PATH/
+        cp -v /tmp/nuget/logging/lib/netstandard2.0/*.dll $RELEASE_PATH/
+        cp -v /tmp/nuget/tokens/lib/netstandard2.0/*.dll $RELEASE_PATH/
+        cp -v /tmp/nuget/jwt/lib/netstandard2.0/*.dll $RELEASE_PATH/
+        cp -v /tmp/nuget/openidconnect/lib/netstandard2.0/*.dll $RELEASE_PATH/
+        cp -v /tmp/nuget/systemjwt/lib/netstandard2.0/*.dll $RELEASE_PATH/
+        
+        # Cập nhật quyền
+        chown -R www-data:www-data $RELEASE_PATH
+        
+        # Dọn dẹp
         rm -rf /tmp/nuget
-        fi
         
         # Khởi động lại các dịch vụ
         supervisorctl reread
