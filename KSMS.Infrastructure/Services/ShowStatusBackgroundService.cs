@@ -73,7 +73,7 @@ namespace KSMS.Infrastructure.Services
                 }
 
                 
-                await Task.Delay(TimeSpan.FromMinutes(5), stoppingToken);
+                await Task.Delay(TimeSpan.FromDays(1), stoppingToken);
             }
         }
     }
