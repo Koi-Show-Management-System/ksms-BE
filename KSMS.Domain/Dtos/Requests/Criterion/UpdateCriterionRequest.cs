@@ -10,7 +10,7 @@ namespace KSMS.Domain.Dtos.Requests.Criterion
 {
     public class UpdateCriterionRequest
     {
-        public Guid Id { get; set; }
+     //   public Guid Id { get; set; }
    
      //   public Guid? CriteriaGroupId { get; set; }
 

@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace KSMS.Domain.Dtos.Responses.ShowStatus
 {
-    public class ShowStatusResponse
+    public class GetAllShowStatusResponse
     {
         public Guid Id { get; set; }
 

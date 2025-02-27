@@ -16,6 +16,6 @@ namespace KSMS.Domain.Dtos.Requests.CategoryVariety
 
         public Guid VarietyId { get; set; } 
 
-        public virtual CreateVarietyRequest Variety { get; set; }
+    //    public virtual CreateVarietyRequest Variety { get; set; }
     }
 }
