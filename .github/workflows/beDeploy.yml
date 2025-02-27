@@ -98,6 +98,52 @@ jobs:
         # Dọn dẹp
         ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "rm -f /tmp/{setup,deploy}.sh"
 
+    - name: Create setup script
+      run: |
+        cat > setup.sh << 'EOL'
+        #!/bin/bash
+        set -e
+        
+        # Đảm bảo hệ thống đã cập nhật
+        apt-get update
+        apt-get upgrade -y
+        
+        # Cài đặt các gói cần thiết
+        apt-get install -y curl wget apt-transport-https gnupg2 software-properties-common sudo unzip
+        
+        # Cài đặt .NET Runtime cho phiên bản 8.0
+        wget https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
+        dpkg -i packages-microsoft-prod.deb
+        apt-get update
+        apt-get install -y dotnet-runtime-8.0 aspnetcore-runtime-8.0
+        
+        # Cài đặt Nginx
+        apt-get install -y nginx
+        systemctl enable nginx
+        systemctl start nginx
+        
+        # Cài đặt Supervisor
+        apt-get install -y supervisor
+        systemctl enable supervisor
+        systemctl start supervisor
+        
+        # Tạo cấu trúc thư mục cho ứng dụng
+        APP_NAME="ksms-api"
+        APP_PATH="/var/www/$APP_NAME"
+        mkdir -p $APP_PATH/releases
+        mkdir -p $APP_PATH/shared
+        
+        # Đặt quyền cho thư mục
+        chown -R www-data:www-data $APP_PATH
+        
+        # Tạo thư mục logs
+        mkdir -p /var/log/$APP_NAME
+        chown -R www-data:www-data /var/log/$APP_NAME
+        
+        echo "Environment setup completed!"
+        EOL
+        chmod +x setup.sh
+
     - name: Create deploy script
       run: |
         cat > deploy.sh << 'EOL'
@@ -144,5 +190,28 @@ jobs:
         DLL_NAME=$(basename "$DLL_FILE")
         DLL_DIR=$(dirname "$DLL_FILE")
         
-        # Rest of the deploy script...
+        # Tạo hoặc cập nhật file cấu hình supervisor
+        cat > /etc/supervisor/conf.d/$APP_NAME.conf << EOF
+        [program:$APP_NAME]
+        command=dotnet $DLL_FILE
+        directory=$DLL_DIR
+        autostart=true
+        autorestart=true
+        stderr_logfile=/var/log/$APP_NAME/$APP_NAME.err.log
+        stdout_logfile=/var/log/$APP_NAME/$APP_NAME.out.log
+        environment=ASPNETCORE_ENVIRONMENT=Production,ASPNETCORE_URLS="http://localhost:5000"
+        user=www-data
+        stopsignal=INT
+        EOF
+        
+        # Khởi động lại supervisor
+        supervisorctl reread
+        supervisorctl update
+        supervisorctl restart $APP_NAME
+        
+        # Xóa các bản release cũ (giữ lại 3 bản gần nhất)
+        cd $APP_PATH/releases && ls -t | tail -n +4 | xargs -I {} rm -rf {}
+        
+        echo "Deployment completed successfully!"
         EOL
+        chmod +x deploy.sh
