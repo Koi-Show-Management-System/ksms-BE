@@ -1,10 +1,10 @@
-name: CI/CD Pipeline 
+name: CI/CD Pipeline - C# Backend to Fresh Ubuntu VPS
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, master ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, master ]
   workflow_dispatch:
     # Cho phép chạy workflow thủ công từ giao diện GitHub
 
@@ -42,7 +42,7 @@ jobs:
         path: ./publish/
         
   deploy:
-    name: Deploy to VPS
+    name: Setup Environment and Deploy to VPS
     needs: build
     runs-on: ubuntu-latest
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
@@ -54,13 +54,58 @@ jobs:
         name: app-build
         path: ./publish/
         
+    - name: Create setup script
+      run: |
+        cat > setup.sh << 'EOL'
+        #!/bin/bash
+        
+        # Đảm bảo hệ thống đã cập nhật
+        apt-get update
+        apt-get upgrade -y
+        
+        # Cài đặt các gói cần thiết
+        apt-get install -y curl wget apt-transport-https gnupg2 software-properties-common sudo unzip
+        
+        # Cài đặt .NET Runtime
+        wget https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
+        dpkg -i packages-microsoft-prod.deb
+        apt-get update
+        apt-get install -y dotnet-runtime-7.0 aspnetcore-runtime-7.0
+        
+        # Cài đặt Nginx
+        apt-get install -y nginx
+        systemctl enable nginx
+        systemctl start nginx
+        
+        # Cài đặt Supervisor
+        apt-get install -y supervisor
+        systemctl enable supervisor
+        systemctl start supervisor
+        
+        # Tạo cấu trúc thư mục cho ứng dụng
+        APP_NAME="your-app-name"
+        APP_PATH="/var/www/$APP_NAME"
+        mkdir -p $APP_PATH/releases
+        mkdir -p $APP_PATH/shared
+        
+        # Đặt quyền cho thư mục
+        chown -R www-data:www-data $APP_PATH
+        
+        # Tạo thư mục logs
+        mkdir -p /var/log/$APP_NAME
+        chown -R www-data:www-data /var/log/$APP_NAME
+        
+        echo "Environment setup completed!"
+        EOL
+        chmod +x setup.sh
+
     - name: Create deploy script
       run: |
         cat > deploy.sh << 'EOL'
         #!/bin/bash
         
         # Thiết lập các biến môi trường
-        APP_NAME="ksms-BE"
+        APP_NAME="your-app-name"
         APP_PATH="/var/www/$APP_NAME"
         TIMESTAMP=$(date +%Y%m%d%H%M%S)
         RELEASE_PATH="$APP_PATH/releases/$TIMESTAMP"
@@ -84,9 +129,9 @@ jobs:
         directory=$APP_PATH/current
         autostart=true
         autorestart=true
-        stderr_logfile=/var/log/$APP_NAME.err.log
-        stdout_logfile=/var/log/$APP_NAME.out.log
-        environment=ASPNETCORE_ENVIRONMENT=Production
+        stderr_logfile=/var/log/$APP_NAME/$APP_NAME.err.log
+        stdout_logfile=/var/log/$APP_NAME/$APP_NAME.out.log
+        environment=ASPNETCORE_ENVIRONMENT=Production,ASPNETCORE_URLS="http://localhost:5000"
         user=www-data
         stopsignal=INT
         EOF
@@ -95,7 +140,7 @@ jobs:
         cat > /etc/nginx/sites-available/$APP_NAME << EOF
         server {
             listen 80;
-            server_name ksms.news;  # Thay bằng tên miền của bạn
+            server_name _;  # Thay bằng tên miền của bạn khi có
         
             location / {
                 proxy_pass http://localhost:5000;
@@ -115,6 +160,9 @@ jobs:
             ln -s /etc/nginx/sites-available/$APP_NAME /etc/nginx/sites-enabled/
         fi
         
+        # Vô hiệu hóa trang mặc định của Nginx
+        rm -f /etc/nginx/sites-enabled/default
+        
         # Kiểm tra cấu hình Nginx
         nginx -t
         
@@ -124,8 +172,8 @@ jobs:
         supervisorctl restart $APP_NAME
         systemctl restart nginx
         
-        # Xóa các bản release cũ (giữ lại 5 bản gần nhất)
-        cd $APP_PATH/releases && ls -t | tail -n +6 | xargs -I {} rm -rf {}
+        # Xóa các bản release cũ (giữ lại 3 bản gần nhất)
+        cd $APP_PATH/releases && ls -t | tail -n +4 | xargs -I {} rm -rf {}
         
         echo "Deployment completed successfully!"
         EOL
@@ -135,17 +183,21 @@ jobs:
       uses: shimataro/ssh-key-action@v2
       with:
         key: ${{ secrets.SSH_PRIVATE_KEY }}
-        known_hosts: ${{ secrets.SSH_KNOWN_HOSTS }}
+        if_key_exists: replace
         
-    - name: Deploy to VPS
+    - name: Setup environment and deploy to VPS
       run: |
         # Tạo thư mục tạm trên VPS và sao chép các tệp
-        ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "mkdir -p /tmp/app-build"
-        scp -r ./publish/* ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/tmp/app-build/
-        scp deploy.sh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/tmp/
+        ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "mkdir -p /tmp/app-build"
+        scp -o StrictHostKeyChecking=no -r ./publish/* ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/tmp/app-build/
+        scp -o StrictHostKeyChecking=no setup.sh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/tmp/
+        scp -o StrictHostKeyChecking=no deploy.sh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/tmp/
         
-        # Chạy script triển khai trên VPS
-        ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "sudo bash /tmp/deploy.sh"
+        # Chạy script thiết lập môi trường
+        ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "sudo bash /tmp/setup.sh"
+        
+        # Chạy script triển khai ứng dụng
+        ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "sudo bash /tmp/deploy.sh"
         
         # Dọn dẹp
-        ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "rm -rf /tmp/app-build /tmp/deploy.sh"
+        ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "rm -rf /tmp/app-build /tmp/setup.sh /tmp/deploy.sh"
