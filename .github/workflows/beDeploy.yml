@@ -328,9 +328,16 @@ jobs:
         
     - name: Setup environment and deploy to VPS
       run: |
-        # Tạo thư mục tạm trên VPS và sao chép các tệp
-        ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "mkdir -p /tmp/app-build"
+        # Tạo thư mục tạm và các thư mục con cần thiết trên VPS
+        ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "mkdir -p /tmp/app-build/ja"
+        
+        # Sao chép toàn bộ nội dung từ thư mục publish
         scp -r ./publish/* ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/tmp/app-build/
+        
+        # Đảm bảo quyền truy cập cho các thư mục
+        ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "chmod -R 755 /tmp/app-build"
+        
+        # Sao chép các script
         scp setup.sh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/tmp/
         scp deploy.sh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/tmp/
         
@@ -341,26 +348,4 @@ jobs:
         ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "sudo bash /tmp/deploy.sh"
         
         # Dọn dẹp
-        ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "rm -rf /tmp/app-build /tmp/setup.sh /tmp/deploy.sh"
-
-    - name: Copy files to VPS
-      uses: appleboy/scp-action@master
-      with:
-        host: ${{ secrets.HOST }}
-        username: ${{ secrets.USERNAME }}
-        key: ${{ secrets.SSH_PRIVATE_KEY }}
-        source: "./publish/*"
-        target: "/tmp/app-build/"
-        strip_components: 1
-        # Thêm bước tạo thư mục trước
-        script: |
-          mkdir -p /tmp/app-build/ja
-
-    - name: Create required directories
-      uses: appleboy/ssh-action@master
-      with:
-        host: ${{ secrets.HOST }}
-        username: ${{ secrets.USERNAME }}
-        key: ${{ secrets.SSH_PRIVATE_KEY }}
-        script: |
-          mkdir -p /tmp/app-build/ja
+        ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "rm -rf /tmp/setup.sh /tmp/deploy.sh"
