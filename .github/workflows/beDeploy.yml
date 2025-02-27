@@ -54,19 +54,10 @@ jobs:
         name: app-build
         path: ./publish/
         
-    - name: Setup SSH Config
-      run: |
-        mkdir -p ~/.ssh
-        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-        chmod 600 ~/.ssh/id_rsa
-        ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
-
-    # 1. Tạo scripts trước
     - name: Create setup script
       run: |
         cat > setup.sh << 'EOL'
         #!/bin/bash
-        set -e
         
         # Đảm bảo hệ thống đã cập nhật
         apt-get update
@@ -91,6 +82,9 @@ jobs:
         systemctl enable supervisor
         systemctl start supervisor
         
+        # Cài đặt Certbot nếu chưa có
+        apt-get install -y certbot python3-certbot-nginx
+        
         # Tạo cấu trúc thư mục cho ứng dụng
         APP_NAME="ksms-api"
         APP_PATH="/var/www/$APP_NAME"
@@ -104,6 +98,55 @@ jobs:
         mkdir -p /var/log/$APP_NAME
         chown -R www-data:www-data /var/log/$APP_NAME
         
+        # Tạo script sửa lỗi để sử dụng trong tương lai nếu cần
+        cat > /usr/local/bin/ksms-fix-tokens << 'SCRIPT'
+        #!/bin/bash
+        # Tải và cài đặt phiên bản 8.2.1 của các thư viện Identity Model
+        
+        # Tạo thư mục tạm
+        mkdir -p /tmp/nuget-latest
+        cd /tmp/nuget-latest
+        
+        echo "Đang tải các package Identity Model phiên bản 8.2.1..."
+        wget -q https://www.nuget.org/api/v2/package/Microsoft.IdentityModel.Protocols/8.2.1 -O protocols.nupkg
+        wget -q https://www.nuget.org/api/v2/package/Microsoft.IdentityModel.Logging/8.2.1 -O logging.nupkg
+        wget -q https://www.nuget.org/api/v2/package/Microsoft.IdentityModel.Tokens/8.2.1 -O tokens.nupkg
+        wget -q https://www.nuget.org/api/v2/package/Microsoft.IdentityModel.JsonWebTokens/8.2.1 -O jwt.nupkg
+        wget -q https://www.nuget.org/api/v2/package/Microsoft.IdentityModel.Protocols.OpenIdConnect/8.2.1 -O openidconnect.nupkg
+        wget -q https://www.nuget.org/api/v2/package/System.IdentityModel.Tokens.Jwt/8.2.1 -O systemjwt.nupkg
+        
+        echo "Giải nén các package..."
+        mkdir -p protocols logging tokens jwt openidconnect systemjwt
+        unzip -q protocols.nupkg -d protocols
+        unzip -q logging.nupkg -d logging
+        unzip -q tokens.nupkg -d tokens
+        unzip -q jwt.nupkg -d jwt
+        unzip -q openidconnect.nupkg -d openidconnect
+        unzip -q systemjwt.nupkg -d systemjwt
+        
+        echo "Sao chép DLL vào thư mục ứng dụng..."
+        cp -v protocols/lib/net8.0/*.dll /var/www/ksms-api/current/
+        cp -v logging/lib/net8.0/*.dll /var/www/ksms-api/current/
+        cp -v tokens/lib/net8.0/*.dll /var/www/ksms-api/current/
+        cp -v jwt/lib/net8.0/*.dll /var/www/ksms-api/current/
+        cp -v openidconnect/lib/net8.0/*.dll /var/www/ksms-api/current/
+        cp -v systemjwt/lib/net8.0/*.dll /var/www/ksms-api/current/
+        
+        echo "Cập nhật quyền..."
+        chown -R www-data:www-data /var/www/ksms-api/current
+        
+        echo "Khởi động lại ứng dụng..."
+        supervisorctl restart ksms-api
+        
+        # Dọn dẹp
+        cd /
+        rm -rf /tmp/nuget-latest
+        
+        echo "Hoàn tất!"
+        SCRIPT
+        
+        chmod +x /usr/local/bin/ksms-fix-tokens
+        
         echo "Environment setup completed!"
         EOL
         chmod +x setup.sh
@@ -112,7 +155,6 @@ jobs:
       run: |
         cat > deploy.sh << 'EOL'
         #!/bin/bash
-        set -e  # Exit on error
         
         # Thiết lập các biến môi trường
         APP_NAME="ksms-api"
@@ -126,33 +168,20 @@ jobs:
         # Cài đặt thư mục release mới
         cp -R /tmp/app-build/* $RELEASE_PATH/
         
-        # Debug: Liệt kê các file trong release
-        echo "=== Files in release directory ==="
-        ls -la $RELEASE_PATH
-        find $RELEASE_PATH -name "*.dll"
-        
         # Cập nhật symbolic link
         ln -sfn $RELEASE_PATH $APP_PATH/current
         
         # Cấu hình quyền
         chown -R www-data:www-data $RELEASE_PATH
         
-        # Tìm DLL file - sử dụng cách linh hoạt hơn
-        echo "Searching for main DLL file..."
-        DLL_FILE=$(find $RELEASE_PATH -name "KSMS.API.dll" -type f)
+        # Tìm tên chính xác của file DLL
+        DLL_FILE=$(find $RELEASE_PATH -name "KSMS.API.dll")
         if [ -z "$DLL_FILE" ]; then
-            echo "KSMS.API.dll not found, trying to find any DLL..."
-            DLL_FILE=$(find $RELEASE_PATH -name "*.dll" -type f -print0 | xargs -0 ls -t | head -1)
-        fi
-        
-        if [ -z "$DLL_FILE" ]; then
-            echo "No DLL files found in $RELEASE_PATH"
+            echo "Cannot find main DLL file. Deployment failed."
             exit 1
         fi
-        
-        echo "Found DLL file: $DLL_FILE"
-        DLL_NAME=$(basename "$DLL_FILE")
-        DLL_DIR=$(dirname "$DLL_FILE")
+        DLL_NAME=$(basename $DLL_FILE)
+        DLL_DIR=$(dirname $DLL_FILE)
         
         # Tạo hoặc cập nhật file cấu hình supervisor
         cat > /etc/supervisor/conf.d/$APP_NAME.conf << EOF
@@ -168,10 +197,118 @@ jobs:
         stopsignal=INT
         EOF
         
-        # Khởi động lại supervisor
+        # Cập nhật cấu hình Nginx cho API domain
+        cat > /etc/nginx/sites-available/$APP_NAME << EOF
+        # Server block cho API (api.ksms.news)
+        server {
+            listen 80;
+            server_name api.ksms.news;
+        
+            location / {
+                proxy_pass http://localhost:5000;
+                proxy_http_version 1.1;
+                proxy_set_header Upgrade \$http_upgrade;
+                proxy_set_header Connection keep-alive;
+                proxy_set_header Host \$host;
+                proxy_cache_bypass \$http_upgrade;
+                proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto \$scheme;
+                proxy_set_header X-Real-IP \$remote_addr;
+                
+                # Tăng buffer size cho Swagger
+                proxy_buffers 16 16k;
+                proxy_buffer_size 16k;
+                
+                # Tăng timeout cho các request lâu
+                proxy_read_timeout 300s;
+                proxy_connect_timeout 300s;
+            }
+        }
+        
+        # Server block cho website chính (ksms.news và www.ksms.news)
+        # Bỏ comment phần này nếu frontend và backend chạy trên cùng server
+        # server {
+        #     listen 80;
+        #     server_name ksms.news www.ksms.news;
+        #
+        #     location / {
+        #         proxy_pass http://localhost:3000; # Thay đổi port nếu cần
+        #         proxy_http_version 1.1;
+        #         proxy_set_header Upgrade \$http_upgrade;
+        #         proxy_set_header Connection keep-alive;
+        #         proxy_set_header Host \$host;
+        #         proxy_cache_bypass \$http_upgrade;
+        #         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        #         proxy_set_header X-Forwarded-Proto \$scheme;
+        #         proxy_set_header X-Real-IP \$remote_addr;
+        #     }
+        # }
+        EOF
+        
+        # Kích hoạt site nếu chưa có
+        if [ ! -f /etc/nginx/sites-enabled/$APP_NAME ]; then
+            ln -s /etc/nginx/sites-available/$APP_NAME /etc/nginx/sites-enabled/
+        fi
+        
+        # Vô hiệu hóa trang mặc định của Nginx
+        rm -f /etc/nginx/sites-enabled/default
+        
+        # Kiểm tra cấu hình Nginx
+        nginx -t
+        
+        # Download và cài đặt các thư viện Identity Model cần thiết
+        echo "Kiểm tra và cài đặt các thư viện Identity Model..."
+        mkdir -p /tmp/nuget
+        
+        # Tải xuống tất cả các package cần thiết
+        echo "Tải xuống các package Identity Model..."
+        wget -q https://www.nuget.org/api/v2/package/Microsoft.IdentityModel.Protocols/8.2.1 -O /tmp/nuget/protocols.nupkg
+        wget -q https://www.nuget.org/api/v2/package/Microsoft.IdentityModel.Logging/8.2.1 -O /tmp/nuget/logging.nupkg
+        wget -q https://www.nuget.org/api/v2/package/Microsoft.IdentityModel.Tokens/8.2.1 -O /tmp/nuget/tokens.nupkg
+        wget -q https://www.nuget.org/api/v2/package/Microsoft.IdentityModel.JsonWebTokens/8.2.1 -O /tmp/nuget/jwt.nupkg
+        wget -q https://www.nuget.org/api/v2/package/Microsoft.IdentityModel.Protocols.OpenIdConnect/8.2.1 -O /tmp/nuget/openidconnect.nupkg
+        wget -q https://www.nuget.org/api/v2/package/System.IdentityModel.Tokens.Jwt/8.2.1 -O /tmp/nuget/systemjwt.nupkg
+        
+        # Giải nén các packages
+        echo "Giải nén các package..."
+        mkdir -p /tmp/nuget/protocols /tmp/nuget/logging /tmp/nuget/tokens /tmp/nuget/jwt /tmp/nuget/openidconnect /tmp/nuget/systemjwt
+        unzip -q /tmp/nuget/protocols.nupkg -d /tmp/nuget/protocols
+        unzip -q /tmp/nuget/logging.nupkg -d /tmp/nuget/logging
+        unzip -q /tmp/nuget/tokens.nupkg -d /tmp/nuget/tokens
+        unzip -q /tmp/nuget/jwt.nupkg -d /tmp/nuget/jwt
+        unzip -q /tmp/nuget/openidconnect.nupkg -d /tmp/nuget/openidconnect
+        unzip -q /tmp/nuget/systemjwt.nupkg -d /tmp/nuget/systemjwt
+        
+        # Sao chép tất cả DLL vào thư mục ứng dụng
+        echo "Sao chép DLL vào thư mục ứng dụng..."
+        cp -v /tmp/nuget/protocols/lib/net8.0/*.dll $RELEASE_PATH/
+        cp -v /tmp/nuget/logging/lib/net8.0/*.dll $RELEASE_PATH/
+        cp -v /tmp/nuget/tokens/lib/net8.0/*.dll $RELEASE_PATH/
+        cp -v /tmp/nuget/jwt/lib/net8.0/*.dll $RELEASE_PATH/
+        cp -v /tmp/nuget/openidconnect/lib/net8.0/*.dll $RELEASE_PATH/
+        cp -v /tmp/nuget/systemjwt/lib/net8.0/*.dll $RELEASE_PATH/
+        
+        # Cập nhật quyền
+        chown -R www-data:www-data $RELEASE_PATH
+        
+        # Dọn dẹp
+        rm -rf /tmp/nuget
+        
+        # Hướng dẫn khởi chạy SSL
+        echo "=== IMPORTANT ==="
+        echo "After deployment, run the following command to set up SSL:"
+        echo "sudo certbot --nginx -d api.ksms.news"
+        echo "================="
+        
+        # Kiểm tra các DLL quan trọng đã được cài đặt
+        echo "Kiểm tra các DLL Identity Model..."
+        ls -la $RELEASE_PATH/Microsoft.IdentityModel.*.dll || echo "WARNING: Missing Identity Model DLLs!"
+        
+        # Khởi động lại các dịch vụ
         supervisorctl reread
         supervisorctl update
         supervisorctl restart $APP_NAME
+        systemctl restart nginx
         
         # Xóa các bản release cũ (giữ lại 3 bản gần nhất)
         cd $APP_PATH/releases && ls -t | tail -n +4 | xargs -I {} rm -rf {}
@@ -180,40 +317,28 @@ jobs:
         EOL
         chmod +x deploy.sh
 
-    # 2. Sau đó mới thực hiện deploy
+    # Thay thế cách cài đặt SSH key
+    - name: Setup SSH Config
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+        chmod 644 ~/.ssh/known_hosts
+        
     - name: Setup environment and deploy to VPS
       run: |
-        # Lưu vị trí thư mục hiện tại
-        CURRENT_DIR=$(pwd)
-        
-        # Nén thư mục publish để tăng tốc quá trình transfer
-        cd ./publish && tar czf ../app.tar.gz .
-        cd $CURRENT_DIR
-        
-        # Debug: Kiểm tra nội dung thư mục publish và scripts
-        echo "=== Checking files ==="
-        ls -la
-        echo "=== Checking publish directory content ==="
-        ls -la ./publish/
-        find ./publish -name "*.dll"
-        
-        # Tạo thư mục và copy file nén
+        # Tạo thư mục tạm trên VPS và sao chép các tệp
         ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "mkdir -p /tmp/app-build"
-        scp app.tar.gz ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/tmp/app-build/
+        scp -r ./publish/* ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/tmp/app-build/
+        scp setup.sh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/tmp/
+        scp deploy.sh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/tmp/
         
-        # Copy scripts từ thư mục gốc
-        scp ./setup.sh ./deploy.sh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/tmp/
+        # Chạy script thiết lập môi trường
+        ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "sudo bash /tmp/setup.sh"
         
-        # Giải nén và kiểm tra files trên server
-        ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "cd /tmp/app-build && \
-          tar xzf app.tar.gz && \
-          rm app.tar.gz && \
-          echo '=== Server files after extraction ===' && \
-          ls -la && \
-          find . -name '*.dll'"
-        
-        # Chạy setup và deploy
-        ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "sudo bash /tmp/setup.sh && sudo bash /tmp/deploy.sh"
+        # Chạy script triển khai ứng dụng
+        ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "sudo bash /tmp/deploy.sh"
         
         # Dọn dẹp
-        ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "rm -f /tmp/{setup,deploy}.sh"
+        ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "rm -rf /tmp/app-build /tmp/setup.sh /tmp/deploy.sh"
