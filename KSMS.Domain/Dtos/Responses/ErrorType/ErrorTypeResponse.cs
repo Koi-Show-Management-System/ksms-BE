@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace KSMS.Domain.Dtos.Responses.ErrorType
 {
-    public class GetAllErrorTypeResponse
+    public class ErrorTypeResponse
     {
         public Guid CriteriaId { get; set; }
 

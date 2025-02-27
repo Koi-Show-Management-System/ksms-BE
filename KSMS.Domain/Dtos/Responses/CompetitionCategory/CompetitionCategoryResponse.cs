@@ -16,7 +16,7 @@ using System.Threading.Tasks;
 
 namespace KSMS.Domain.Dtos.Responses.CompetitionCategory
 {
-    public class GetAllCompetitionCategoryResponse
+    public class CompetitionCategoryResponse
     {
         public Guid Id { get; set; }
         public Guid KoiShowId { get; set; }
@@ -39,17 +39,16 @@ namespace KSMS.Domain.Dtos.Responses.CompetitionCategory
 
         public string? Status { get; set; }
 
-        public virtual ICollection<GetAllRoundResponse> Rounds { get; set; } = new List<GetAllRoundResponse>();
+        public virtual ICollection<RoundResponse> Rounds { get; set; } = new List<RoundResponse>();
 
         public virtual ICollection<AwardResponse> Awards { get; set; } = new List<AwardResponse>();
 
         public virtual ICollection<CategoryVarietyResponse> CategoryVarieties { get; set; } = new List<CategoryVarietyResponse>();
 
         public virtual ICollection<RegistrationStaffResponse> Registrations { get; set; } = new List<RegistrationStaffResponse>();
+        
+        public virtual ICollection<CriteriaCompetitionCategoryResponse> CriteriaCompetitionCategories { get; set; } = new List<CriteriaCompetitionCategoryResponse>();
 
-
-        public virtual ICollection<GetAllCriteriaGroupResponse> CriteriaCompetitionCategories { get; set; } = new List<GetAllCriteriaGroupResponse>();
-
-        public virtual ICollection<GetAllRefereeAssignmentResponse> RefereeAssignments { get; set; } = new List<GetAllRefereeAssignmentResponse>();
+        public virtual ICollection<RefereeAssignmentResponse> RefereeAssignments { get; set; } = new List<RefereeAssignmentResponse>();
     }
 }

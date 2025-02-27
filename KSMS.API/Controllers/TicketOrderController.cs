@@ -36,7 +36,7 @@ public class TicketOrderController : ControllerBase
         return Redirect("http://localhost:5173/success");
     }
 
-    [HttpGet("get-all-orders")]
+    [HttpGet("get-paging-orders")]
     [Authorize(Roles = "Member, Staff, Manager, Admin")]
     public async Task<ActionResult<ApiResponse<object>>> GetAllOrders([FromQuery]Guid? koiShowId, [FromQuery]OrderStatus? orderStatus,
         [FromQuery] int page = 1, [FromQuery]int size  = 10)

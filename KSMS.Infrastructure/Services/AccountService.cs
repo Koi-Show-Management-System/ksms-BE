@@ -1,4 +1,5 @@
-﻿using KSMS.Application.GoogleServices;
+﻿using System.Linq.Expressions;
+using KSMS.Application.GoogleServices;
 using KSMS.Application.Repositories;
 using KSMS.Application.Services;
 using KSMS.Domain.Dtos.Requests.Account;
@@ -12,6 +13,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
  
 using BCrypt.Net;
+using KSMS.Application.Extensions;
 using KSMS.Domain.Dtos.Responses.Account;
 using KSMS.Domain.Exceptions;
 using KSMS.Infrastructure.Utils;
@@ -26,19 +28,25 @@ public class AccountService : BaseService<AccountService>, IAccountService
     {
         _firebaseService = firebaseService;
     }
-    public async Task<Paginate<GetALLAccountResponse>> GetPagedUsersAsync(int page, int size)
+    public async Task<Paginate<AccountResponse>> GetPagedUsersAsync(RoleName? roleName, int page, int size)
     { 
         var userRepository = _unitOfWork.GetRepository<Account>();
 
-        
-       var pagedUsers = await userRepository.GetPagingListAsync(
+        Expression<Func<Account, bool>> filterQuery = account => true;
+        if (roleName.HasValue)
+        {
+            var roleString = roleName.Value.ToString();
+            filterQuery = filterQuery.AndAlso(r => r.Role == roleString);
+        } 
+        var pagedUsers = await userRepository.GetPagingListAsync(
+            predicate: filterQuery,
             orderBy: query => query.OrderBy(a => a.Username),  
             page: page,  
             size: size   
         );
-        return pagedUsers.Adapt<Paginate<GetALLAccountResponse>>();
+        return pagedUsers.Adapt<Paginate<AccountResponse>>();
     }
-    public async Task<GetALLAccountResponse> GetUserByIdAsync(Guid id)
+    public async Task<AccountResponse> GetUserByIdAsync(Guid id)
     {
         var user = await _unitOfWork.GetRepository<Account>()
             .SingleOrDefaultAsync(
@@ -50,11 +58,11 @@ public class AccountService : BaseService<AccountService>, IAccountService
             throw new NotFoundException("User not found");
         }
 
-        return user.Adapt<GetALLAccountResponse>();
+        return user.Adapt<AccountResponse>();
         
     }
 
-    public async Task<GetALLAccountResponse> CreateUserAsync(CreateAccountRequest createAccountRequest)
+    public async Task<AccountResponse> CreateUserAsync(CreateAccountRequest createAccountRequest)
     {
          
         var userRepository = _unitOfWork.GetRepository<Account>();
@@ -79,13 +87,13 @@ public class AccountService : BaseService<AccountService>, IAccountService
         user.IsConfirmed = true;
         var createdUser = await userRepository.InsertAsync(user);
         await _unitOfWork.CommitAsync();
-        return createdUser.Adapt<GetALLAccountResponse>();
+        return createdUser.Adapt<AccountResponse>();
     }
 
 
 
 
-    public async Task<GetALLAccountResponse> UpdateStatus(Guid id, AccountStatus status)
+    public async Task<AccountResponse> UpdateStatus(Guid id, AccountStatus status)
     {
         var userRepository = _unitOfWork.GetRepository<Account>();
 
@@ -107,7 +115,7 @@ public class AccountService : BaseService<AccountService>, IAccountService
         };
         userRepository.UpdateAsync(user);
         await _unitOfWork.CommitAsync();
-        return user.Adapt<GetALLAccountResponse>();
+        return user.Adapt<AccountResponse>();
     }
 
 

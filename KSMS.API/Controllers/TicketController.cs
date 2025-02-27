@@ -11,29 +11,29 @@ namespace KSMS.API.Controllers
     [ApiController]
     public class TicketController : ControllerBase
     {
-        private readonly ITicketService _ticketService;
-
-        public TicketController(ITicketService ticketService)
-        {
-            _ticketService = ticketService;
-        }
-
-      
-        [HttpPost("generate-qr")]
-        public ActionResult<ApiResponse<string>> GenerateQrCode([FromBody] Guid TicketId)
-        {
-            var qrCodeBase64 = QrcodeUtil.GenerateQrCode(TicketId);
-            return Ok(ApiResponse<string>.Success(qrCodeBase64, "Tạo mã QR thành công"));
-        }
-
-
-        [HttpGet("get-detail/{ticketId:guid}")]
-        [Authorize(Roles = "Staff")]
-        public async Task<ActionResult<ApiResponse<object>>> GetDetailTicketId(Guid ticketId)
-        {
-            var ticketDetail = await _ticketService.GetTicketDetailByIdAsync(ticketId);
-            return Ok(ApiResponse<object>.Success(ticketDetail, "Lấy chi tiết vé thành công"));
-        }
+        // private readonly ITicketService _ticketService;
+        //
+        // public TicketController(ITicketService ticketService)
+        // {
+        //     _ticketService = ticketService;
+        // }
+        //
+        //
+        // [HttpPost("generate-qr")]
+        // public ActionResult<ApiResponse<string>> GenerateQrCode([FromBody] Guid TicketId)
+        // {
+        //     var qrCodeBase64 = QrcodeUtil.GenerateQrCode(TicketId);
+        //     return Ok(ApiResponse<string>.Success(qrCodeBase64, "Tạo mã QR thành công"));
+        // }
+        //
+        //
+        // [HttpGet("get-detail/{ticketId:guid}")]
+        // [Authorize(Roles = "Staff")]
+        // public async Task<ActionResult<ApiResponse<object>>> GetDetailTicketId(Guid ticketId)
+        // {
+        //     var ticketDetail = await _ticketService.GetTicketDetailByIdAsync(ticketId);
+        //     return Ok(ApiResponse<object>.Success(ticketDetail, "Lấy chi tiết vé thành công"));
+        // }
 
         //    [HttpPost("verify-ticket")]
         ////    [Authorize(Roles = "Staff")]

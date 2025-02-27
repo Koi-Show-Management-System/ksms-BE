@@ -21,18 +21,6 @@ namespace KSMS.API.Controllers
             _showService = showService;
             _varietyService = varietyService;
         }
-        /// <summary>
-        /// Get all varieties for the logged-in account.
-        /// </summary>
-        [HttpGet("varieties")]
-        public async Task<ActionResult<ApiResponse<IEnumerable<VarietyResponse>>>> GetAllVarietiesByAccount()
-        {
-            var varieties = await _varietyService.GetAllVarietyAsync();
-            return Ok(ApiResponse<IEnumerable<VarietyResponse>>.Success(varieties, "Get all varieties successfully"));
-        }
-        /// <summary>
-        /// Create a new show with related entities.
-        /// </summary>
         [HttpPost("create")]
         public async Task<ActionResult<ApiResponse<object>>> CreateShow([FromBody] CreateShowRequest createShowRequest)
         {
@@ -53,7 +41,7 @@ namespace KSMS.API.Controllers
             if (showResponse == null)
                 return NotFound(ApiResponse<object>.Fail("Show is not existed"));
 
-            return Ok(ApiResponse<GetAllKoiShowResponse>.Success(showResponse, "Get show successfully"));
+            return Ok(ApiResponse<KoiShowResponse>.Success(showResponse, "Get show successfully"));
         }
 
         // <summary>
