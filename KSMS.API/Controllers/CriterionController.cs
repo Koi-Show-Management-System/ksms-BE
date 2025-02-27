@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace KSMS.API.Controllers
 {
-    [Route("api/criterion")]
+    [Route("api/criteria")]
     [ApiController]
     public class CriterionController : ControllerBase
     {
@@ -44,7 +44,13 @@ namespace KSMS.API.Controllers
             var updatedCriterion = await _criterionService.UpdateCriterionAsync(id, updateCriterionRequest);
             return Ok(ApiResponse<object>.Success(updatedCriterion, "Criterion updated successfully"));
         }
-
+        
+        [HttpGet("get-all")]
+        public async Task<ActionResult<ApiResponse<object>>> GetPagedCriteria([FromQuery]int page = 1, [FromQuery]int size = 10)
+        {
+            var criteria = await _criterionService.GetAllCriteria(page, size);
+            return Ok(ApiResponse<object>.Success(criteria, "Get list  successfully"));
+        }
    
         //[HttpDelete("{id:guid}")]
         //public async Task<ActionResult<ApiResponse<object>>> DeleteCriterion(Guid id)

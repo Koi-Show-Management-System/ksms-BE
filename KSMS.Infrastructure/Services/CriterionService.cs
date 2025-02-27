@@ -11,6 +11,7 @@ using KSMS.Infrastructure.Utils;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using KSMS.Domain.Pagination;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 
@@ -107,7 +108,13 @@ namespace KSMS.Infrastructure.Services
             return criterion.Adapt<CriterionResponse>();
         }
 
-      
+        public async Task<Paginate<GetAllCriteriaResponse>> GetAllCriteria(int page, int size)
+        {
+            return (await _unitOfWork.GetRepository<Criterion>().GetPagingListAsync(page: page, size: size))
+                .Adapt<Paginate<GetAllCriteriaResponse>>();
+        }
+
+
         public async Task DeleteCriterionAsync(Guid id)
         {
             var criterionRepository = _unitOfWork.GetRepository<Criterion>();

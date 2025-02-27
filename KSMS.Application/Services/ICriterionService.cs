@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using KSMS.Domain.Pagination;
 
 namespace KSMS.Application.Services
 {
@@ -18,6 +19,7 @@ namespace KSMS.Application.Services
        
         Task<CriterionResponse> UpdateCriterionAsync(Guid id, UpdateCriterionRequest updateCriterionRequest);
 
+        Task<Paginate<GetAllCriteriaResponse>> GetAllCriteria(int page, int size);
     
         Task DeleteCriterionAsync(Guid id);
     }
