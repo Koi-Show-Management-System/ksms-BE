@@ -59,7 +59,7 @@ app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
     c.SwaggerEndpoint("/swagger/v1/swagger.json", "KSMS API v1");
-    c.DocExpansion(Swashbuckle.AspNetCore.SwaggerUI.DocExpansion.None);
+    //c.DocExpansion(Swashbuckle.AspNetCore.SwaggerUI.DocExpansion.Full);
     // c.RoutePrefix = string.Empty; // Uncomment nếu muốn đặt Swagger làm trang chủ
 });
 
