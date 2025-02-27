@@ -9,84 +9,140 @@ on:
     # Cho phép chạy workflow thủ công từ giao diện GitHub
 
 jobs:
-  deploy:
-    name: Build and Deploy
+  build:
+    name: Build and Test
     runs-on: ubuntu-latest
     
     steps:
     - uses: actions/checkout@v3
-    
+      with:
+        fetch-depth: 0
+
     - name: Setup .NET
       uses: actions/setup-dotnet@v3
       with:
         dotnet-version: '8.0.x'
         
-    - name: Build and Publish
-      run: |
-        dotnet publish --configuration Release --runtime linux-x64 --self-contained true \
-          -p:PublishTrimmed=false -p:PublishSingleFile=false --output ./publish
+    - name: Restore dependencies
+      run: dotnet restore
+      
+    - name: Build
+      run: dotnet build --configuration Release --no-restore
+      
+    - name: Test
+      run: dotnet test --no-build --verbosity normal --configuration Release
+      
+    - name: Publish
+      run: dotnet publish --configuration Release --runtime linux-x64 --self-contained true -p:PublishTrimmed=false -p:PublishSingleFile=false --output ./publish
+      
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: app-build
+        path: ./publish/
         
-    - name: Setup SSH and Deploy
-      env:
-        SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-        SSH_HOST: ${{ secrets.SSH_HOST }}
-        SSH_USER: ${{ secrets.SSH_USER }}
+  deploy:
+    name: Setup Environment and Deploy to VPS
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    
+    steps:
+    - name: Download build artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: app-build
+        path: ./publish/
+        
+    - name: Setup SSH Config
       run: |
-        # Setup SSH
         mkdir -p ~/.ssh
-        echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
         chmod 600 ~/.ssh/id_rsa
-        ssh-keyscan -H $SSH_HOST >> ~/.ssh/known_hosts
+        ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
         
-        # Create deployment script
-        cat > deploy.sh << 'EOF'
+    - name: Setup environment and deploy to VPS
+      run: |
+        # Nén thư mục publish để tăng tốc quá trình transfer
+        cd ./publish && tar czf ../app.tar.gz .
+        
+        # Debug: Kiểm tra nội dung thư mục publish
+        echo "=== Checking publish directory content ==="
+        ls -la
+        find . -name "*.dll"
+        
+        # Tạo thư mục và copy file nén
+        ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "mkdir -p /tmp/app-build"
+        scp ../app.tar.gz ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/tmp/app-build/
+        
+        # Giải nén và kiểm tra files trên server
+        ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "cd /tmp/app-build && \
+          tar xzf app.tar.gz && \
+          rm app.tar.gz && \
+          echo '=== Server files after extraction ===' && \
+          ls -la && \
+          find . -name '*.dll'"
+        
+        # Copy và chạy scripts với debug info
+        scp {setup,deploy}.sh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/tmp/
+        
+        # Chạy setup
+        ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "sudo bash /tmp/setup.sh"
+        
+        # Sửa lại phần tìm DLL trong deploy script
+        ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "sudo sed -i 's/DLL_FILE=\$(find \$RELEASE_PATH -name \"KSMS.API.dll\")/DLL_FILE=\$(find \$RELEASE_PATH -name \"*.dll\" -type f -print0 | xargs -0 ls -t | head -1)/' /tmp/deploy.sh"
+        
+        # Chạy deploy với debug info
+        ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "set -x && sudo bash /tmp/deploy.sh"
+        
+        # Dọn dẹp
+        ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "rm -f /tmp/{setup,deploy}.sh"
+
+    - name: Create deploy script
+      run: |
+        cat > deploy.sh << 'EOL'
         #!/bin/bash
-        set -e
+        set -e  # Exit on error
         
+        # Thiết lập các biến môi trường
         APP_NAME="ksms-api"
         APP_PATH="/var/www/$APP_NAME"
-        RELEASE_PATH="$APP_PATH/releases/$(date +%Y%m%d%H%M%S)"
+        TIMESTAMP=$(date +%Y%m%d%H%M%S)
+        RELEASE_PATH="$APP_PATH/releases/$TIMESTAMP"
         
-        # Setup directories
+        # Tạo thư mục release mới
         mkdir -p $RELEASE_PATH
-        cd /tmp/app-build
         
-        # Copy files and set permissions
-        cp -R * $RELEASE_PATH/
-        chown -R www-data:www-data $RELEASE_PATH
+        # Cài đặt thư mục release mới
+        cp -R /tmp/app-build/* $RELEASE_PATH/
+        
+        # Debug: Liệt kê các file trong release
+        echo "=== Files in release directory ==="
+        ls -la $RELEASE_PATH
+        find $RELEASE_PATH -name "*.dll"
+        
+        # Cập nhật symbolic link
         ln -sfn $RELEASE_PATH $APP_PATH/current
         
-        # Update supervisor config
-        cat > /etc/supervisor/conf.d/$APP_NAME.conf << CONF
-        [program:$APP_NAME]
-        command=dotnet $RELEASE_PATH/KSMS.API.dll
-        directory=$RELEASE_PATH
-        autostart=true
-        autorestart=true
-        stderr_logfile=/var/log/$APP_NAME/$APP_NAME.err.log
-        stdout_logfile=/var/log/$APP_NAME/$APP_NAME.out.log
-        environment=ASPNETCORE_ENVIRONMENT=Production,ASPNETCORE_URLS="http://localhost:5000"
-        user=www-data
-        CONF
+        # Cấu hình quyền
+        chown -R www-data:www-data $RELEASE_PATH
         
-        # Restart services
-        supervisorctl reread
-        supervisorctl update
-        supervisorctl restart $APP_NAME
-        systemctl restart nginx
+        # Tìm DLL file - sử dụng cách linh hoạt hơn
+        echo "Searching for main DLL file..."
+        DLL_FILE=$(find $RELEASE_PATH -name "KSMS.API.dll" -type f)
+        if [ -z "$DLL_FILE" ]; then
+            echo "KSMS.API.dll not found, trying to find any DLL..."
+            DLL_FILE=$(find $RELEASE_PATH -name "*.dll" -type f -print0 | xargs -0 ls -t | head -1)
+        fi
         
-        # Cleanup old releases (keep last 3)
-        cd $APP_PATH/releases && ls -t | tail -n +4 | xargs -I {} rm -rf {}
-        EOF
+        if [ -z "$DLL_FILE" ]; then
+            echo "No DLL files found in $RELEASE_PATH"
+            exit 1
+        fi
         
-        # Compress and deploy
-        cd publish
-        tar czf ../app.tar.gz .
-        ssh $SSH_USER@$SSH_HOST "mkdir -p /tmp/app-build"
-        scp ../app.tar.gz deploy.sh $SSH_USER@$SSH_HOST:/tmp/
+        echo "Found DLL file: $DLL_FILE"
+        DLL_NAME=$(basename "$DLL_FILE")
+        DLL_DIR=$(dirname "$DLL_FILE")
         
-        # Execute deployment
-        ssh $SSH_USER@$SSH_HOST "cd /tmp && \
-          tar xzf app.tar.gz -C /tmp/app-build && \
-          sudo bash deploy.sh && \
-          rm -rf app.tar.gz deploy.sh /tmp/app-build"
+        # Rest of the deploy script...
+        EOL
