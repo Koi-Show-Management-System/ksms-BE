@@ -9,343 +9,84 @@ on:
     # Cho phép chạy workflow thủ công từ giao diện GitHub
 
 jobs:
-  build:
-    name: Build and Test
+  deploy:
+    name: Build and Deploy
     runs-on: ubuntu-latest
     
     steps:
     - uses: actions/checkout@v3
-      with:
-        fetch-depth: 0
-
+    
     - name: Setup .NET
       uses: actions/setup-dotnet@v3
       with:
         dotnet-version: '8.0.x'
         
-    - name: Restore dependencies
-      run: dotnet restore
-      
-    - name: Build
-      run: dotnet build --configuration Release --no-restore
-      
-    - name: Test
-      run: dotnet test --no-build --verbosity normal --configuration Release
-      
-    - name: Publish
-      run: dotnet publish --configuration Release --runtime linux-x64 --self-contained true -p:PublishTrimmed=false -p:PublishSingleFile=false --output ./publish
-      
-    - name: Upload build artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: app-build
-        path: ./publish/
-        
-  deploy:
-    name: Setup Environment and Deploy to VPS
-    needs: build
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
-    
-    steps:
-    - name: Download build artifacts
-      uses: actions/download-artifact@v4
-      with:
-        name: app-build
-        path: ./publish/
-        
-    - name: Create setup script
+    - name: Build and Publish
       run: |
-        cat > setup.sh << 'EOL'
+        dotnet publish --configuration Release --runtime linux-x64 --self-contained true \
+          -p:PublishTrimmed=false -p:PublishSingleFile=false --output ./publish
+        
+    - name: Setup SSH and Deploy
+      env:
+        SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        SSH_HOST: ${{ secrets.SSH_HOST }}
+        SSH_USER: ${{ secrets.SSH_USER }}
+      run: |
+        # Setup SSH
+        mkdir -p ~/.ssh
+        echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan -H $SSH_HOST >> ~/.ssh/known_hosts
+        
+        # Create deployment script
+        cat > deploy.sh << 'EOF'
         #!/bin/bash
+        set -e
         
-        # Đảm bảo hệ thống đã cập nhật
-        apt-get update
-        apt-get upgrade -y
-        
-        # Cài đặt các gói cần thiết
-        apt-get install -y curl wget apt-transport-https gnupg2 software-properties-common sudo unzip
-        
-        # Cài đặt .NET Runtime cho phiên bản 8.0
-        wget https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
-        dpkg -i packages-microsoft-prod.deb
-        apt-get update
-        apt-get install -y dotnet-runtime-8.0 aspnetcore-runtime-8.0
-        
-        # Cài đặt Nginx
-        apt-get install -y nginx
-        systemctl enable nginx
-        systemctl start nginx
-        
-        # Cài đặt Supervisor
-        apt-get install -y supervisor
-        systemctl enable supervisor
-        systemctl start supervisor
-        
-        # Cài đặt Certbot nếu chưa có
-        apt-get install -y certbot python3-certbot-nginx
-        
-        # Tạo cấu trúc thư mục cho ứng dụng
         APP_NAME="ksms-api"
         APP_PATH="/var/www/$APP_NAME"
-        mkdir -p $APP_PATH/releases
-        mkdir -p $APP_PATH/shared
+        RELEASE_PATH="$APP_PATH/releases/$(date +%Y%m%d%H%M%S)"
         
-        # Đặt quyền cho thư mục
-        chown -R www-data:www-data $APP_PATH
-        
-        # Tạo thư mục logs
-        mkdir -p /var/log/$APP_NAME
-        chown -R www-data:www-data /var/log/$APP_NAME
-        
-        # Tạo script sửa lỗi để sử dụng trong tương lai nếu cần
-        cat > /usr/local/bin/ksms-fix-tokens << 'SCRIPT'
-        #!/bin/bash
-        # Tải và cài đặt phiên bản 8.2.1 của các thư viện Identity Model
-        
-        # Tạo thư mục tạm
-        mkdir -p /tmp/nuget-latest
-        cd /tmp/nuget-latest
-        
-        echo "Đang tải các package Identity Model phiên bản 8.2.1..."
-        wget -q https://www.nuget.org/api/v2/package/Microsoft.IdentityModel.Protocols/8.2.1 -O protocols.nupkg
-        wget -q https://www.nuget.org/api/v2/package/Microsoft.IdentityModel.Logging/8.2.1 -O logging.nupkg
-        wget -q https://www.nuget.org/api/v2/package/Microsoft.IdentityModel.Tokens/8.2.1 -O tokens.nupkg
-        wget -q https://www.nuget.org/api/v2/package/Microsoft.IdentityModel.JsonWebTokens/8.2.1 -O jwt.nupkg
-        wget -q https://www.nuget.org/api/v2/package/Microsoft.IdentityModel.Protocols.OpenIdConnect/8.2.1 -O openidconnect.nupkg
-        wget -q https://www.nuget.org/api/v2/package/System.IdentityModel.Tokens.Jwt/8.2.1 -O systemjwt.nupkg
-        
-        echo "Giải nén các package..."
-        mkdir -p protocols logging tokens jwt openidconnect systemjwt
-        unzip -q protocols.nupkg -d protocols
-        unzip -q logging.nupkg -d logging
-        unzip -q tokens.nupkg -d tokens
-        unzip -q jwt.nupkg -d jwt
-        unzip -q openidconnect.nupkg -d openidconnect
-        unzip -q systemjwt.nupkg -d systemjwt
-        
-        echo "Sao chép DLL vào thư mục ứng dụng..."
-        cp -v protocols/lib/net8.0/*.dll /var/www/ksms-api/current/
-        cp -v logging/lib/net8.0/*.dll /var/www/ksms-api/current/
-        cp -v tokens/lib/net8.0/*.dll /var/www/ksms-api/current/
-        cp -v jwt/lib/net8.0/*.dll /var/www/ksms-api/current/
-        cp -v openidconnect/lib/net8.0/*.dll /var/www/ksms-api/current/
-        cp -v systemjwt/lib/net8.0/*.dll /var/www/ksms-api/current/
-        
-        echo "Cập nhật quyền..."
-        chown -R www-data:www-data /var/www/ksms-api/current
-        
-        echo "Khởi động lại ứng dụng..."
-        supervisorctl restart ksms-api
-        
-        # Dọn dẹp
-        cd /
-        rm -rf /tmp/nuget-latest
-        
-        echo "Hoàn tất!"
-        SCRIPT
-        
-        chmod +x /usr/local/bin/ksms-fix-tokens
-        
-        echo "Environment setup completed!"
-        EOL
-        chmod +x setup.sh
-
-    - name: Create deploy script
-      run: |
-        cat > deploy.sh << 'EOL'
-        #!/bin/bash
-        
-        # Thiết lập các biến môi trường
-        APP_NAME="ksms-api"
-        APP_PATH="/var/www/$APP_NAME"
-        TIMESTAMP=$(date +%Y%m%d%H%M%S)
-        RELEASE_PATH="$APP_PATH/releases/$TIMESTAMP"
-        
-        # Tạo thư mục release mới
+        # Setup directories
         mkdir -p $RELEASE_PATH
+        cd /tmp/app-build
         
-        # Cài đặt thư mục release mới
-        cp -R /tmp/app-build/* $RELEASE_PATH/
-        
-        # Cập nhật symbolic link
+        # Copy files and set permissions
+        cp -R * $RELEASE_PATH/
+        chown -R www-data:www-data $RELEASE_PATH
         ln -sfn $RELEASE_PATH $APP_PATH/current
         
-        # Cấu hình quyền
-        chown -R www-data:www-data $RELEASE_PATH
-        
-        # Tìm tên chính xác của file DLL
-        DLL_FILE=$(find $RELEASE_PATH -name "KSMS.API.dll")
-        if [ -z "$DLL_FILE" ]; then
-            echo "Cannot find main DLL file. Deployment failed."
-            exit 1
-        fi
-        DLL_NAME=$(basename $DLL_FILE)
-        DLL_DIR=$(dirname $DLL_FILE)
-        
-        # Tạo hoặc cập nhật file cấu hình supervisor
-        cat > /etc/supervisor/conf.d/$APP_NAME.conf << EOF
+        # Update supervisor config
+        cat > /etc/supervisor/conf.d/$APP_NAME.conf << CONF
         [program:$APP_NAME]
-        command=dotnet $DLL_FILE
-        directory=$DLL_DIR
+        command=dotnet $RELEASE_PATH/KSMS.API.dll
+        directory=$RELEASE_PATH
         autostart=true
         autorestart=true
         stderr_logfile=/var/log/$APP_NAME/$APP_NAME.err.log
         stdout_logfile=/var/log/$APP_NAME/$APP_NAME.out.log
         environment=ASPNETCORE_ENVIRONMENT=Production,ASPNETCORE_URLS="http://localhost:5000"
         user=www-data
-        stopsignal=INT
-        EOF
+        CONF
         
-        # Cập nhật cấu hình Nginx cho API domain
-        cat > /etc/nginx/sites-available/$APP_NAME << EOF
-        # Server block cho API (api.ksms.news)
-        server {
-            listen 80;
-            server_name api.ksms.news;
-        
-            location / {
-                proxy_pass http://localhost:5000;
-                proxy_http_version 1.1;
-                proxy_set_header Upgrade \$http_upgrade;
-                proxy_set_header Connection keep-alive;
-                proxy_set_header Host \$host;
-                proxy_cache_bypass \$http_upgrade;
-                proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-                proxy_set_header X-Forwarded-Proto \$scheme;
-                proxy_set_header X-Real-IP \$remote_addr;
-                
-                # Tăng buffer size cho Swagger
-                proxy_buffers 16 16k;
-                proxy_buffer_size 16k;
-                
-                # Tăng timeout cho các request lâu
-                proxy_read_timeout 300s;
-                proxy_connect_timeout 300s;
-            }
-        }
-        
-        # Server block cho website chính (ksms.news và www.ksms.news)
-        # Bỏ comment phần này nếu frontend và backend chạy trên cùng server
-        # server {
-        #     listen 80;
-        #     server_name ksms.news www.ksms.news;
-        #
-        #     location / {
-        #         proxy_pass http://localhost:3000; # Thay đổi port nếu cần
-        #         proxy_http_version 1.1;
-        #         proxy_set_header Upgrade \$http_upgrade;
-        #         proxy_set_header Connection keep-alive;
-        #         proxy_set_header Host \$host;
-        #         proxy_cache_bypass \$http_upgrade;
-        #         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        #         proxy_set_header X-Forwarded-Proto \$scheme;
-        #         proxy_set_header X-Real-IP \$remote_addr;
-        #     }
-        # }
-        EOF
-        
-        # Kích hoạt site nếu chưa có
-        if [ ! -f /etc/nginx/sites-enabled/$APP_NAME ]; then
-            ln -s /etc/nginx/sites-available/$APP_NAME /etc/nginx/sites-enabled/
-        fi
-        
-        # Vô hiệu hóa trang mặc định của Nginx
-        rm -f /etc/nginx/sites-enabled/default
-        
-        # Kiểm tra cấu hình Nginx
-        nginx -t
-        
-        # Download và cài đặt các thư viện Identity Model cần thiết
-        echo "Kiểm tra và cài đặt các thư viện Identity Model..."
-        mkdir -p /tmp/nuget
-        
-        # Tải xuống tất cả các package cần thiết
-        echo "Tải xuống các package Identity Model..."
-        wget -q https://www.nuget.org/api/v2/package/Microsoft.IdentityModel.Protocols/8.2.1 -O /tmp/nuget/protocols.nupkg
-        wget -q https://www.nuget.org/api/v2/package/Microsoft.IdentityModel.Logging/8.2.1 -O /tmp/nuget/logging.nupkg
-        wget -q https://www.nuget.org/api/v2/package/Microsoft.IdentityModel.Tokens/8.2.1 -O /tmp/nuget/tokens.nupkg
-        wget -q https://www.nuget.org/api/v2/package/Microsoft.IdentityModel.JsonWebTokens/8.2.1 -O /tmp/nuget/jwt.nupkg
-        wget -q https://www.nuget.org/api/v2/package/Microsoft.IdentityModel.Protocols.OpenIdConnect/8.2.1 -O /tmp/nuget/openidconnect.nupkg
-        wget -q https://www.nuget.org/api/v2/package/System.IdentityModel.Tokens.Jwt/8.2.1 -O /tmp/nuget/systemjwt.nupkg
-        
-        # Giải nén các packages
-        echo "Giải nén các package..."
-        mkdir -p /tmp/nuget/protocols /tmp/nuget/logging /tmp/nuget/tokens /tmp/nuget/jwt /tmp/nuget/openidconnect /tmp/nuget/systemjwt
-        unzip -q /tmp/nuget/protocols.nupkg -d /tmp/nuget/protocols
-        unzip -q /tmp/nuget/logging.nupkg -d /tmp/nuget/logging
-        unzip -q /tmp/nuget/tokens.nupkg -d /tmp/nuget/tokens
-        unzip -q /tmp/nuget/jwt.nupkg -d /tmp/nuget/jwt
-        unzip -q /tmp/nuget/openidconnect.nupkg -d /tmp/nuget/openidconnect
-        unzip -q /tmp/nuget/systemjwt.nupkg -d /tmp/nuget/systemjwt
-        
-        # Sao chép tất cả DLL vào thư mục ứng dụng
-        echo "Sao chép DLL vào thư mục ứng dụng..."
-        cp -v /tmp/nuget/protocols/lib/net8.0/*.dll $RELEASE_PATH/
-        cp -v /tmp/nuget/logging/lib/net8.0/*.dll $RELEASE_PATH/
-        cp -v /tmp/nuget/tokens/lib/net8.0/*.dll $RELEASE_PATH/
-        cp -v /tmp/nuget/jwt/lib/net8.0/*.dll $RELEASE_PATH/
-        cp -v /tmp/nuget/openidconnect/lib/net8.0/*.dll $RELEASE_PATH/
-        cp -v /tmp/nuget/systemjwt/lib/net8.0/*.dll $RELEASE_PATH/
-        
-        # Cập nhật quyền
-        chown -R www-data:www-data $RELEASE_PATH
-        
-        # Dọn dẹp
-        rm -rf /tmp/nuget
-        
-        # Hướng dẫn khởi chạy SSL
-        echo "=== IMPORTANT ==="
-        echo "After deployment, run the following command to set up SSL:"
-        echo "sudo certbot --nginx -d api.ksms.news"
-        echo "================="
-        
-        # Kiểm tra các DLL quan trọng đã được cài đặt
-        echo "Kiểm tra các DLL Identity Model..."
-        ls -la $RELEASE_PATH/Microsoft.IdentityModel.*.dll || echo "WARNING: Missing Identity Model DLLs!"
-        
-        # Khởi động lại các dịch vụ
+        # Restart services
         supervisorctl reread
         supervisorctl update
         supervisorctl restart $APP_NAME
         systemctl restart nginx
         
-        # Xóa các bản release cũ (giữ lại 3 bản gần nhất)
+        # Cleanup old releases (keep last 3)
         cd $APP_PATH/releases && ls -t | tail -n +4 | xargs -I {} rm -rf {}
+        EOF
         
-        echo "Deployment completed successfully!"
-        EOL
-        chmod +x deploy.sh
-
-    # Thay thế cách cài đặt SSH key
-    - name: Setup SSH Config
-      run: |
-        mkdir -p ~/.ssh
-        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-        chmod 600 ~/.ssh/id_rsa
-        ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
-        chmod 644 ~/.ssh/known_hosts
+        # Compress and deploy
+        cd publish
+        tar czf ../app.tar.gz .
+        ssh $SSH_USER@$SSH_HOST "mkdir -p /tmp/app-build"
+        scp ../app.tar.gz deploy.sh $SSH_USER@$SSH_HOST:/tmp/
         
-    - name: Setup environment and deploy to VPS
-      run: |
-        # Tạo thư mục tạm và các thư mục con cần thiết trên VPS
-        ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "mkdir -p /tmp/app-build/ja"
-        
-        # Sao chép toàn bộ nội dung từ thư mục publish
-        scp -r ./publish/* ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/tmp/app-build/
-        
-        # Đảm bảo quyền truy cập cho các thư mục
-        ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "chmod -R 755 /tmp/app-build"
-        
-        # Sao chép các script
-        scp setup.sh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/tmp/
-        scp deploy.sh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/tmp/
-        
-        # Chạy script thiết lập môi trường
-        ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "sudo bash /tmp/setup.sh"
-        
-        # Chạy script triển khai ứng dụng
-        ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "sudo bash /tmp/deploy.sh"
-        
-        # Dọn dẹp
-        ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "rm -rf /tmp/setup.sh /tmp/deploy.sh"
+        # Execute deployment
+        ssh $SSH_USER@$SSH_HOST "cd /tmp && \
+          tar xzf app.tar.gz -C /tmp/app-build && \
+          sudo bash deploy.sh && \
+          rm -rf app.tar.gz deploy.sh /tmp/app-build"
