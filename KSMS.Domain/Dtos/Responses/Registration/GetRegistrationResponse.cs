@@ -27,7 +27,7 @@ public class GetRegistrationResponse // for user
 
     public DateTime? ApprovedAt { get; set; }
 
-    public CompetitionCategoryResponse? CompetitionCategory { get; set; }
+    public GetCompetitionCategoryResponse? CompetitionCategory { get; set; }
 
     public ICollection<GetKoiMediaResponse> KoiMedia { get; set; } = new List<GetKoiMediaResponse>();
 
