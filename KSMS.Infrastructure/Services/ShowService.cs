@@ -228,13 +228,15 @@ namespace KSMS.Infrastructure.Services
                         {
                             foreach (var refereeAssignmentRequest in categoryRequest.RefereeAssignments)
                             {
-                                var refereeAssignment = refereeAssignmentRequest.Adapt<RefereeAssignment>();
-                                refereeAssignment.CompetitionCategoryId = createdCategory.Id; // Link RefereeAssignment with Category
-
-                                // Save RefereeAssignment to the database
-                                await refereeAssignmentRepository.InsertAsync(refereeAssignment);
-                                await _unitOfWork.CommitAsync();
-
+                                foreach (var x in refereeAssignmentRequest.RoundTypes)
+                                {
+                                    var refereeAssignment = refereeAssignmentRequest.Adapt<RefereeAssignment>();
+                                    refereeAssignment.CompetitionCategoryId = createdCategory.Id; // Link RefereeAssignment with Category
+                                    refereeAssignment.RoundType = x;
+                                    // Save RefereeAssignment to the database
+                                    await refereeAssignmentRepository.InsertAsync(refereeAssignment);
+                                    await _unitOfWork.CommitAsync();
+                                }
                                 var refereeAccount = await accountRepository.SingleOrDefaultAsync(predicate: a => a.Id == refereeAssignmentRequest.RefereeAccountId);
 
                                 string emailBody = ContentMailUtil.StaffRoleNotification(refereeAccount.FullName ?? "NoName", createShowRequest.Name, refereeAccount.Email?? "NoEmail", "DefaultPassword123");
