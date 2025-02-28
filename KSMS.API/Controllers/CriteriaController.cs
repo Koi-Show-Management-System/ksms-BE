@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace KSMS.API.Controllers
 {
-    [Route("api/criteria")]
+    [Route("api/v1/criteria")]
     [ApiController]
     public class CriteriaController : ControllerBase
     {

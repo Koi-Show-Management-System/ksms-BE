@@ -28,10 +28,14 @@ namespace KSMS.Infrastructure.Services
             var paymentRepository = _unitOfWork.GetRepository<RegistrationPayment>();
 
             var payment = await paymentRepository.SingleOrDefaultAsync(
-                predicate: p => p.Id == id , include: p => p.Include(r => r.Registration)
-                .ThenInclude(r => r.KoiProfile)
-                .Include(r => r.Registration)
-                .ThenInclude(r => r.KoiMedia)
+                predicate: p => p.Id == id , include: p =>
+                        p.Include(r => r.Registration)
+                                .ThenInclude(r => r.KoiProfile)
+                         .Include(r => r.Registration)
+                                .ThenInclude(r => r.KoiMedia)
+                        .Include(r => r.Registration)
+                                .ThenInclude(r => r.CompetitionCategory)
+                                    .ThenInclude(r => r.KoiShow)
             );
 
             if (payment == null)

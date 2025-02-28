@@ -86,8 +86,6 @@ namespace KSMS.Infrastructure.Services
             {
                 throw new NotFoundException("Criterion not found");
             }
-
-            // Delete the Criterion
             criterionRepository.DeleteAsync(criterion);
             await _unitOfWork.CommitAsync();
         }

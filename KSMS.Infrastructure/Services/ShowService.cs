@@ -17,7 +17,8 @@ using KSMS.Infrastructure.Utils;
 using Microsoft.AspNetCore.Http;
 using static KSMS.Infrastructure.Utils.MailUtil;
 using KSMS.Domain.Pagination;
-
+using System.Linq.Expressions;
+using KSMS.Application.Extensions;
 
 namespace KSMS.Infrastructure.Services
 {
@@ -733,12 +734,32 @@ namespace KSMS.Infrastructure.Services
         public async Task<Paginate<PaginatedKoiShowResponse>> GetPagedShowsAsync(int page, int size)
         {
             var showRepository = _unitOfWork.GetRepository<KoiShow>();
-
             
+            var role = GetRoleFromJwt(); 
+            Expression<Func<KoiShow, bool>> filterQuery = show => true;
+            if (role is "Guest" or "Member")
+            {
+                filterQuery = filterQuery.AndAlso(show => show.Status != Domain.Enums.ShowStatus.Draft.ToString().ToLower());
+            }
+            else if (role is "Staff" or "Manager")
+            {
+                var accountId = GetIdFromJwt();
+                filterQuery = filterQuery.AndAlso(show => show.ShowStaffs.Any(ss => ss.AccountId == accountId));
+            }
+            else if (role == "Referee")
+            {
+                var accountId = GetIdFromJwt();
+                filterQuery = filterQuery.AndAlso(show =>
+                    show.CompetitionCategories.Any(
+                        c => c.RefereeAssignments.Any(ra => ra.RefereeAccountId == accountId)));
+            }
             var pagedShows = await showRepository.GetPagingListAsync(
-                predicate: null,
+                predicate: filterQuery,
                 orderBy: query => query.OrderBy(s => s.Name),
-                include: query => query.Include(s => s.ShowStatuses), 
+                include: query => query.Include(s => s.ShowStatuses)
+                    .Include(s => s.CompetitionCategories)
+                    .ThenInclude(s => s.RefereeAssignments)
+                    .Include(s => s.ShowStaffs),
                 page: page,
                 size: size
             );

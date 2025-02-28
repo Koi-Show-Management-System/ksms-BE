@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace KSMS.API.Controllers
 {
-    [Route("api/auth")]
+    [Route("api/v1/auth")]
     [ApiController]
     public class AuthenticationController : ControllerBase
     {

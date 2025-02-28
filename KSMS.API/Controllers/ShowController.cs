@@ -11,23 +11,18 @@ using Microsoft.AspNetCore.Mvc;
 namespace KSMS.API.Controllers
 {
     [ApiController]
-    [Route("api/koi-show")]
+    [Route("api/v1/koi-show")]
     public class ShowController : ControllerBase
     {
         private readonly IShowService _showService;
-        private readonly IVarieryService _varietyService;
 
-        public ShowController(IShowService showService, IVarieryService varietyService)
+        public ShowController(IShowService showService)
         {
             _showService = showService;
-            _varietyService = varietyService;
         }
         [HttpPost("create")]
         public async Task<ActionResult<ApiResponse<object>>> CreateShow([FromBody] CreateShowRequest createShowRequest)
         {
-            if (!ModelState.IsValid)
-                return BadRequest(ApiResponse<object>.Fail(ModelState.ToString()));
-
              await _showService.CreateShowAsync(createShowRequest);
             return StatusCode(201, ApiResponse<object>.Created(null, "Create show successfully"));
         }
@@ -58,9 +53,6 @@ namespace KSMS.API.Controllers
         [HttpPut("{id:guid}")]
         public async Task<ActionResult<ApiResponse<object>>> UpdateShow(Guid id, [FromBody] UpdateShowRequest updateRequest)
         {
-            if (!ModelState.IsValid)
-                return BadRequest(ApiResponse<object>.Fail(ModelState.ToString()));
-
             await _showService.UpdateShowAsync(id, updateRequest);
             return Ok(ApiResponse<object>.Success(null, "Update show status successfully"));
         }

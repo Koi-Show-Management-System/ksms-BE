@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace KSMS.API.Controllers
 {
-    [Route("api/registration-round")]
+    [Route("api/v1/registration-round")]
     [ApiController]
     public class RegistrationRoundController : ControllerBase 
     {

@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 namespace KSMS.API.Controllers
 {
     [ApiController]
-    [Route("api/registration-payment")]
+    [Route("api/v1/registration-payment")]
     public class RegistrationPaymentController : ControllerBase
     {
         private readonly IRegistrationPaymentService _registrationPaymentService;
@@ -17,15 +17,11 @@ namespace KSMS.API.Controllers
         {
             _registrationPaymentService = registrationPaymentService;
         }
-
-        /// <summary>
-        /// Get Registration Payment by ID
-        /// </summary>
-        [HttpGet("{id:guid}")]
+        [HttpGet("/api/registrations/checkin-info/{id:guid}")]
         public async Task<ActionResult<ApiResponse<RegistrationPaymentResponse>>> CheckinRegistration(Guid id)
         {
             var payment = await _registrationPaymentService.GetRegistrationPaymentByIdAsync(id);
-            return Ok(ApiResponse<RegistrationPaymentResponse>.Success(payment, "Get registration payment successfully"));
+            return Ok(ApiResponse<RegistrationPaymentResponse>.Success(payment, "Get registration for check in"));
         }
     }
 }

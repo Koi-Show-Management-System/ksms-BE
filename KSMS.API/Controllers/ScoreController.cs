@@ -8,7 +8,7 @@ using KSMS.Domain.Dtos;
 
 namespace KSMS.API.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/v1/score")]
     [ApiController]
     public class ScoreController : ControllerBase
     {
@@ -18,7 +18,7 @@ namespace KSMS.API.Controllers
         {
             _scoreService = scoreService;
         }
-        [Route("admin/GetAllScores")]
+        [Route("get-all-referee-score")]
         [HttpGet]
         public async Task<ActionResult<ApiResponse<object>>> GetPagedScores([FromQuery] int page = 1, [FromQuery] int size = 10)
         {
@@ -26,7 +26,7 @@ namespace KSMS.API.Controllers
             return Ok(ApiResponse<object>.Success(pagedScores, "Get the list of score successfully"));
         }
 
-        [Route("Refree/CreateScores")]
+        [Route("create-score")]
         [HttpPost]
         public async Task<ActionResult<ApiResponse<object>>> CreateScore([FromBody] CreateScoreDetailRequest request)
         {

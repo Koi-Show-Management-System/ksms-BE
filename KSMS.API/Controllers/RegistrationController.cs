@@ -10,7 +10,7 @@ using KSMS.Domain.Models;
 
 namespace KSMS.API.Controllers
 {
-    [Route("api/registration")]
+    [Route("api/v1/registration")]
     [ApiController]
     public class RegistrationController : ControllerBase
     {
