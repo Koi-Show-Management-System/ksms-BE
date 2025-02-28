@@ -2,7 +2,7 @@
 using KSMS.Application.Services;
 using KSMS.Domain.Dtos.Requests.Show;
 using KSMS.Domain.Dtos.Responses.KoiShow;
-using KSMS.Domain.Dtos.Responses.ShowStatus;
+
 using KSMS.Domain.Entities;
 using KSMS.Domain.Exceptions;
 using KSMS.Infrastructure.Database;
@@ -16,21 +16,23 @@ using Microsoft.EntityFrameworkCore;
 using KSMS.Infrastructure.Utils;
 using Microsoft.AspNetCore.Http;
 using static KSMS.Infrastructure.Utils.MailUtil;
- 
+using KSMS.Domain.Pagination;
+
 
 namespace KSMS.Infrastructure.Services
 {
     public class ShowService : BaseService<ShowService>, IShowService
     {
 
-        public ShowService(IUnitOfWork<KoiShowManagementSystemContext> unitOfWork, ILogger<ShowService> logger, IHttpContextAccessor httpContextAccessor)
+        public ShowService(IUnitOfWork<KoiShowManagementSystemContext> unitOfWork,
+            ILogger<ShowService> logger, IHttpContextAccessor httpContextAccessor)
             : base(unitOfWork, logger, httpContextAccessor)
         {
         }
-            public async Task<KoiShowResponse> CreateShowAsync(CreateShowRequest createShowRequest)
+            public async Task CreateShowAsync(CreateShowRequest createShowRequest)
             {
-           
-                var showRepository = _unitOfWork.GetRepository<KoiShow>();
+         
+            var showRepository = _unitOfWork.GetRepository<KoiShow>();
                 var categoryRepository = _unitOfWork.GetRepository<CompetitionCategory>();
                 var sponsorRepository = _unitOfWork.GetRepository<Sponsor>();
                 var showStaffRepository = _unitOfWork.GetRepository<ShowStaff>();
@@ -88,7 +90,7 @@ namespace KSMS.Infrastructure.Services
                                 foreach (var categoryVarietyRequest in categoryRequest.CategoryVarietys)
                                 {
                                     // Ensure Variety exists or create a new one if not found
-                                    var variety = await varietyRepository.SingleOrDefaultAsync(v => v.Id == categoryVarietyRequest.VarietyId, null, null);
+                                    var variety = await varietyRepository.SingleOrDefaultAsync( predicate: v => v.Id == categoryVarietyRequest.VarietyId);
                                     if (variety == null)
                                     {
                                     throw new BadRequestException($"Criteria details are missing for CriteriaId: {categoryVarietyRequest.VarietyId}");
@@ -117,7 +119,7 @@ namespace KSMS.Infrastructure.Services
                                 group.CompetitionCategoryId = createdCategory.Id;
 
                                 // Kiểm tra xem criterion có tồn tại trong cơ sở dữ liệu không
-                                var criterion = await criteriaRepository.SingleOrDefaultAsync(c => c.Id == groupRequest.CriteriaId, null, null);
+                                var criterion = await criteriaRepository.SingleOrDefaultAsync( predicate: c => c.Id == groupRequest.CriteriaId);
 
                                 // Nếu không tìm thấy, tạo mới Criterion
                                 if (criterion == null)
@@ -212,7 +214,7 @@ namespace KSMS.Infrastructure.Services
                                 await _unitOfWork.CommitAsync();
 
                                 // Find the Account for the staff member using the AccountId
-                                var staffAccount = await accountRepository.SingleOrDefaultAsync(a => a.Id == staff.AccountId ,null,null);
+                                var staffAccount = await accountRepository.SingleOrDefaultAsync(predicate: a => a.Id == staff.AccountId);
                                 if (staffAccount != null)
                                 {
                                     // Send email notification to the staff
@@ -232,10 +234,10 @@ namespace KSMS.Infrastructure.Services
                                 await refereeAssignmentRepository.InsertAsync(refereeAssignment);
                                 await _unitOfWork.CommitAsync();
 
-                                var refereeAccount = await accountRepository.SingleOrDefaultAsync(a => a.Id == refereeAssignmentRequest.RefereeAccountId, null, null);
+                                var refereeAccount = await accountRepository.SingleOrDefaultAsync(predicate: a => a.Id == refereeAssignmentRequest.RefereeAccountId);
 
-                                string emailBody = ContentMailUtil.StaffRoleNotification(refereeAccount.FullName, createShowRequest.Name, refereeAccount.Email, "DefaultPassword123");
-                                MailUtil.SendEmail(refereeAccount.Email, "[KOI SHOW SYSTEM] New Referee Assigned", emailBody, null);
+                                string emailBody = ContentMailUtil.StaffRoleNotification(refereeAccount.FullName ?? "NoName", createShowRequest.Name, refereeAccount.Email?? "NoEmail", "DefaultPassword123");
+                                MailUtil.SendEmail(refereeAccount.Email?? "NoEmail", "[KOI SHOW SYSTEM] New Referee Assigned", emailBody, null);
                             }
                         }
 
@@ -261,7 +263,7 @@ namespace KSMS.Infrastructure.Services
                     await transaction.CommitAsync();
 
                     // Return the created show response
-                    return createdShow.Adapt<KoiShowResponse>();
+                    //return createdShow.Adapt<KoiShowResponse>();
                 }
                 catch (Exception ex)
                 {
@@ -270,103 +272,104 @@ namespace KSMS.Infrastructure.Services
                 }
             }
 
-        public async Task<IEnumerable<KoiShowResponse>> GetAllShowsAsync()
-        {
-            var showRepository = _unitOfWork.GetRepository<KoiShow>();
-            var shows = await showRepository.GetListAsync(
-                predicate: null,
-                orderBy: q => q.OrderBy(s => s.Name),
-                include: query => query.Include(s => s.ShowStatuses)
-                                       .Include(s => s.CompetitionCategories)
-                                           .ThenInclude(s => s.Rounds)
-                                       .Include(s => s.CompetitionCategories)
-                                           .ThenInclude(s => s.Awards)
-                                       .Include(s => s.CompetitionCategories)
-                                           .ThenInclude(s => s.CriteriaCompetitionCategories)
-                                               .ThenInclude(s => s.Criteria)
-                                           .ThenInclude(e => e.ErrorTypes)
-                                       .Include(s => s.CompetitionCategories)
-                                           .ThenInclude(s => s.RefereeAssignments)
-                                               .ThenInclude(s => s.RefereeAccount)
-                                       .Include(s => s.CompetitionCategories)
-                                           .ThenInclude(s => s.RefereeAssignments)
-                                               .ThenInclude(s => s.AssignedByNavigation)
-                                       .Include(s => s.CompetitionCategories)
-                                           .ThenInclude(s => s.Registrations)
-                                       .Include(s => s.CompetitionCategories)
-                                           .ThenInclude(s => s.CategoryVarieties)
-                                               .ThenInclude(s => s.Variety)
-                                       .Include(s => s.ShowStaffs)
-                                           .ThenInclude(s => s.AssignedByNavigation)
-                                       .Include(s => s.ShowStaffs)
-                                           .ThenInclude(s => s.Account)
-                                       .Include(s => s.ShowRules)
-                                       .Include(s => s.Sponsors)
-                                       .Include(s => s.TicketTypes)
-            );
+        //public async Task<IEnumerable<KoiShowResponse>> GetAllShowsAsync()
+        //{
+        //    var showRepository = _unitOfWork.GetRepository<KoiShow>();
+        //    var shows = await showRepository.GetListAsync(
+        //        predicate: null,
+        //        orderBy: q => q.OrderBy(s => s.Name),
+        //        include: query => query.Include(s => s.ShowStatuses)
+        //                               .Include(s => s.CompetitionCategories)
+        //                                   .ThenInclude(s => s.Rounds)
+        //                               .Include(s => s.CompetitionCategories)
+        //                                   .ThenInclude(s => s.Awards)
+        //                               .Include(s => s.CompetitionCategories)
+        //                                   .ThenInclude(s => s.CriteriaCompetitionCategories)
+        //                                       .ThenInclude(s => s.Criteria)
+        //                                   .ThenInclude(e => e.ErrorTypes)
+        //                               .Include(s => s.CompetitionCategories)
+        //                                   .ThenInclude(s => s.RefereeAssignments)
+        //                                       .ThenInclude(s => s.RefereeAccount)
+        //                               .Include(s => s.CompetitionCategories)
+        //                                   .ThenInclude(s => s.RefereeAssignments)
+        //                                       .ThenInclude(s => s.AssignedByNavigation)
+        //                               .Include(s => s.CompetitionCategories)
+        //                                   .ThenInclude(s => s.Registrations)
+        //                               .Include(s => s.CompetitionCategories)
+        //                                   .ThenInclude(s => s.CategoryVarieties)
+        //                                       .ThenInclude(s => s.Variety)
+        //                               .Include(s => s.ShowStaffs)
+        //                                   .ThenInclude(s => s.AssignedByNavigation)
+        //                               .Include(s => s.ShowStaffs)
+        //                                   .ThenInclude(s => s.Account)
+        //                               .Include(s => s.ShowRules)
+        //                               .Include(s => s.Sponsors)
+        //                               .Include(s => s.TicketTypes)
+        //    );
 
-            var KoiShowResponses = shows.Select(show => show.Adapt<KoiShowResponse>());
+        //    var KoiShowResponses = shows.Select(show => show.Adapt<KoiShowResponse>());
 
-            return KoiShowResponses;
-        }
+        //    return KoiShowResponses;
+        //}
 
-        public async Task<KoiShowResponse> GetShowByIdAsync(Guid id)
-        {
-            var showRepository = _unitOfWork.GetRepository<KoiShow>();
+        //public async Task<KoiShowResponse> GetShowByIdAsync(Guid id)
+        //{
+        //    var showRepository = _unitOfWork.GetRepository<KoiShow>();
                 
-            var show = await showRepository.SingleOrDefaultAsync(
-                 predicate: s => s.Id == id,
-                orderBy: q => q.OrderBy(s => s.Name),
-                include: query => query.Include(s => s.ShowStatuses)
-                .Include(s => s.CompetitionCategories)
-                    .Include(s => s.CompetitionCategories)
-                        .ThenInclude(s => s.Rounds)
-                    .Include(s => s.CompetitionCategories)
-                        .ThenInclude(s => s.Awards)
-                    .Include(s => s.CompetitionCategories)
-                        .ThenInclude(s => s.CriteriaCompetitionCategories)
-                            .ThenInclude(s => s.Criteria)
-                    .Include(s => s.CompetitionCategories)
-                        .ThenInclude(s => s.RefereeAssignments)
-                            .ThenInclude(s => s.RefereeAccount)
-                    .Include(s => s.CompetitionCategories)
-                        .ThenInclude(s => s.Registrations)
-                     .Include(s => s.CompetitionCategories)
-                        .ThenInclude(s => s.CategoryVarieties)
-                            .ThenInclude(s => s.Variety)
+        //    var show = await showRepository.SingleOrDefaultAsync(
+        //         predicate: s => s.Id == id,
+        //        orderBy: q => q.OrderBy(s => s.Name),
+        //        include: query => query.Include(s => s.ShowStatuses)
+        //        .Include(s => s.CompetitionCategories)
+        //            .Include(s => s.CompetitionCategories)
+        //                .ThenInclude(s => s.Rounds)
+        //            .Include(s => s.CompetitionCategories)
+        //                .ThenInclude(s => s.Awards)
+        //            .Include(s => s.CompetitionCategories)
+        //                .ThenInclude(s => s.CriteriaCompetitionCategories)
+        //                    .ThenInclude(s => s.Criteria)
+        //            .Include(s => s.CompetitionCategories)
+        //                .ThenInclude(s => s.RefereeAssignments)
+        //                    .ThenInclude(s => s.RefereeAccount)
+        //            .Include(s => s.CompetitionCategories)
+        //                .ThenInclude(s => s.Registrations)
+        //             .Include(s => s.CompetitionCategories)
+        //                .ThenInclude(s => s.CategoryVarieties)
+        //                    .ThenInclude(s => s.Variety) 
+        //            .Include(s => s.CompetitionCategories)
+        //                .ThenInclude(s => s.RefereeAssignments)
+        //                    .ThenInclude(s => s.AssignedByNavigation)
 
-                    .Include(s => s.CompetitionCategories)
-                        .ThenInclude(s => s.RefereeAssignments)
-                            .ThenInclude(s => s.AssignedByNavigation)
+        //            .Include(s => s.ShowStaffs)
+        //                .ThenInclude(s => s.AssignedByNavigation)
 
-                    .Include(s => s.ShowStaffs)
-                        .ThenInclude(s => s.AssignedByNavigation)
+        //            .Include(s => s.ShowStaffs)
+        //                .ThenInclude(s => s.Account)
 
-                    .Include(s => s.ShowStaffs)
-                        .ThenInclude(s => s.Account)
-
-                    .Include(s => s.ShowRules)
-                    .Include(s => s.Sponsors)
-                    .Include(s => s.TicketTypes)
-                    .Include(s => s.CompetitionCategories)
-                        .ThenInclude(s => s.CriteriaCompetitionCategories)
-                            .ThenInclude(c => c.Criteria)
-                                .ThenInclude(e => e.ErrorTypes)
+        //            .Include(s => s.ShowRules)
+        //            .Include(s => s.Sponsors)
+        //            .Include(s => s.TicketTypes)
+        //            .Include(s => s.CompetitionCategories)
+        //                .ThenInclude(s => s.CriteriaCompetitionCategories)
+        //                    .ThenInclude(c => c.Criteria)
+        //                        .ThenInclude(e => e.ErrorTypes)
 
 
-            );
+        //    );
 
-            if (show == null)
-            {
-                throw new NotFoundException("Show not found.");
-            }
+        //    if (show == null)
+        //    {
+        //        throw new NotFoundException("Show not found.");
+        //    }
 
-            return show.Adapt<KoiShowResponse>();
-        }
+        //    return show.Adapt<KoiShowResponse>();
+        //}
 
 
         public async Task UpdateShowAsync(Guid id, UpdateShowRequest updateShowRequest)
         {
+ 
+
             var showStatusRepository = _unitOfWork.GetRepository<ShowStatus>();
             var showRepository = _unitOfWork.GetRepository<KoiShow>();
             var categoryRepository = _unitOfWork.GetRepository<CompetitionCategory>();
@@ -383,7 +386,7 @@ namespace KSMS.Infrastructure.Services
             var categoryVarietyRepository = _unitOfWork.GetRepository<CategoryVariety>();
 
             // Fetch the show from the repository
-            var show = await showRepository.SingleOrDefaultAsync(s => s.Id == id, null, null);
+            var show = await showRepository.SingleOrDefaultAsync(predicate: s => s.Id == id);
             if (show == null)
             {
                 throw new NotFoundException("Show not found.");
@@ -414,7 +417,7 @@ namespace KSMS.Infrastructure.Services
             {
                 foreach (var categoryRequest in updateShowRequest.UpdateCategorieShowRequests)
                 {
-                    var category = await categoryRepository.SingleOrDefaultAsync(c => c.Id == categoryRequest.Id && c.KoiShowId == id, null, null);
+                    var category = await categoryRepository.SingleOrDefaultAsync( predicate: c => c.Id == categoryRequest.Id && c.KoiShowId == id);
                     if (category != null)
                     {
                         category.Name = categoryRequest.Name;
@@ -435,7 +438,7 @@ namespace KSMS.Infrastructure.Services
                             foreach (var categoryVarietyRequest in categoryRequest.UpdateCategoryVarietyRequests)
                             {
                                 // Check if the variety exists
-                                var variety = await varietyRepository.SingleOrDefaultAsync(v => v.Id == categoryVarietyRequest.VarietyId, null, null);
+                                var variety = await varietyRepository.SingleOrDefaultAsync(predicate: v => v.Id == categoryVarietyRequest.VarietyId);
 
                                 // If variety doesn't exist, create a new one
                                 if (variety == null)
@@ -445,7 +448,7 @@ namespace KSMS.Infrastructure.Services
                                  
 
                                 // Now check if CategoryVariety with the given CategoryId and VarietyId exists
-                                var existingCategoryVariety = await categoryVarietyRepository.SingleOrDefaultAsync(cv => cv.CompetitionCategoryId == categoryRequest.Id && cv.VarietyId == variety.Id ,null,null);
+                                var existingCategoryVariety = await categoryVarietyRepository.SingleOrDefaultAsync(predicate: cv => cv.CompetitionCategoryId == categoryRequest.Id && cv.VarietyId == variety.Id);
 
                                 if (existingCategoryVariety != null)
                                 {
@@ -466,7 +469,7 @@ namespace KSMS.Infrastructure.Services
                         {
                             foreach (var awardRequest in categoryRequest.UpdateAwardCateShowRequests)
                             {
-                                var award = await awardRepository.SingleOrDefaultAsync(a => a.CompetitionCategoriesId == category.Id && a.Id == awardRequest.Id, null, null);
+                                var award = await awardRepository.SingleOrDefaultAsync(predicate: a => a.CompetitionCategoriesId == category.Id && a.Id == awardRequest.Id);
                                 if (award != null)
                                 {
                                     award.Name = awardRequest.Name;
@@ -496,7 +499,7 @@ namespace KSMS.Infrastructure.Services
                         {
                             foreach (var criteriaGroupRequest in categoryRequest.UpdateCriteriaCompetitionCategoryRequests)
                             {
-                                var criteriaGroup = await criteriaGroupRepository.SingleOrDefaultAsync(g => g.CompetitionCategoryId == category.Id && g.Id == criteriaGroupRequest.Id, null, null);
+                                var criteriaGroup = await criteriaGroupRepository.SingleOrDefaultAsync(predicate: g => g.CompetitionCategoryId == category.Id && g.Id == criteriaGroupRequest.Id);
                                 if (criteriaGroup != null)
                                 {
                                     criteriaGroup.RoundType      = criteriaGroupRequest.RoundType;
@@ -505,7 +508,7 @@ namespace KSMS.Infrastructure.Services
                                     criteriaGroup.Order = criteriaGroupRequest.Order;
                                     criteriaGroupRepository.UpdateAsync(criteriaGroup);
 
-                                    var criterion = await criteriaRepository.SingleOrDefaultAsync(c => c.Id == criteriaGroupRequest.CriteriaId, null, null);
+                                    var criterion = await criteriaRepository.SingleOrDefaultAsync(predicate: c => c.Id == criteriaGroupRequest.CriteriaId);
                                     if (criterion == null)
                                     {
                                         throw new BadRequestException(" criterion not found");
@@ -522,7 +525,7 @@ namespace KSMS.Infrastructure.Services
                         {
                             foreach (var roundRequest in categoryRequest.UpdateRoundRequest)
                             {
-                                var round = await roundRepository.SingleOrDefaultAsync(r => r.CompetitionCategoriesId == category.Id && r.Id == roundRequest.Id, null, null);
+                                var round = await roundRepository.SingleOrDefaultAsync(predicate: r => r.CompetitionCategoriesId == category.Id && r.Id == roundRequest.Id);
                                 if (round != null)
                                 {
                                     round.Name = roundRequest.Name;
@@ -577,7 +580,7 @@ namespace KSMS.Infrastructure.Services
             {
                 foreach (var staffRequest in updateShowRequest.UpdateShowStaffRequests)
                 {
-                    var staff = await showStaffRepository.SingleOrDefaultAsync(s => s.Id == staffRequest.Id && s.KoiShowId == id, null, null);
+                    var staff = await showStaffRepository.SingleOrDefaultAsync(predicate: s => s.Id == staffRequest.Id && s.KoiShowId == id);
 
                     if (staff != null)
                     {
@@ -611,7 +614,7 @@ namespace KSMS.Infrastructure.Services
             {
                 foreach (var ticketRequest in updateShowRequest.UpdateTicketRequests)
                 {
-                    var ticket = await ticketRepository.SingleOrDefaultAsync(t => t.Id == ticketRequest.Id && t.KoiShowId == id, null, null);
+                    var ticket = await ticketRepository.SingleOrDefaultAsync(predicate: t => t.Id == ticketRequest.Id && t.KoiShowId == id);
                     if (ticket != null)
                     {
                         ticket.Name = ticketRequest.Name;
@@ -638,7 +641,7 @@ namespace KSMS.Infrastructure.Services
             {
                 foreach (var sponsorRequest in updateShowRequest.UpdateSponsorRequests)
                 {
-                    var sponsor = await sponsorRepository.SingleOrDefaultAsync(s => s.Id == sponsorRequest.Id && s.KoiShowId == id, null, null);
+                    var sponsor = await sponsorRepository.SingleOrDefaultAsync(predicate: s => s.Id == sponsorRequest.Id && s.KoiShowId == id);
                     if (sponsor != null)
                     {
                         sponsor.Name = sponsorRequest.Name;
@@ -663,7 +666,7 @@ namespace KSMS.Infrastructure.Services
             {
                 foreach (var ruleRequest in updateShowRequest.UpdateShowRuleRequests)
                 {
-                    var rule = await showRuleRepository.SingleOrDefaultAsync(r => r.Id == ruleRequest.Id && r.KoiShowId == id, null, null);
+                    var rule = await showRuleRepository.SingleOrDefaultAsync(predicate: r => r.Id == ruleRequest.Id && r.KoiShowId == id);
                     if (rule != null)
                     {
                         rule.Title = ruleRequest.Title;
@@ -688,7 +691,7 @@ namespace KSMS.Infrastructure.Services
             {
                 foreach (var statusRequest in updateShowRequest.UpdateShowStatusRequests)
                 {
-                    var status = await showStatusRepository.SingleOrDefaultAsync(s => s.Id == statusRequest.Id && s.KoiShowId == id, null, null);
+                    var status = await showStatusRepository.SingleOrDefaultAsync(predicate: s => s.Id == statusRequest.Id && s.KoiShowId == id);
                     if (status != null)
                     {
                         status.StatusName = statusRequest.StatusName;
@@ -727,7 +730,21 @@ namespace KSMS.Infrastructure.Services
 
         }
 
+        public async Task<Paginate<PaginatedKoiShowResponse>> GetPagedShowsAsync(int page, int size)
+        {
+            var showRepository = _unitOfWork.GetRepository<KoiShow>();
 
+            
+            var pagedShows = await showRepository.GetPagingListAsync(
+                predicate: null,
+                orderBy: query => query.OrderBy(s => s.Name),
+                include: query => query.Include(s => s.ShowStatuses), 
+                page: page,
+                size: size
+            );
+
+            return pagedShows.Adapt<Paginate<PaginatedKoiShowResponse>>();
+        }
         /// <summary>
         /// Cập nhật trạng thái của ShowStatus theo thời gian
         /// </summary>

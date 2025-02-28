@@ -11,7 +11,7 @@ using KSMS.Infrastructure.Database;
 using Mapster;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
- 
+
 using BCrypt.Net;
 using KSMS.Application.Extensions;
 using KSMS.Domain.Dtos.Responses.Account;
@@ -29,7 +29,7 @@ public class AccountService : BaseService<AccountService>, IAccountService
         _firebaseService = firebaseService;
     }
     public async Task<Paginate<AccountResponse>> GetPagedUsersAsync(RoleName? roleName, int page, int size)
-    { 
+    {
         var userRepository = _unitOfWork.GetRepository<Account>();
 
         Expression<Func<Account, bool>> filterQuery = account => true;
@@ -37,12 +37,12 @@ public class AccountService : BaseService<AccountService>, IAccountService
         {
             var roleString = roleName.Value.ToString();
             filterQuery = filterQuery.AndAlso(r => r.Role == roleString);
-        } 
+        }
         var pagedUsers = await userRepository.GetPagingListAsync(
             predicate: filterQuery,
-            orderBy: query => query.OrderBy(a => a.Username),  
-            page: page,  
-            size: size   
+            orderBy: query => query.OrderBy(a => a.Username),
+            page: page,
+            size: size
         );
         return pagedUsers.Adapt<Paginate<AccountResponse>>();
     }
@@ -59,18 +59,18 @@ public class AccountService : BaseService<AccountService>, IAccountService
         }
 
         return user.Adapt<AccountResponse>();
-        
+
     }
 
     public async Task<AccountResponse> CreateUserAsync(CreateAccountRequest createAccountRequest)
     {
-         
+
         var userRepository = _unitOfWork.GetRepository<Account>();
-        
+
         var emailExists = await userRepository.SingleOrDefaultAsync(
             predicate: u => u.Email == createAccountRequest.Email
         );
-        if (emailExists!= null)
+        if (emailExists != null)
         {
             throw new BadRequestException($"Email '{createAccountRequest.Email}' is already in use");
         }
@@ -81,7 +81,7 @@ public class AccountService : BaseService<AccountService>, IAccountService
         {
             throw new BadRequestException($"Username '{createAccountRequest.Username}' is already in use");
         }
-         
+
         var user = createAccountRequest.Adapt<Account>();
         if (createAccountRequest.AvatarUrl is not null)
         {
@@ -101,15 +101,15 @@ public class AccountService : BaseService<AccountService>, IAccountService
     {
         var userRepository = _unitOfWork.GetRepository<Account>();
 
-         
+
         var user = await userRepository.SingleOrDefaultAsync(
             predicate: u => u.Id == id
         );
 
         if (user == null)
             throw new NotFoundException("User not found");
-        
-        
+
+
         user.Status = status switch
         {
             AccountStatus.Blocked => AccountStatus.Blocked.ToString().ToLower(),
@@ -143,5 +143,5 @@ public class AccountService : BaseService<AccountService>, IAccountService
     }
 
 
-    
+
 }

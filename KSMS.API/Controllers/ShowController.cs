@@ -4,6 +4,7 @@ using KSMS.Domain.Dtos.Requests.Show;
 using KSMS.Domain.Dtos.Responses.KoiShow;
 using KSMS.Domain.Dtos.Responses.Variety;
 using KSMS.Domain.Exceptions;
+using KSMS.Domain.Pagination;
 using KSMS.Infrastructure.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -27,32 +28,32 @@ namespace KSMS.API.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ApiResponse<object>.Fail(ModelState.ToString()));
 
-            var showResponse = await _showService.CreateShowAsync(createShowRequest);
-            return StatusCode(201, ApiResponse<object>.Created(showResponse, "Create show successfully"));
+             await _showService.CreateShowAsync(createShowRequest);
+            return StatusCode(201, ApiResponse<object>.Created(null, "Create show successfully"));
         }
 
         /// <summary>
         /// Get a show by its ID.
         /// </summary>
-        [HttpGet("{id:guid}")]
-        public async Task<ActionResult<ApiResponse<object>>> GetShowById(Guid id)
-        {
-            var showResponse = await _showService.GetShowByIdAsync(id);
-            if (showResponse == null)
-                return NotFound(ApiResponse<object>.Fail("Show is not existed"));
+        //[HttpGet("{id:guid}")]
+        //public async Task<ActionResult<ApiResponse<object>>> GetShowById(Guid id)
+        //{
+        //    var showResponse = await _showService.GetShowByIdAsync(id);
+        //    if (showResponse == null)
+        //        return NotFound(ApiResponse<object>.Fail("Show is not existed"));
 
-            return Ok(ApiResponse<KoiShowResponse>.Success(showResponse, "Get show successfully"));
-        }
+        //    return Ok(ApiResponse<KoiShowResponse>.Success(showResponse, "Get show successfully"));
+        //}
 
         // <summary>
         // Get a paginated list of shows.
         // </summary>
-        [HttpGet("list-show")]
-        public async Task<ActionResult<ApiResponse<object>>> GetShows()
-        {
-            var shows = await _showService.GetAllShowsAsync();
-            return Ok(ApiResponse<object>.Success(shows, "Get list of show successfully"));
-        }
+        //[HttpGet("list-show")]
+        //public async Task<ActionResult<ApiResponse<object>>> GetShows()
+        //{
+        //    var shows = await _showService.GetAllShowsAsync();
+        //    return Ok(ApiResponse<object>.Success(shows, "Get list of show successfully"));
+        //}
 
         [HttpPut("{id:guid}")]
         public async Task<ActionResult<ApiResponse<object>>> UpdateShow(Guid id, [FromBody] UpdateShowRequest updateRequest)
@@ -64,6 +65,12 @@ namespace KSMS.API.Controllers
             return Ok(ApiResponse<object>.Success(null, "Update show status successfully"));
         }
 
+        [HttpGet("paged")]
+        public async Task<ActionResult<ApiResponse<object>>> GetPagedShows( [FromQuery] int page = 1, [FromQuery] int size = 10)
+        {
+            var shows = await _showService.GetPagedShowsAsync(page, size);
+            return Ok(ApiResponse<Paginate<PaginatedKoiShowResponse>>.Success(shows, "Get paged shows successfully"));
+        }
 
 
         /// <summary>

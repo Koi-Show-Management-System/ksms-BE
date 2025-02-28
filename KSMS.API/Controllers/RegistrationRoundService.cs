@@ -12,10 +12,10 @@ namespace KSMS.API.Controllers
 {
     [Route("api/registration-round")]
     [ApiController]
-    public class RegistrationRoundController : ControllerBase
+    public class RegistrationRoundController : ControllerBase 
     {
         private readonly IRegistrationRoundService _registrationRoundService;
-
+        
         public RegistrationRoundController(IRegistrationRoundService registrationRoundService)
         {
             _registrationRoundService = registrationRoundService;

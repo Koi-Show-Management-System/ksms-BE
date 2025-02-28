@@ -1,16 +1,14 @@
-﻿using KSMS.Domain.Dtos.Responses.CompetitionCategory;
-
-using KSMS.Domain.Dtos.Responses.Ticket;
+﻿
+using KSMS.Domain.Dtos.Responses.ShowStatus;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-
 namespace KSMS.Domain.Dtos.Responses.KoiShow
 {
-    public class KoiShowResponse
+    public class PaginatedKoiShowResponse
     {
         public Guid Id { get; set; }
         public string Name { get; set; } = null!;
@@ -43,9 +41,7 @@ namespace KSMS.Domain.Dtos.Responses.KoiShow
 
         public string? Status { get; set; }
 
-       
-       
-      
+        public virtual ICollection<ShowStatusResponse> ShowStatuses { get; set; } = new List<ShowStatusResponse>();
 
     }
 }

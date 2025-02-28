@@ -21,7 +21,7 @@ namespace KSMS.API.Controllers
             _criterionService = criterionService;
         }
 
-     
+
         [HttpPost("create")]
         public async Task<ActionResult<ApiResponse<object>>> CreateCriterion([FromBody] CreateCriteriaRequest createCriteriaRequest)
         {
@@ -29,7 +29,7 @@ namespace KSMS.API.Controllers
             return StatusCode(201, ApiResponse<object>.Created(null, "Criterion created successfully"));
         }
 
-   
+
         [HttpGet("{id:guid}")]
         public async Task<ActionResult<ApiResponse<object>>> GetCriterionById(Guid id)
         {
@@ -37,21 +37,21 @@ namespace KSMS.API.Controllers
             return Ok(ApiResponse<object>.Success(criterion, "Criterion retrieved successfully"));
         }
 
-   
+
         [HttpPut("{id:guid}")]
         public async Task<ActionResult<ApiResponse<object>>> UpdateCriterion(Guid id, [FromBody] UpdateCriteriaRequest updateCriteriaRequest)
         { 
             await _criterionService.UpdateCriteriaAsync(id, updateCriteriaRequest);
             return Ok(ApiResponse<object>.Success(null, "Criterion updated successfully"));
         }
-        
+
         [HttpGet("get-page")]
-        public async Task<ActionResult<ApiResponse<object>>> GetPagingCriteria([FromQuery]int page = 1, [FromQuery]int size = 10)
+        public async Task<ActionResult<ApiResponse<object>>> GetPagingCriteria([FromQuery] int page = 1, [FromQuery] int size = 10)
         {
             var criteria = await _criterionService.GetPagingCriteria(page, size);
             return Ok(ApiResponse<object>.Success(criteria, "Get list  successfully"));
         }
-   
+
         //[HttpDelete("{id:guid}")]
         //public async Task<ActionResult<ApiResponse<object>>> DeleteCriterion(Guid id)
         //{
@@ -59,6 +59,6 @@ namespace KSMS.API.Controllers
         //    return Ok(ApiResponse<object>.Success(null, "Criterion deleted successfully"));
         //}
 
-        
+
     }
 }

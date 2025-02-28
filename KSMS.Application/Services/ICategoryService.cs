@@ -11,6 +11,6 @@ namespace KSMS.Application.Services
 {
     public interface ICategoryService
     {
-        Task<Paginate<CompetitionCategoryResponse>> GetPagedRegistrationsInShow(Guid showId, int page, int size);
+      //  Task<Paginate<CompetitionCategoryResponse>> GetPagedRegistrationsInShow(Guid showId, int page, int size);
     }
 }

@@ -1,4 +1,4 @@
-﻿using KSMS.Application.Repositories;
+using KSMS.Application.Repositories;
 using KSMS.Application.Services;
 using KSMS.Domain.Dtos.Requests.Criterion;
 using KSMS.Domain.Dtos.Responses.Criterion;
@@ -24,26 +24,26 @@ namespace KSMS.Infrastructure.Services
         {
         }
 
-        
+
         public async Task CreateCriteriaAsync(CreateCriteriaRequest createCriteriaRequest)
         {
             var criterionRepository = _unitOfWork.GetRepository<Criterion>();
 
-            var existingCriterion = await criterionRepository.SingleOrDefaultAsync(c => c.Name == createCriteriaRequest.Name ,null,null);
+            var existingCriterion = await criterionRepository.SingleOrDefaultAsync(c => c.Name == createCriteriaRequest.Name, null, null);
             if (existingCriterion != null)
             {
                 throw new BadRequestException($"Criterion with name '{createCriteriaRequest.Name}' already exists.");
             }
             await criterionRepository.InsertAsync(createCriteriaRequest.Adapt<Criterion>());
             await _unitOfWork.CommitAsync();
-            
+
         }
 
-  
+
         public async Task<CriteriaResponse> GetCriteriaByIdAsync(Guid id)
         {
             var criterionRepository = _unitOfWork.GetRepository<Criterion>();
-             
+
             var criterion = await criterionRepository.SingleOrDefaultAsync(
                 predicate: c => c.Id == id);
 
@@ -59,7 +59,7 @@ namespace KSMS.Infrastructure.Services
         {
             var criterionRepository = _unitOfWork.GetRepository<Criterion>();
 
-            var criterion = await criterionRepository.SingleOrDefaultAsync(c => c.Id == id,null,null);
+            var criterion = await criterionRepository.SingleOrDefaultAsync(c => c.Id == id, null, null);
             if (criterion == null)
             {
                 throw new NotFoundException("Criterion not found");
@@ -80,7 +80,7 @@ namespace KSMS.Infrastructure.Services
         public async Task DeleteCriteriaAsync(Guid id)
         {
             var criterionRepository = _unitOfWork.GetRepository<Criterion>();
-            var criterion = await criterionRepository.SingleOrDefaultAsync(c => c.Id == id,null,null);
+            var criterion = await criterionRepository.SingleOrDefaultAsync(c => c.Id == id, null, null);
 
             if (criterion == null)
             {
