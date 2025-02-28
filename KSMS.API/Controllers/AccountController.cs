@@ -31,7 +31,7 @@ namespace KSMS.API.Controllers
         }
 
         [HttpPost("create")]
-        public async Task<ActionResult<ApiResponse<object>>> CreateUser([FromBody] CreateAccountRequest createAccountRequest)
+        public async Task<ActionResult<ApiResponse<object>>> CreateUser([FromForm] CreateAccountRequest createAccountRequest)
         {
             var newUser = await _accountService.CreateUserAsync(createAccountRequest);
             return StatusCode(201, ApiResponse<object>.Created(newUser, "Register account successfully"));
