@@ -27,7 +27,7 @@ namespace KSMS.Infrastructure.Services
             : base(unitOfWork, logger, httpContextAccessor)
         {
         }
-            public async Task<GetAllKoiShowResponse> CreateShowAsync(CreateShowRequest createShowRequest)
+            public async Task<KoiShowResponse> CreateShowAsync(CreateShowRequest createShowRequest)
             {
            
                 var showRepository = _unitOfWork.GetRepository<KoiShow>();
@@ -261,7 +261,7 @@ namespace KSMS.Infrastructure.Services
                     await transaction.CommitAsync();
 
                     // Return the created show response
-                    return createdShow.Adapt<GetAllKoiShowResponse>();
+                    return createdShow.Adapt<KoiShowResponse>();
                 }
                 catch (Exception ex)
                 {
@@ -270,7 +270,7 @@ namespace KSMS.Infrastructure.Services
                 }
             }
 
-        public async Task<IEnumerable<GetAllKoiShowResponse>> GetAllShowsAsync()
+        public async Task<IEnumerable<KoiShowResponse>> GetAllShowsAsync()
         {
             var showRepository = _unitOfWork.GetRepository<KoiShow>();
             var shows = await showRepository.GetListAsync(
@@ -305,12 +305,12 @@ namespace KSMS.Infrastructure.Services
                                        .Include(s => s.TicketTypes)
             );
 
-            var KoiShowResponses = shows.Select(show => show.Adapt<GetAllKoiShowResponse>());
+            var KoiShowResponses = shows.Select(show => show.Adapt<KoiShowResponse>());
 
             return KoiShowResponses;
         }
 
-        public async Task<GetAllKoiShowResponse> GetShowByIdAsync(Guid id)
+        public async Task<KoiShowResponse> GetShowByIdAsync(Guid id)
         {
             var showRepository = _unitOfWork.GetRepository<KoiShow>();
                 
@@ -361,7 +361,7 @@ namespace KSMS.Infrastructure.Services
                 throw new NotFoundException("Show not found.");
             }
 
-            return show.Adapt<GetAllKoiShowResponse>();
+            return show.Adapt<KoiShowResponse>();
         }
 
 

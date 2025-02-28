@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace KSMS.Domain.Dtos.Responses.ShowRule
 {
-    public class GetAllShowRuleResponse
+    public class ShowRuleResponse
     {
         public Guid Id { get; set; }
         public Guid KoiShowId { get; set; }

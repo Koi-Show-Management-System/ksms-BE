@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace KSMS.Domain.Dtos.Responses.ShowStaff
 {
-    public class GetAllShowStaffResponse
+    public class ShowStaffResponse
     {
         public Guid Id { get; set; }
 

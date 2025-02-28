@@ -7,7 +7,7 @@ using KSMS.Domain.Dtos.Responses.Account;
 
 namespace KSMS.Domain.Dtos.Responses.RefereeAssignment
 {
-    public class GetAllRefereeAssignmentResponse
+    public class RefereeAssignmentResponse
     {
         public Guid Id { get; set; }
         public Guid CompetitionCategoryId { get; set; }

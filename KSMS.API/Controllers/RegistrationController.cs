@@ -64,7 +64,7 @@ namespace KSMS.API.Controllers
         }
 
 
-        [HttpGet("get-all-registration-for-current-account")]
+        [HttpGet("get-paging-registration-for-current-account")]
         [Authorize(Roles = "Staff, Admin, Manager, Member")]
         public async Task<ActionResult<ApiResponse<object>>> GetAllRegistration([FromQuery]RegistrationFilter filter, [FromQuery]int page, [FromQuery]int size)
         {

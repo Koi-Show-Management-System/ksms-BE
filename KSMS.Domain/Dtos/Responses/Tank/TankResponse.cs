@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace KSMS.Domain.Dtos.Responses.Tank
 {
-    public class GetAllTankResponse
+    public class TankResponse
     {
         public Guid Id { get; set; }
         public Guid KoiShowId { get; set; }

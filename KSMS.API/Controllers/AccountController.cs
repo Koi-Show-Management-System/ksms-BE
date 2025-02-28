@@ -43,11 +43,11 @@ namespace KSMS.API.Controllers
             return Ok(ApiResponse<object>.Success(user, "Get account successfully"));
         }
 
-        [Route("admin/get-all-user-account")]
+        [Route("admin/get-paging-account")]
         [HttpGet]
-        public async Task<ActionResult<ApiResponse<object>>> GetAccUsersByAdmin([FromQuery] int page = 1, [FromQuery] int size = 10)
+        public async Task<ActionResult<ApiResponse<object>>> GetAccUsersByAdmin([FromQuery] RoleName? roleName, [FromQuery] int page = 1, [FromQuery] int size = 10)
         {
-            var pagedUsers = await _accountService.GetPagedUsersAsync(page, size);
+            var pagedUsers = await _accountService.GetPagedUsersAsync(roleName, page, size);
             return Ok(ApiResponse<object>.Success(pagedUsers, "Get list of account successfully"));
         }
 

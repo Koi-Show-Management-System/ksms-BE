@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace KSMS.Domain.Dtos.Responses.Sponsor
 {
-    public class GetAllSponsorResponse
+    public class SponsorResponse
     {
 
         public Guid KoiShowId { get; set; }

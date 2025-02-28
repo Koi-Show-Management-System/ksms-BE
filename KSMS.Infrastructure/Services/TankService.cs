@@ -24,7 +24,7 @@ namespace KSMS.Infrastructure.Services
             _logger = logger;
         }
          
-        public async Task<GetAllTankResponse> CreateTankAsync(CreateTankRequest request)
+        public async Task<TankResponse> CreateTankAsync(CreateTankRequest request)
         {
             var tankRepository = _unitOfWork.GetRepository<Tank>();
 
@@ -47,11 +47,11 @@ namespace KSMS.Infrastructure.Services
             await _unitOfWork.CommitAsync();
 
             
-            return createdTank.Adapt<GetAllTankResponse>();
+            return createdTank.Adapt<TankResponse>();
         }
 
       
-        public async Task<List<GetAllTankResponse>> GetTanksByKoiShowIdAsync(Guid koiShowId)
+        public async Task<List<TankResponse>> GetTanksByKoiShowIdAsync(Guid koiShowId)
         {
             var tankRepository = _unitOfWork.GetRepository<Tank>();
 
@@ -59,7 +59,7 @@ namespace KSMS.Infrastructure.Services
                 predicate: t => t.KoiShowId == koiShowId
             );
 
-            return tanks.Adapt<List<GetAllTankResponse>>();
+            return tanks.Adapt<List<TankResponse>>();
         }
     }
 }

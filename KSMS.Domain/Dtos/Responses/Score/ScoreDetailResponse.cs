@@ -25,12 +25,12 @@ namespace KSMS.Domain.Dtos.Responses.Score
 
         public string? Comments { get; set; }
 
-        public virtual GetAllCriteriaGroupResponse Criteria { get; set; } 
+        public virtual GetAllCriteriaResponse Criteria { get; set; } 
 
         public virtual AccountResponse RefereeAccount { get; set; } 
 
         public virtual RegistrationStaffResponse Registration { get; set; } 
 
-        public virtual GetAllRoundResponse Round { get; set; } 
+        public virtual RoundResponse Round { get; set; } 
     }
 }
