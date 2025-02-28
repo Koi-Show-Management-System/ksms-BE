@@ -6,7 +6,7 @@ using KSMS.Domain.Dtos.Requests;
 namespace KSMS.API.Controllers
 {
     [ApiController]
-    [Route("api/chat")]
+    [Route("api/v1/chat")]
     public class ChatController : ControllerBase
     {
         private readonly IChatService _chatService;

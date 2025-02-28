@@ -7,7 +7,7 @@ using KSMS.Domain.Dtos;
 
 namespace KSMS.API.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/v1/category")]
     [ApiController]
     public class CategoryController : ControllerBase
     {

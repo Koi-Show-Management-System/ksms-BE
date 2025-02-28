@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace KSMS.API.Controllers
 {
-    [Route("api/round-result")]
+    [Route("api/v1/round-result")]
     [ApiController]
     public class RoundResultController : ControllerBase
     {

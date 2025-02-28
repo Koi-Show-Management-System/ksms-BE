@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace KSMS.API.Controllers
 {
-    [Route("api/tank")]
+    [Route("api/v1/tank")]
     [ApiController]
     public class TankController : ControllerBase
     {

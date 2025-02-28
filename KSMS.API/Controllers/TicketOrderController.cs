@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace KSMS.API.Controllers;
-[Route("api/ticket-order")]
+[Route("api/v1/ticket-order")]
 [ApiController]
 public class TicketOrderController : ControllerBase
 {

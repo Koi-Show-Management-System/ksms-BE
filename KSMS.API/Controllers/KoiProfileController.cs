@@ -10,7 +10,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace KSMS.API.Controllers
 {
-    [Route("api/koi-profle")]
+    [Route("api/v1/koi-profile")]
     [ApiController]
     public class KoiProfileController : ControllerBase
     {
@@ -20,14 +20,14 @@ namespace KSMS.API.Controllers
         {
             _koiProfileService = koiProfileService;
         }
-        [HttpPost]
+        [HttpPost("create")]
         [Authorize(Roles = "Member")]
         public async Task<ActionResult<ApiResponse<object>>> CreateKoiProfile([FromForm] CreateKoiProfileRequest createKoiProfileRequest)
         { 
             var koi = await _koiProfileService.CreateKoiProfile(createKoiProfileRequest);
             return StatusCode(201, ApiResponse<object>.Created(koi, "Created Koi profile successfully"));
         }
-        [HttpGet]
+        [HttpGet("get-page")]
         [Authorize(Roles = "Member")]
         public async Task<ActionResult<ApiResponse<object>>> GetPagedKoiProfile([FromQuery] KoiProfileFilter filter, [FromQuery]int page = 1, [FromQuery]int size = 10)
         {

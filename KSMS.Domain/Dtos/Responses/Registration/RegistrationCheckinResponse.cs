@@ -21,6 +21,8 @@ namespace KSMS.Domain.Dtos.Responses.Registration
         public string? Status { get; set; }
 
         public string? Notes { get; set; }
+        
+        public CompetitionCategoryCheckinResponse? CompetitionCategory { get; set; }
 
         public virtual KoiProfileCheckinResponse KoiProfile { get; set; } = null!;
 

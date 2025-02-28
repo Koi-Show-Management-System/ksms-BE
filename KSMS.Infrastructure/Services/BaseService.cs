@@ -41,7 +41,7 @@ public abstract class BaseService<T> where T : class
     }
     protected string GetRoleFromJwt()
     {
-        string role = _httpContextAccessor?.HttpContext?.User.FindFirstValue(ClaimTypes.Role)!;
-        return role;
+        var role = _httpContextAccessor?.HttpContext?.User.FindFirstValue(ClaimTypes.Role);
+        return role ?? "Guest";
     }
 }
