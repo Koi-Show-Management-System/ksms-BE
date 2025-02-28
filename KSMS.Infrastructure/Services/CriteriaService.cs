@@ -25,34 +25,18 @@ namespace KSMS.Infrastructure.Services
         }
 
 
-        public async Task<CriteriaResponse> CreateCriteriaAsync(CreateCriteriaRequest createCriteriaRequest)
+        public async Task CreateCriteriaAsync(CreateCriteriaRequest createCriteriaRequest)
         {
             var criterionRepository = _unitOfWork.GetRepository<Criterion>();
-            var errorTypeRepository = _unitOfWork.GetRepository<ErrorType>();
 
             var existingCriterion = await criterionRepository.SingleOrDefaultAsync(c => c.Name == createCriteriaRequest.Name, null, null);
             if (existingCriterion != null)
             {
                 throw new BadRequestException($"Criterion with name '{createCriteriaRequest.Name}' already exists.");
             }
-
-
-            var criterion = createCriteriaRequest.Adapt<Criterion>();
-
-
-            if (createCriteriaRequest.CreateErrorTypeRequests != null && createCriteriaRequest.CreateErrorTypeRequests.Any())
-            {
-                foreach (var errorTypeRequest in createCriteriaRequest.CreateErrorTypeRequests)
-                {
-                    var errorType = errorTypeRequest.Adapt<ErrorType>();
-                    criterion.ErrorTypes.Add(errorType);
-                }
-            }
-
-            var createdCriterion = await criterionRepository.InsertAsync(criterion);
+            await criterionRepository.InsertAsync(createCriteriaRequest.Adapt<Criterion>());
             await _unitOfWork.CommitAsync();
 
-            return createdCriterion.Adapt<CriteriaResponse>();
         }
 
 
@@ -61,9 +45,7 @@ namespace KSMS.Infrastructure.Services
             var criterionRepository = _unitOfWork.GetRepository<Criterion>();
 
             var criterion = await criterionRepository.SingleOrDefaultAsync(
-           predicate: c => c.Id == id,
-           include: query => query
-               .Include(c => c.ErrorTypes));
+                predicate: c => c.Id == id);
 
             if (criterion == null)
             {
@@ -73,7 +55,7 @@ namespace KSMS.Infrastructure.Services
             return criterion.Adapt<CriteriaResponse>();
         }
 
-        public async Task<CriteriaResponse> UpdateCriteriaAsync(Guid id, UpdateCriteriaRequest updateCriteriaRequest)
+        public async Task UpdateCriteriaAsync(Guid id, UpdateCriteriaRequest updateCriteriaRequest)
         {
             var criterionRepository = _unitOfWork.GetRepository<Criterion>();
 
@@ -82,29 +64,10 @@ namespace KSMS.Infrastructure.Services
             {
                 throw new NotFoundException("Criterion not found");
             }
-
             updateCriteriaRequest.Adapt(criterion);
-
-
-            if (updateCriteriaRequest.UpdateErrorTypeRequests != null && updateCriteriaRequest.UpdateErrorTypeRequests.Any())
-            {
-                foreach (var errorTypeRequest in updateCriteriaRequest.UpdateErrorTypeRequests)
-                {
-                    var existingErrorType = await _unitOfWork.GetRepository<ErrorType>()
-                        .SingleOrDefaultAsync(e => e.Id == errorTypeRequest.CriteriaId, null, null);
-
-                    if (existingErrorType == null)
-                    {
-                        var newErrorType = errorTypeRequest.Adapt<ErrorType>();
-                        criterion.ErrorTypes.Add(newErrorType);
-                    }
-                }
-            }
 
             criterionRepository.UpdateAsync(criterion);
             await _unitOfWork.CommitAsync();
-
-            return criterion.Adapt<CriteriaResponse>();
         }
 
         public async Task<Paginate<GetAllCriteriaResponse>> GetPagingCriteria(int page, int size)
@@ -122,12 +85,6 @@ namespace KSMS.Infrastructure.Services
             if (criterion == null)
             {
                 throw new NotFoundException("Criterion not found");
-            }
-
-            // Remove related ErrorTypes if any
-            foreach (var errorType in criterion.ErrorTypes)
-            {
-                _unitOfWork.GetRepository<ErrorType>().DeleteAsync(errorType);
             }
 
             // Delete the Criterion

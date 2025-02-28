@@ -83,6 +83,10 @@ public class AccountService : BaseService<AccountService>, IAccountService
         }
 
         var user = createAccountRequest.Adapt<Account>();
+        if (createAccountRequest.AvatarUrl is not null)
+        {
+            user.Avatar = await _firebaseService.UploadImageAsync(createAccountRequest.AvatarUrl, "account/");
+        }
         user.HashedPassword = PasswordUtil.HashPassword(createAccountRequest.HashedPassword);
         user.IsConfirmed = true;
         var createdUser = await userRepository.InsertAsync(user);

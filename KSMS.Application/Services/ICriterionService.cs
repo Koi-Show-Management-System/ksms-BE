@@ -9,18 +9,18 @@ using KSMS.Domain.Pagination;
 
 namespace KSMS.Application.Services
 {
-    public interface ICriterionService
-    {
-        Task<CriteriaResponse> CreateCriteriaAsync(CreateCriteriaRequest createCriteriaRequest);
+        public interface ICriterionService
+        {
+                Task CreateCriteriaAsync(CreateCriteriaRequest createCriteriaRequest);
 
 
-        Task<CriteriaResponse> GetCriteriaByIdAsync(Guid id);
+                Task<CriteriaResponse> GetCriteriaByIdAsync(Guid id);
 
 
-        Task<CriteriaResponse> UpdateCriteriaAsync(Guid id, UpdateCriteriaRequest updateCriteriaRequest);
+                Task UpdateCriteriaAsync(Guid id, UpdateCriteriaRequest updateCriteriaRequest);
 
-        Task<Paginate<GetAllCriteriaResponse>> GetPagingCriteria(int page, int size);
+                Task<Paginate<GetAllCriteriaResponse>> GetPagingCriteria(int page, int size);
 
-        Task DeleteCriteriaAsync(Guid id);
-    }
+                Task DeleteCriteriaAsync(Guid id);
+        }
 }
