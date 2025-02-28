@@ -18,15 +18,15 @@ namespace KSMS.API.Controllers
             _categoryService = categoryService;
         }
 
-        [HttpGet("show/registrations")]
-        public async Task<ActionResult<ApiResponse<object>>> GetAllRegistrationsByShow(
-            [FromQuery] Guid showId,       
-            [FromQuery] int page = 1,     
-            [FromQuery] int size = 10)    
-        {
-            var registrations = await _categoryService.GetPagedRegistrationsInShow(showId, page, size);
-            return Ok(ApiResponse<object>.Success(registrations, "Get the list of registrations successfully"));
-        }
+        //[HttpGet("show/registrations")]
+        //public async Task<ActionResult<ApiResponse<object>>> GetAllRegistrationsByShow(
+        //    [FromQuery] Guid showId,       
+        //    [FromQuery] int page = 1,     
+        //    [FromQuery] int size = 10)    
+        //{
+        //    var registrations = await _categoryService.GetPagedRegistrationsInShow(showId, page, size);
+        //    return Ok(ApiResponse<object>.Success(registrations, "Get the list of registrations successfully"));
+        //}
 
     }
 }

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using KSMS.Domain.Dtos.Responses.Registration;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,14 +9,7 @@ namespace KSMS.Domain.Dtos.Responses.RegistrationPayment
 {
     public class RegistrationPaymentResponse
     {
-        public Guid Id { get; set; }
-
-        public Guid RegistrationId { get; set; }
-
-        public Guid? PaymentTypeId { get; set; }
-
-        public string? QrcodeData { get; set; }
-
+        public Guid Id { get; set; }  
         public decimal PaidAmount { get; set; }
 
         public DateTime PaymentDate { get; set; }
@@ -23,6 +17,8 @@ namespace KSMS.Domain.Dtos.Responses.RegistrationPayment
         public string PaymentMethod { get; set; } = null!;
 
         public string Status { get; set; } = null!;
+
+        public RegistrationCheckinResponse Registration { get; set; } = null!;
 
     }
 }

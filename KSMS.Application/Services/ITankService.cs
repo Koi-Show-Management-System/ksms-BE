@@ -1,5 +1,6 @@
 ﻿using KSMS.Domain.Dtos.Requests.Tank;
 using KSMS.Domain.Dtos.Responses.Tank;
+using KSMS.Domain.Enums;
 using KSMS.Domain.Pagination;
 using System;
 using System.Collections.Generic;
@@ -12,6 +13,7 @@ namespace KSMS.Application.Services
     public interface ITankService
     {
         Task<Paginate<TankResponse>> GetPagedTanksByKoiShowIdAsync(Guid koiShowId, int page, int size);
+        Task UpdateTankStatusAsync(Guid id, TankStatus status);
 
         Task CreateTankAsync(CreateTankRequest request);
         Task UpdateTankAsync(Guid id, UpdateTankRequest request);

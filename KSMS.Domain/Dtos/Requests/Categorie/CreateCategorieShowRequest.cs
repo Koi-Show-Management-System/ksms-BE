@@ -4,7 +4,7 @@ using KSMS.Domain.Dtos.Requests.CriteriaCompetitionCategory;
 using KSMS.Domain.Dtos.Requests.RefereeAssignment;
 using KSMS.Domain.Dtos.Requests.Round;
 using KSMS.Domain.Dtos.Requests.Variety;
-using KSMS.Domain.Dtos.Responses.Award;
+
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;

@@ -35,25 +35,25 @@ namespace KSMS.API.Controllers
         /// <summary>
         /// Get a show by its ID.
         /// </summary>
-        [HttpGet("{id:guid}")]
-        public async Task<ActionResult<ApiResponse<object>>> GetShowById(Guid id)
-        {
-            var showResponse = await _showService.GetShowByIdAsync(id);
-            if (showResponse == null)
-                return NotFound(ApiResponse<object>.Fail("Show is not existed"));
+        //[HttpGet("{id:guid}")]
+        //public async Task<ActionResult<ApiResponse<object>>> GetShowById(Guid id)
+        //{
+        //    var showResponse = await _showService.GetShowByIdAsync(id);
+        //    if (showResponse == null)
+        //        return NotFound(ApiResponse<object>.Fail("Show is not existed"));
 
-            return Ok(ApiResponse<KoiShowResponse>.Success(showResponse, "Get show successfully"));
-        }
+        //    return Ok(ApiResponse<KoiShowResponse>.Success(showResponse, "Get show successfully"));
+        //}
 
         // <summary>
         // Get a paginated list of shows.
         // </summary>
-        [HttpGet("list-show")]
-        public async Task<ActionResult<ApiResponse<object>>> GetShows()
-        {
-            var shows = await _showService.GetAllShowsAsync();
-            return Ok(ApiResponse<object>.Success(shows, "Get list of show successfully"));
-        }
+        //[HttpGet("list-show")]
+        //public async Task<ActionResult<ApiResponse<object>>> GetShows()
+        //{
+        //    var shows = await _showService.GetAllShowsAsync();
+        //    return Ok(ApiResponse<object>.Success(shows, "Get list of show successfully"));
+        //}
 
         [HttpPut("{id:guid}")]
         public async Task<ActionResult<ApiResponse<object>>> UpdateShow(Guid id, [FromBody] UpdateShowRequest updateRequest)

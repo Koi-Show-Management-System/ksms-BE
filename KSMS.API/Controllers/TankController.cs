@@ -2,6 +2,7 @@
 using KSMS.Domain.Dtos;
 using KSMS.Domain.Dtos.Requests.Tank;
 using KSMS.Domain.Dtos.Responses.Tank;
+using KSMS.Domain.Enums;
 using KSMS.Domain.Pagination;
 using KSMS.Infrastructure.Utils;
 using Microsoft.AspNetCore.Mvc;
@@ -26,6 +27,16 @@ namespace KSMS.API.Controllers
         {
             var tanks = await _tankService.GetPagedTanksByKoiShowIdAsync(koiShowId, page, size);
             return Ok(ApiResponse<Paginate<TankResponse>>.Success(tanks, "Get paged tanks successfully"));
+        }
+
+        /// <summary>
+        /// API Update status tank
+        /// </summary>
+        [HttpPatch("{id:guid}/status")]
+        public async Task<IActionResult> UpdateTankStatus(Guid id, [FromQuery] TankStatus status)
+        {
+            await _tankService.UpdateTankStatusAsync(id, status);
+            return Ok(new { message = "Tank status updated successfully!" });
         }
 
         /// <summary>

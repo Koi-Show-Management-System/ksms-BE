@@ -1,9 +1,5 @@
 ﻿using KSMS.Domain.Dtos.Responses.CompetitionCategory;
-using KSMS.Domain.Dtos.Responses.Round;
-using KSMS.Domain.Dtos.Responses.ShowRule;
-using KSMS.Domain.Dtos.Responses.ShowStaff;
-using KSMS.Domain.Dtos.Responses.ShowStatus;
-using KSMS.Domain.Dtos.Responses.Sponsor;
+
 using KSMS.Domain.Dtos.Responses.Ticket;
 using System;
 using System.Collections.Generic;
@@ -47,18 +43,9 @@ namespace KSMS.Domain.Dtos.Responses.KoiShow
 
         public string? Status { get; set; }
 
-        public virtual ICollection<CompetitionCategoryResponse> CompetitionCategories { get; set; } = new List<CompetitionCategoryResponse>();
-
-        public virtual ICollection<ShowStaffResponse> ShowStaffs { get; set; } = new List<ShowStaffResponse>();
-
-        public virtual ICollection<ShowRuleResponse> ShowRules { get; set; } = new List<ShowRuleResponse>();
-
-        public virtual ICollection<ShowStatusResponse> ShowStatuses { get; set; } = new List<ShowStatusResponse>();
-
-        public virtual ICollection<SponsorResponse> Sponsors { get; set; } = new List<SponsorResponse>();
-
-        public virtual ICollection<TicketTypeResponse> TicketTypes { get; set; } = new List<TicketTypeResponse>();
-
+       
+       
+      
 
     }
 }
