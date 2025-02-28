@@ -1,4 +1,5 @@
 ﻿using KSMS.Domain.Dtos.Responses.Account;
+using KSMS.Domain.Dtos.Responses.CriteriaGroupRequest;
 using KSMS.Domain.Dtos.Responses.Criterion;
 using KSMS.Domain.Dtos.Responses.Registration;
 using KSMS.Domain.Dtos.Responses.Round;
@@ -24,9 +25,9 @@ namespace KSMS.Domain.Dtos.Responses.Score
 
         public string? Comments { get; set; }
 
-        public virtual GetAllCriterionResponse Criteria { get; set; } 
+        public virtual GetAllCriteriaGroupResponse Criteria { get; set; } 
 
-        public virtual GetALLAccountResponse RefereeAccount { get; set; } 
+        public virtual AccountResponse RefereeAccount { get; set; } 
 
         public virtual RegistrationStaffResponse Registration { get; set; } 
 

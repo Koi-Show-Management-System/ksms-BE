@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace KSMS.Domain.Dtos.Requests.Criterion
 {
-    public class UpdateCriterionRequest
+    public class UpdateCriteriaRequest
     {
      //   public Guid Id { get; set; }
    

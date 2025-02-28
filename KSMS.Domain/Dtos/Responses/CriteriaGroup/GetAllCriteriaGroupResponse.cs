@@ -24,7 +24,7 @@ namespace KSMS.Domain.Dtos.Responses.CriteriaGroupRequest
 
 
 
-        public virtual GetAllCriterionResponse Criteria { get; set; } = null!;
+        public virtual GetAllCriteriaGroupResponse Criteria { get; set; } = null!;
 
 
 

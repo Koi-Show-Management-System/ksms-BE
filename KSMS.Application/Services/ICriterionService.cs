@@ -11,16 +11,16 @@ namespace KSMS.Application.Services
 {
     public interface ICriterionService
     {
-        Task<GetAllCriterionResponse> CreateCriterionAsync(CreateCriterionRequest createCriterionRequest);
+        Task<CriteriaResponse> CreateCriteriaAsync(CreateCriteriaRequest createCriteriaRequest);
 
-        
-        Task<GetAllCriterionResponse> GetCriterionByIdAsync(Guid id);
 
-       
-        Task<GetAllCriterionResponse> UpdateCriterionAsync(Guid id, UpdateCriterionRequest updateCriterionRequest);
+        Task<CriteriaResponse> GetCriteriaByIdAsync(Guid id);
 
-        Task<Paginate<GetAllCriteriaResponse>> GetAllCriteria(int page, int size);
-    
-        Task DeleteCriterionAsync(Guid id);
+
+        Task<CriteriaResponse> UpdateCriteriaAsync(Guid id, UpdateCriteriaRequest updateCriteriaRequest);
+
+        Task<Paginate<GetAllCriteriaResponse>> GetPagingCriteria(int page, int size);
+
+        Task DeleteCriteriaAsync(Guid id);
     }
 }

@@ -7,7 +7,8 @@ using KSMS.Domain.Dtos.Responses.Role;
 
 namespace KSMS.Domain.Dtos.Responses.Account
 {
-    public class GetALLAccountResponse
+
+    public class AccountResponse
     {
         public Guid Id { get; set; }
         public string? Email { get; set; }
