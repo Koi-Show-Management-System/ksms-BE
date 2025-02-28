@@ -20,7 +20,7 @@ namespace KSMS.Domain.Dtos.Requests.Account
             [MinLength(8, ErrorMessage = "Password must be at least 8 characters long")]
             public string HashedPassword { get; set; } = string.Empty;
 
-
+        
             [Required]
             [MinLength(3)]
             public string FullName { get; set; } = string.Empty;
@@ -37,7 +37,7 @@ namespace KSMS.Domain.Dtos.Requests.Account
             [EnumDataType(typeof(RoleName))]
             public required string Role { get; set; }
 
-            public string? Avatar { get; set; }
+       //     public string? Avatar { get; set; }
     }
     }
 

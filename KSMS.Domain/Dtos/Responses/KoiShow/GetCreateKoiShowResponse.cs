@@ -16,7 +16,7 @@ namespace KSMS.Domain.Dtos.Responses.KoiShow
     {
         public virtual ICollection<AccountResponse> Staffs { get; set; } = new List<AccountResponse>();
         public virtual ICollection<VarietyResponse> Varietys { get; set; } = new List<VarietyResponse>();
-        public virtual ICollection<GetAllCriteriaGroupResponse> Critions { get; set; } = new List<GetAllCriteriaGroupResponse>();
+    //    public virtual ICollection<GetAllCriteriaGroupResponse> Critions { get; set; } = new List<GetAllCriteriaGroupResponse>();
 
     }
 }

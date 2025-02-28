@@ -10,6 +10,8 @@ using System.Threading.Tasks;
 using KSMS.Application.Services;
 using KSMS.Domain.Exceptions;
 using Mapster;
+using KSMS.Domain.Pagination;
+using System.Linq.Expressions;
 
 namespace KSMS.Infrastructure.Services
 {
@@ -24,7 +26,7 @@ namespace KSMS.Infrastructure.Services
             _logger = logger;
         }
          
-        public async Task<TankResponse> CreateTankAsync(CreateTankRequest request)
+        public async Task CreateTankAsync(CreateTankRequest request)
         {
             var tankRepository = _unitOfWork.GetRepository<Tank>();
 
@@ -47,19 +49,67 @@ namespace KSMS.Infrastructure.Services
             await _unitOfWork.CommitAsync();
 
             
-            return createdTank.Adapt<TankResponse>();
+            
         }
 
-      
-        public async Task<List<TankResponse>> GetTanksByKoiShowIdAsync(Guid koiShowId)
+        public async Task<Paginate<TankResponse>> GetPagedTanksByKoiShowIdAsync(Guid koiShowId, int page, int size)
         {
             var tankRepository = _unitOfWork.GetRepository<Tank>();
 
-            var tanks = await tankRepository.GetListAsync(
-                predicate: t => t.KoiShowId == koiShowId
+            // Lọc theo KoiShowId
+            Expression<Func<Tank, bool>> filterQuery = tank => tank.KoiShowId == koiShowId;
+
+            // Gọi repository với phân trang
+            var pagedTanks = await tankRepository.GetPagingListAsync(
+                predicate: filterQuery,
+                orderBy: query => query.OrderBy(t => t.Name),
+                page: page,
+                size: size
             );
 
-            return tanks.Adapt<List<TankResponse>>();
+            return pagedTanks.Adapt<Paginate<TankResponse>>();
         }
+        public async Task UpdateTankAsync(Guid id, UpdateTankRequest request)
+        {
+            var tankRepository = _unitOfWork.GetRepository<Tank>();
+
+           
+            var existingTank = await tankRepository.SingleOrDefaultAsync(
+                predicate: t => t.Id == id
+            );
+
+            if (existingTank == null)
+            {
+                throw new NotFoundException($"Tank with ID {id} not found.");
+            }
+
+           
+            existingTank.Name = request.Name ?? existingTank.Name;
+            existingTank.Capacity = request.Capacity;
+            existingTank.WaterType = request.WaterType ?? existingTank.WaterType;
+            existingTank.Temperature = request.Temperature ?? existingTank.Temperature;
+            existingTank.Phlevel = request.Phlevel ?? existingTank.Phlevel;
+            existingTank.Size = request.Size ?? existingTank.Size;
+            existingTank.Location = request.Location ?? existingTank.Location;
+            existingTank.Status = request.Status ?? existingTank.Status;
+
+           
+            tankRepository.UpdateAsync(existingTank);
+            await _unitOfWork.CommitAsync();
+
+            
+        }
+
+
+        //public async Task<List<TankResponse>> GetTanksByKoiShowIdAsync(Guid koiShowId)
+        //{
+        //    var tankRepository = _unitOfWork.GetRepository<Tank>();
+
+        //    var tanks = await tankRepository.GetListAsync(
+        //        predicate: t => t.KoiShowId == koiShowId
+        //    );
+
+        //    return tanks.Adapt<List<TankResponse>>();
+        //}
     }
 }

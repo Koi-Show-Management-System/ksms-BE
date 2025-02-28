@@ -4,6 +4,7 @@ using KSMS.Domain.Dtos.Requests.Show;
 using KSMS.Domain.Dtos.Responses.KoiShow;
 using KSMS.Domain.Dtos.Responses.Variety;
 using KSMS.Domain.Exceptions;
+using KSMS.Domain.Pagination;
 using KSMS.Infrastructure.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -27,8 +28,8 @@ namespace KSMS.API.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ApiResponse<object>.Fail(ModelState.ToString()));
 
-            var showResponse = await _showService.CreateShowAsync(createShowRequest);
-            return StatusCode(201, ApiResponse<object>.Created(showResponse, "Create show successfully"));
+             await _showService.CreateShowAsync(createShowRequest);
+            return StatusCode(201, ApiResponse<object>.Created(null, "Create show successfully"));
         }
 
         /// <summary>
@@ -64,6 +65,12 @@ namespace KSMS.API.Controllers
             return Ok(ApiResponse<object>.Success(null, "Update show status successfully"));
         }
 
+        [HttpGet("paged")]
+        public async Task<ActionResult<ApiResponse<object>>> GetPagedShows( [FromQuery] int page = 1, [FromQuery] int size = 10)
+        {
+            var shows = await _showService.GetPagedShowsAsync(page, size);
+            return Ok(ApiResponse<Paginate<PaginatedKoiShowResponse>>.Success(shows, "Get paged shows successfully"));
+        }
 
 
         /// <summary>

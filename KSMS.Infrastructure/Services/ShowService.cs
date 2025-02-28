@@ -16,7 +16,8 @@ using Microsoft.EntityFrameworkCore;
 using KSMS.Infrastructure.Utils;
 using Microsoft.AspNetCore.Http;
 using static KSMS.Infrastructure.Utils.MailUtil;
- 
+using KSMS.Domain.Pagination;
+
 
 namespace KSMS.Infrastructure.Services
 {
@@ -27,7 +28,7 @@ namespace KSMS.Infrastructure.Services
             : base(unitOfWork, logger, httpContextAccessor)
         {
         }
-            public async Task<KoiShowResponse> CreateShowAsync(CreateShowRequest createShowRequest)
+            public async Task CreateShowAsync(CreateShowRequest createShowRequest)
             {
            
                 var showRepository = _unitOfWork.GetRepository<KoiShow>();
@@ -261,7 +262,7 @@ namespace KSMS.Infrastructure.Services
                     await transaction.CommitAsync();
 
                     // Return the created show response
-                    return createdShow.Adapt<KoiShowResponse>();
+                    //return createdShow.Adapt<KoiShowResponse>();
                 }
                 catch (Exception ex)
                 {
@@ -727,7 +728,21 @@ namespace KSMS.Infrastructure.Services
 
         }
 
+        public async Task<Paginate<PaginatedKoiShowResponse>> GetPagedShowsAsync(int page, int size)
+        {
+            var showRepository = _unitOfWork.GetRepository<KoiShow>();
 
+            
+            var pagedShows = await showRepository.GetPagingListAsync(
+                predicate: null,
+                orderBy: query => query.OrderBy(s => s.Name),
+                include: query => query.Include(s => s.ShowStatuses), 
+                page: page,
+                size: size
+            );
+
+            return pagedShows.Adapt<Paginate<PaginatedKoiShowResponse>>();
+        }
         /// <summary>
         /// Cập nhật trạng thái của ShowStatus theo thời gian
         /// </summary>
