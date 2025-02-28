@@ -16,7 +16,7 @@ namespace KSMS.Domain.Dtos.Requests.RefereeAssignment
 
         public DateTime AssignedAt { get; set; }
 
-        public string RoundType { get; set; }
+        public List<string> RoundTypes { get; set; } = [];
 
         public Guid AssignedBy { get; set; }
 
