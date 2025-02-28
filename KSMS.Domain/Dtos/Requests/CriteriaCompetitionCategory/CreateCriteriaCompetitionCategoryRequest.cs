@@ -1,5 +1,4 @@
 ﻿using KSMS.Domain.Dtos.Requests.Criterion;
-using KSMS.Domain.Dtos.Requests.ErrorType;
 using System;
 using System.Collections.Generic;
 using System.Linq;

@@ -25,8 +25,8 @@ namespace KSMS.API.Controllers
         [HttpPost("create")]
         public async Task<ActionResult<ApiResponse<object>>> CreateCriterion([FromBody] CreateCriteriaRequest createCriteriaRequest)
         {
-            var createdCriterion = await _criterionService.CreateCriteriaAsync(createCriteriaRequest);
-            return StatusCode(201, ApiResponse<object>.Created(createdCriterion, "Criterion created successfully"));
+            await _criterionService.CreateCriteriaAsync(createCriteriaRequest);
+            return StatusCode(201, ApiResponse<object>.Created(null, "Criterion created successfully"));
         }
 
    
@@ -40,9 +40,9 @@ namespace KSMS.API.Controllers
    
         [HttpPut("{id:guid}")]
         public async Task<ActionResult<ApiResponse<object>>> UpdateCriterion(Guid id, [FromBody] UpdateCriteriaRequest updateCriteriaRequest)
-        {
-            var updatedCriterion = await _criterionService.UpdateCriteriaAsync(id, updateCriteriaRequest);
-            return Ok(ApiResponse<object>.Success(updatedCriterion, "Criterion updated successfully"));
+        { 
+            await _criterionService.UpdateCriteriaAsync(id, updateCriteriaRequest);
+            return Ok(ApiResponse<object>.Success(null, "Criterion updated successfully"));
         }
         
         [HttpGet("get-page")]

@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using KSMS.Domain.Enums;
+using Microsoft.AspNetCore.Http;
 
 
 namespace KSMS.Domain.Dtos.Requests.Account
@@ -37,7 +38,7 @@ namespace KSMS.Domain.Dtos.Requests.Account
             [EnumDataType(typeof(RoleName))]
             public required string Role { get; set; }
 
-            public string? Avatar { get; set; }
+            public IFormFile? AvatarUrl { get; set; }
     }
     }
 

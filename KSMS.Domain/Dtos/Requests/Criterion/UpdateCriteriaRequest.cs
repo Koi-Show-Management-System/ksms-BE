@@ -1,4 +1,4 @@
-﻿using KSMS.Domain.Dtos.Requests.ErrorType;
+﻿
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -10,9 +10,6 @@ namespace KSMS.Domain.Dtos.Requests.Criterion
 {
     public class UpdateCriteriaRequest
     {
-     //   public Guid Id { get; set; }
-   
-     //   public Guid? CriteriaGroupId { get; set; }
 
         public string Name { get; set; } = null!; 
  
@@ -20,7 +17,5 @@ namespace KSMS.Domain.Dtos.Requests.Criterion
             
        
         public int? Order { get; set; }
-
-        public virtual ICollection<UpdateErrorTypeRequest> UpdateErrorTypeRequests { get; set; } = new List<UpdateErrorTypeRequest>();
     }
 }
