@@ -9,15 +9,14 @@ namespace KSMS.Domain.Dtos.Requests.Sponsor
 {
     public class CreateSponsorRequest
     { 
-            [Required(ErrorMessage = "Name is required.")]
-            [StringLength(200, ErrorMessage = "Name must not exceed 200 characters.")]
-            public string Name { get; set; } = null!;
+        [Required(ErrorMessage = "Name is required.")]
+        [StringLength(200, ErrorMessage = "Name must not exceed 200 characters.")]
+        public string Name { get; set; } = null!;
 
-            [Url(ErrorMessage = "LogoUrl must be a valid URL.")]
-            public string? LogoUrl { get; set; }
+        [Url(ErrorMessage = "LogoUrl must be a valid URL.")]
+        public string? LogoUrl { get; set; }
         public decimal InvestMoney { get; set; }
-        //[Required(ErrorMessage = "ShowId is required.")]
-        //public Guid KoiShowId { get; set; }
+
 
     }
 }

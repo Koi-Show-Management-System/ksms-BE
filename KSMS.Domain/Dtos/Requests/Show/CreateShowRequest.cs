@@ -62,14 +62,13 @@ namespace KSMS.Domain.Dtos.Requests.Show
         public string? Status { get; set; }
 
         
-        public  ICollection<CreateCategorieShowRequest> CreateCategorieShowRequests { get; set; } = new List<CreateCategorieShowRequest>();
-        public  ICollection<CreateShowStaffRequest> CreateShowStaffRequests { get; set; } = new List<CreateShowStaffRequest>();
-        public  ICollection<CreateShowRuleRequest> CreateShowRuleRequests { get; set; } = new List<CreateShowRuleRequest>(); 
-        public  ICollection<CreateShowStatusRequest> CreateShowStatusRequests { get; set; } = new List<CreateShowStatusRequest>();
-        public  ICollection<CreateSponsorRequest> CreateSponsorRequests { get; set; } = new List<CreateSponsorRequest>();
-        public  ICollection<CreateTicketTypeRequest> CreateTicketTypeRequests { get; set; } = new List<CreateTicketTypeRequest>();
-
-       
+        public  ICollection<CreateCategorieShowRequest> CreateCategorieShowRequests { get; set; } = [];
+        public  ICollection<Guid> AssignStaffRequests { get; set; } = [];
+        public  ICollection<Guid> AssignManagerRequests { get; set; } = [];
+        public  ICollection<CreateShowRuleRequest> CreateShowRuleRequests { get; set; } = []; 
+        public  ICollection<CreateShowStatusRequest> CreateShowStatusRequests { get; set; } = [];
+        public  ICollection<CreateSponsorRequest> CreateSponsorRequests { get; set; } = [];
+        public  ICollection<CreateTicketTypeRequest> CreateTicketTypeRequests { get; set; } = [];
     }
 
      

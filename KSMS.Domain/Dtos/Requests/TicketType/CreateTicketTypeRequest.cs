@@ -9,17 +9,10 @@ namespace KSMS.Domain.Dtos.Requests.TicketType
 {
     public class CreateTicketTypeRequest
     {
-  //     public Guid Id { get; set; }
-
-        //public Guid KoiShowId { get; set; }
-
         public string Name { get; set; } = null!;
 
         public decimal Price { get; set; }
 
         public int AvailableQuantity { get; set; }
-
-    //    public virtual ICollection<TicketOrderDetailResponse> TicketOrderDetails { get; set; } = new List<TicketOrderDetailResponse>();
-
     }
 }
