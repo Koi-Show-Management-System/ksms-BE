@@ -16,8 +16,6 @@ namespace KSMS.Domain.Dtos.Requests.Categorie
 { 
     public class CreateCategorieShowRequest
     {
-        
-       // public Guid KoiShowId { get; set; } 
         public string Name { get; set; } = null!;
 
         
@@ -37,15 +35,15 @@ namespace KSMS.Domain.Dtos.Requests.Categorie
          
         public string? Status { get; set; }
 
-        public  ICollection<CreateRoundRequest> Rounds { get; set; } = new List<CreateRoundRequest>();
+        public  ICollection<CreateRoundRequest> CreateRoundRequests { get; set; } = [];
 
-        public  ICollection<CreateCategoryVarietyRequest> CategoryVarietys { get; set; } = new List<CreateCategoryVarietyRequest>();
+        public List<Guid> CreateCompetionCategoryVarieties { get; set; } = [];
 
-        public  ICollection<CreateAwardCateShowRequest> Awards { get; set; } = new List<CreateAwardCateShowRequest>();
+        public  ICollection<CreateAwardCateShowRequest> CreateAwardCateShowRequests { get; set; } = [];
 
-        public  ICollection<CreateCriteriaCompetitionCategoryRequest> CriteriaCompetitionCategories { get; set; } = new List<CreateCriteriaCompetitionCategoryRequest>();
+        public  ICollection<CreateCriteriaCompetitionCategoryRequest> CreateCriteriaCompetitionCategoryRequests { get; set; } = [];
 
-        public  ICollection<CreateRefereeAssignmentRequest> RefereeAssignments { get; set; } = new List<CreateRefereeAssignmentRequest>();
+        public  ICollection<CreateRefereeAssignmentRequest> CreateRefereeAssignmentRequests { get; set; } = [];
     }
 
 }
