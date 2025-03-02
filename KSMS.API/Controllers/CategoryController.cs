@@ -4,10 +4,11 @@ using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Threading.Tasks;
 using KSMS.Domain.Dtos;
+using KSMS.Domain.Dtos.Requests.Categorie;
 
 namespace KSMS.API.Controllers
 {
-    [Route("api/v1/category")]
+    [Route("api/v1/competition-category")]
     [ApiController]
     public class CategoryController : ControllerBase
     {
@@ -17,16 +18,26 @@ namespace KSMS.API.Controllers
         {
             _categoryService = categoryService;
         }
-
-        //[HttpGet("show/registrations")]
-        //public async Task<ActionResult<ApiResponse<object>>> GetAllRegistrationsByShow(
-        //    [FromQuery] Guid showId,       
-        //    [FromQuery] int page = 1,     
-        //    [FromQuery] int size = 10)    
-        //{
-        //    var registrations = await _categoryService.GetPagedRegistrationsInShow(showId, page, size);
-        //    return Ok(ApiResponse<object>.Success(registrations, "Get the list of registrations successfully"));
-        //}
-
+        [HttpPost("create")]
+        public async Task<ActionResult<ApiResponse<object>>> CreateCategory([FromBody] CreateCompetitionCategoryRequest request)
+        {
+            await _categoryService.CreateCompetitionCategory(request);
+            return StatusCode(201, ApiResponse<object>.Created(null, "Create category successfully"));
+        }
+        [HttpGet("get-page")]
+        public async Task<ActionResult<ApiResponse<object>>> GetPageCategory(
+            [FromQuery] Guid showId,       
+            [FromQuery] int page = 1,     
+            [FromQuery] int size = 10)    
+        {
+            var categories = await _categoryService.GetPagedCompetitionCategory(showId, page, size);
+            return Ok(ApiResponse<object>.Success(categories, "Get list successfully"));
+        }
+        [HttpGet("{id:guid}")]
+        public async Task<ActionResult<ApiResponse<object>>> GetCategoryById(Guid id)
+        {
+            var category = await _categoryService.GetCompetitionCategoryDetailById(id);
+            return Ok(ApiResponse<object>.Success(category, "Get detail successfully"));
+        }
     }
 }

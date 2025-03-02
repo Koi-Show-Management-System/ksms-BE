@@ -19,6 +19,7 @@ using static KSMS.Infrastructure.Utils.MailUtil;
 using KSMS.Domain.Pagination;
 using System.Linq.Expressions;
 using KSMS.Application.Extensions;
+using KSMS.Domain.Dtos.Requests.ShowRule;
 
 namespace KSMS.Infrastructure.Services
 {
@@ -29,6 +30,123 @@ namespace KSMS.Infrastructure.Services
             ILogger<ShowService> logger, IHttpContextAccessor httpContextAccessor)
             : base(unitOfWork, logger, httpContextAccessor)
         {
+        }
+
+        public async Task UpdateShowV2(Guid id, UpdateShowRequestV2 request)
+        {
+            var show = await _unitOfWork.GetRepository<KoiShow>().SingleOrDefaultAsync(predicate: x => x.Id == id,
+                include: query => query.Include(x => x.Sponsors)
+                    .Include(x => x.TicketTypes)
+                    .Include(x => x.ShowRules)
+                    .Include(x => x.ShowStatuses));
+            if (show is null)
+            {
+                throw new NotFoundException("Show is not existed");
+            }
+            request.Adapt(show);
+            _unitOfWork.GetRepository<KoiShow>().UpdateAsync(show);
+            await _unitOfWork.CommitAsync();
+            
+        }
+
+        public async Task<GetKoiShowDetailResponse> GetShowDetailByIdAsync(Guid id)
+        {
+            var show = await _unitOfWork.GetRepository<KoiShow>().SingleOrDefaultAsync(predicate: x => x.Id == id,
+                include: query => query.Include(x => x.ShowRules)
+                    .Include(x => x.ShowStatuses)
+                    .Include(x => x.Sponsors)
+                    .Include(x => x.TicketTypes));
+            if (show is null)
+            {
+                throw new NotFoundException("Show is not existed");
+            }
+            return show.Adapt<GetKoiShowDetailResponse>();
+        }
+
+        // private async Task UpdateShowRules(KoiShow show, List<UpdateShowRuleRequestV2> newRules)
+        // {
+        //     var rulesRepo = _unitOfWork.GetRepository<ShowRule>();
+        //
+        //     var rulesToDelete = show.ShowRules.Where(r => 
+        //         !newRules.Any(nr => nr.Id == r.Id)).ToList();
+        //
+        //     if (rulesToDelete.Any())
+        //     { 
+        //         rulesRepo.DeleteRangeAsync(rulesToDelete);
+        //         foreach (var rule in rulesToDelete)
+        //         {
+        //             show.ShowRules.Remove(rule);
+        //         }
+        //     }
+        //
+        //     foreach (var ruleRequest in newRules)
+        //     {
+        //         var existingRule = show.ShowRules
+        //             .FirstOrDefault(r => r.Id == ruleRequest.Id);
+        //
+        //         if (existingRule != null)
+        //         {
+        //             ruleRequest.Adapt(existingRule);
+        //         }
+        //         else
+        //         {
+        //             var newRule = ruleRequest.Adapt<ShowRule>();
+        //             newRule.KoiShowId = show.Id;
+        //             show.ShowRules.Add(newRule);
+        //         }
+        //     }
+        // }
+        private async Task UpdateShowStaffAssignments(Guid showId, ICollection<Guid> staffIds, ICollection<Guid> managerIds)
+        {
+            var showStaffRepo = _unitOfWork.GetRepository<ShowStaff>();
+            var accountRepo = _unitOfWork.GetRepository<Account>();
+            var currentUserId = GetIdFromJwt();
+            
+            var currentAssignments = await showStaffRepo.GetListAsync(
+                predicate: x => x.KoiShowId == showId);
+            
+            var allNewIds = staffIds.Union(managerIds);
+            var assignmentsToRemove = currentAssignments.Where(x => 
+                !allNewIds.Contains(x.AccountId)).ToList();
+            if (assignmentsToRemove.Any())
+            { 
+                showStaffRepo.DeleteRangeAsync(assignmentsToRemove);
+            }
+            foreach (var staffId in staffIds)
+            {
+                var staff = await accountRepo.SingleOrDefaultAsync(predicate: x => x.Id == staffId);
+                if (staff == null)
+                    throw new NotFoundException($"Staff with id {staffId} not found");
+                if (!currentAssignments.Any(x => x.AccountId == staffId))
+                {
+                    var newAssignment = new ShowStaff
+                    {
+                        KoiShowId = showId,
+                        AccountId = staffId,
+                        AssignedBy = currentUserId,
+                        AssignedAt = DateTime.UtcNow
+                    };
+                    await showStaffRepo.InsertAsync(newAssignment);
+                }
+            }
+            foreach (var managerId in managerIds)
+            {
+                var manager = await accountRepo.SingleOrDefaultAsync(predicate: x => x.Id == managerId);
+                if (manager == null)
+                    throw new NotFoundException($"Manager with id {managerId} not found");
+
+                if (!currentAssignments.Any(x => x.AccountId == managerId))
+                {
+                    var newAssignment = new ShowStaff
+                    {
+                        KoiShowId = showId,
+                        AccountId = managerId,
+                        AssignedBy = currentUserId,
+                        AssignedAt = DateTime.UtcNow
+                    };
+                    await showStaffRepo.InsertAsync(newAssignment);
+                }
+            }
         }
         public async Task CreateShowAsync(CreateShowRequest createShowRequest)
         {
