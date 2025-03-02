@@ -14,7 +14,7 @@ namespace KSMS.Application.Services
     {
         Task<Paginate<TankResponse>> GetPagedTanksByKoiShowIdAsync(Guid koiShowId, int page, int size);
         Task UpdateTankStatusAsync(Guid id, TankStatus status);
-
+        Task<bool> IsTankFull(Guid tankId);
         Task CreateTankAsync(CreateTankRequest request);
         Task UpdateTankAsync(Guid id, UpdateTankRequest request);
 

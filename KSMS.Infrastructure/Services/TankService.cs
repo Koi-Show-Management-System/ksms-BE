@@ -49,6 +49,29 @@ namespace KSMS.Infrastructure.Services
             await tankRepository.InsertAsync(tank);
             await _unitOfWork.CommitAsync();
         }
+        public async Task<bool> IsTankFull(Guid tankId)
+        {
+            var tankRepository = _unitOfWork.GetRepository<Tank>();
+            var regisRoundRepository = _unitOfWork.GetRepository<RegistrationRound>();
+
+            // Lấy thông tin sức chứa của hồ
+            var tank = await tankRepository.SingleOrDefaultAsync(
+                predicate: t => t.Id == tankId
+            );
+
+            if (tank == null)
+            {
+                throw new NotFoundException($"Tank with ID {tankId} not found.");
+            }
+
+            // Đếm số lượng cá hiện có trong hồ
+            int currentFishCount = await regisRoundRepository.CountAsync(
+                predicate: rr => rr.TankId == tankId
+            );
+
+            // Kiểm tra nếu số lượng cá đã đạt hoặc vượt quá sức chứa
+            return currentFishCount >= tank.Capacity;
+        }
 
         public async Task<Paginate<TankResponse>> GetPagedTanksByKoiShowIdAsync(Guid koiShowId, int page, int size)
         {

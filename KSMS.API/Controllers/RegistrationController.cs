@@ -1,4 +1,4 @@
-using KSMS.Application.Services;
+﻿using KSMS.Application.Services;
 using KSMS.Domain.Dtos.Requests.Registration;
 using KSMS.Domain.Dtos.Responses.Registration;
 using KSMS.Domain.Enums;
@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using KSMS.Domain.Dtos;
 using KSMS.Domain.Models;
+using KSMS.Domain.Entities;
 
 namespace KSMS.API.Controllers
 {
@@ -14,11 +15,42 @@ namespace KSMS.API.Controllers
     [ApiController]
     public class RegistrationController : ControllerBase
     {
-        private readonly IRegistrationService _registrationService;
+        private readonly    IRegistrationService _registrationService;
 
         public RegistrationController(IRegistrationService registrationService)
         {
             _registrationService = registrationService;
+        }
+
+        //[HttpPost("{showId:guid}/assign-all-fish")]
+        //public async Task<ActionResult<ApiResponse<object>>> AssignAllFishToTank(Guid showId)
+        //{
+        //    try
+        //    {
+        //        await _registrationService.AssignAllFishToTankAndRound(showId);
+
+        //        return Ok(ApiResponse<object>.Success(null, "Fish assigned successfully"));
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return BadRequest(ApiResponse<object>.Fail(ex.Message));
+        //    }
+        //}
+        
+
+        [HttpPatch("assign-to-tank")]
+        public async Task<ActionResult<ApiResponse<object>>> AssignMultipleFishesToTankAndRound(
+    [FromBody] AssignFishesRequest request)
+        {
+            try
+            {
+                await _registrationService.AssignMultipleFishesToTankAndRound(request.RoundId, request.RegistrationIds);
+                return Ok(ApiResponse<object>.Success(null, "Assigned fishes successfully"));
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ApiResponse<object>.Fail(ex.Message));
+            }
         }
 
 
@@ -60,6 +92,7 @@ namespace KSMS.API.Controllers
         public async Task<ActionResult<ApiResponse<object>>> ToggleUserStatus(Guid id, RegistrationStatus status)
         {
             await _registrationService.UpdateStatusForRegistration(id, status);
+
             return Ok(ApiResponse<object>.Success(null, "Update registration status successfully"));
         }
 
