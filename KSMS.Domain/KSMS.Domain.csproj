@@ -18,14 +18,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Dtos\Responses\Award\" />
-    <Folder Include="Dtos\Responses\CriteriaCompetitionCategory\" />
-    <Folder Include="Dtos\Responses\RefereeAssignment\" />
-    <Folder Include="Dtos\Responses\Round\" />
-    <Folder Include="Dtos\Responses\ShowRule\" />
     <Folder Include="Dtos\Responses\ShowStaff\" />
-    <Folder Include="Dtos\Responses\ShowStatus\" />
-    <Folder Include="Dtos\Responses\Sponsor\" />
     <Folder Include="Entities\" />
   </ItemGroup>
 

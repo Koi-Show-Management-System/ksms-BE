@@ -17,7 +17,7 @@ namespace KSMS.Domain.Dtos.Requests.Categorie
     public class CreateCategorieShowRequest
     {
         public string Name { get; set; } = null!;
-
+        
         
         public decimal? SizeMin { get; set; }
 

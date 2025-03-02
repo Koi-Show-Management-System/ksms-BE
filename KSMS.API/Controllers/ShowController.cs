@@ -26,35 +26,21 @@ namespace KSMS.API.Controllers
              await _showService.CreateShowAsync(createShowRequest);
             return StatusCode(201, ApiResponse<object>.Created(null, "Create show successfully"));
         }
+        
+        [HttpGet("{id:guid}")]
+        public async Task<ActionResult<ApiResponse<object>>> GetShowById(Guid id)
+        {
+            var show = await _showService.GetShowDetailByIdAsync(id);
 
-        /// <summary>
-        /// Get a show by its ID.
-        /// </summary>
-        //[HttpGet("{id:guid}")]
-        //public async Task<ActionResult<ApiResponse<object>>> GetShowById(Guid id)
-        //{
-        //    var showResponse = await _showService.GetShowByIdAsync(id);
-        //    if (showResponse == null)
-        //        return NotFound(ApiResponse<object>.Fail("Show is not existed"));
-
-        //    return Ok(ApiResponse<KoiShowResponse>.Success(showResponse, "Get show successfully"));
-        //}
-
-        // <summary>
-        // Get a paginated list of shows.
-        // </summary>
-        //[HttpGet("list-show")]
-        //public async Task<ActionResult<ApiResponse<object>>> GetShows()
-        //{
-        //    var shows = await _showService.GetAllShowsAsync();
-        //    return Ok(ApiResponse<object>.Success(shows, "Get list of show successfully"));
-        //}
+            return Ok(ApiResponse<object>.Success(show, "Get show successfully"));
+        }
+        
 
         [HttpPut("{id:guid}")]
-        public async Task<ActionResult<ApiResponse<object>>> UpdateShow(Guid id, [FromBody] UpdateShowRequest updateRequest)
+        public async Task<ActionResult<ApiResponse<object>>> UpdateShow(Guid id, [FromBody] UpdateShowRequestV2 request)
         {
-            await _showService.UpdateShowAsync(id, updateRequest);
-            return Ok(ApiResponse<object>.Success(null, "Update show status successfully"));
+            await _showService.UpdateShowV2(id, request);
+            return Ok(ApiResponse<object>.Success(null, "Update show successfully"));
         }
 
         [HttpGet("paged")]
@@ -63,27 +49,5 @@ namespace KSMS.API.Controllers
             var shows = await _showService.GetPagedShowsAsync(page, size);
             return Ok(ApiResponse<Paginate<PaginatedKoiShowResponse>>.Success(shows, "Get paged shows successfully"));
         }
-
-
-        /// <summary>
-        /// Delete a show (soft delete).
-        /// </summary>
-        //[HttpDelete("{id:guid}")]
-        //public async Task<IActionResult> DeleteShow(Guid id)
-        //{
-        //    try
-        //    {
-        //        await _showService.DeleteShowAsync(id);
-        //        return Ok(new { Message = "Show deleted successfully." });
-        //    }
-        //    catch (KeyNotFoundException ex)
-        //    {
-        //        return NotFound(new { Error = ex.Message });
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        return StatusCode(500, new { Error = "An unexpected error occurred.", Details = ex.Message });
-        //    }
-        //}
     }
 }

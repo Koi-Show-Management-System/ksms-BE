@@ -124,15 +124,12 @@ namespace KSMS.Infrastructure.Repositories
 
         public void UpdateAsync(T entity)
         {
-            _dbSet.Entry(entity).State = EntityState.Modified;
+            _dbSet.Update(entity);
         }
 
         public void UpdateRange(IEnumerable<T> entities)
         {
-            foreach (var entity in entities)
-            {
-                _dbSet.Entry(entity).State = EntityState.Modified;
-            }
+            _dbSet.UpdateRange(entities);
         }
 
         public void Detach(T entity)
