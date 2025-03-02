@@ -21,15 +21,14 @@ namespace KSMS.API.Controllers
         public async Task<ActionResult<ApiResponse<object>>> CreateRoundResult([FromBody] CreateRoundResult request)
         {
 
-            var createdRoundResult = await _roundResultService.CreateRoundResultAsync(request);
-
+            var createdRoundResult = await _roundResultService.CreateRoundResultAsync(request); 
 
             return StatusCode(201, ApiResponse<object>.Created(createdRoundResult, "Round result created successfully"));
         }
 
 
         [HttpPatch("{id:guid}/update-public-status")]
-        public async Task<ActionResult<ApiResponse<object>>> UpdatePublicStatus(Guid id, [FromBody] bool isPublic)
+        public async Task<ActionResult<ApiResponse<object>>> UpdatePublicStatus(Guid id, [FromQuery] bool isPublic)
         {
 
             var updatedRoundResult = await _roundResultService.UpdateIsPublicAsync(id, isPublic);
