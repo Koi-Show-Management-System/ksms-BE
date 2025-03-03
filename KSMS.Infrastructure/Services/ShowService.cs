@@ -328,6 +328,7 @@ namespace KSMS.Infrastructure.Services
                                 {
                                     var refereeAssignment = new RefereeAssignment
                                     {
+                                        RefereeAccountId = refereeAssignmentRequest.RefereeAccountId,
                                         CompetitionCategoryId = createdCategory.Id,
                                         RoundType = x,
                                         AssignedAt = DateTime.UtcNow,

@@ -17,7 +17,7 @@ public class CreateAwardCateShowRequest
     [StringLength(50, ErrorMessage = "AwardType must not exceed 50 characters.")]
     public string? AwardType { get; set; }
 
-    [Range(0, 100000, ErrorMessage = "PrizeValue must be between 0 and 100000.")]
+    //[Range(0, 100000, ErrorMessage = "PrizeValue must be between 0 and 100000.")]
     public decimal? PrizeValue { get; set; }
 
     [StringLength(500, ErrorMessage = "Description must not exceed 500 characters.")]

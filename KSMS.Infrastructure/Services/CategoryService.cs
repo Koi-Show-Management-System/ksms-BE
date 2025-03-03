@@ -103,6 +103,7 @@ namespace KSMS.Infrastructure.Services
                 var refereeAssignments = request.CreateRefereeAssignmentRequests
                     .SelectMany(r => r.RoundTypes.Select(rt => new RefereeAssignment
                     {
+                        RefereeAccountId = r.RefereeAccountId,
                         CompetitionCategoryId = category.Id,
                         RoundType = rt,
                         AssignedAt = DateTime.UtcNow,
