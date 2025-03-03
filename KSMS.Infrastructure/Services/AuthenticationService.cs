@@ -1,5 +1,6 @@
 ﻿using KSMS.Application.Repositories;
 using KSMS.Application.Services;
+using KSMS.Domain.Common;
 using KSMS.Domain.Dtos.Requests.Authentication;
 using KSMS.Domain.Dtos.Responses;
 using KSMS.Domain.Entities;
@@ -34,7 +35,7 @@ public class AuthenticationService : BaseService<AuthenticationService>, IAuthen
         account.HashedPassword = PasswordUtil.HashPassword(registerRequest.Password);
         account.ConfirmationToken = Guid.NewGuid().ToString();
         await _unitOfWork.GetRepository<Account>().InsertAsync(account);
-        var confirmationLink = $"https://localhost:7042/swagger/confirm?token={account.ConfirmationToken}";
+        var confirmationLink = $"{AppConfig.AppSetting.BaseUrl}/swagger/confirm?token={account.ConfirmationToken}";
         if (!MailUtil.SendEmail(registerRequest.Email, MailUtil.ContentMailUtil.Title_ThankingForRegisAccount,
                 MailUtil.ContentMailUtil.ThankingForRegistration(registerRequest.FullName, confirmationLink), ""))
         {

@@ -16,6 +16,7 @@ using Net.payOS;
 using Net.payOS.Types;
 using System.Linq.Expressions;
 using System.Security.Claims;
+using KSMS.Domain.Common;
 using KSMS.Domain.Pagination;
 using Mapster;
 
@@ -94,7 +95,7 @@ public class TicketOrderService : BaseService<TicketOrder>, ITicketOrderService
             var item = new ItemData(x.TicketType.Name, x.Quantity, (int)x.UnitPrice);
             items.Add(item);
         }
-        const string baseUrl = "https://localhost:7042/api/ticket-order" + "/call-back";
+        var baseUrl = $"{AppConfig.AppSetting.BaseUrl}/api/ticket-order" + "/call-back";
         var url = $"{baseUrl}?ticketOrderId={ticketOrder.Id}";
         var paymentData = new PaymentData(transactionCode, (int)(ticketOrder.TotalAmount), "Buy Ticket", items
             , url, url);
