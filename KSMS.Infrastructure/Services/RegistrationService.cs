@@ -18,6 +18,7 @@ using Net.payOS.Types;
 using System.Security.Claims;
 using System.Linq.Expressions;
 using KSMS.Application.Extensions;
+using KSMS.Domain.Common;
 using KSMS.Domain.Pagination;
 
 namespace KSMS.Infrastructure.Services;
@@ -489,7 +490,7 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
         );
         items.Add(item);
 
-        const string baseUrl = "https://localhost:7042/api/registration" + "/call-back";
+        var baseUrl = $"{AppConfig.AppSetting.BaseUrl}/api/registration" + "/call-back";
         var url = $"{baseUrl}?registrationPaymentId={registrationPayment.Id}";
         
         var paymentData = new PaymentData(

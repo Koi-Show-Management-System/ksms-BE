@@ -11,12 +11,14 @@ namespace KSMS.API.Configuration
             AppConfig.GoogleImage = new GoogleImage();
             AppConfig.MailSetting = new MailSetting();
             AppConfig.PayOs = new PayOs();
+            AppConfig.AppSetting = new AppSetting();
 
             configuration.Bind("ConnectionStrings", AppConfig.ConnectionString);
             configuration.Bind("JwtSettings", AppConfig.JwtSetting);
             configuration.Bind("GoogleImages", AppConfig.GoogleImage);
             configuration.Bind("MailSettings", AppConfig.MailSetting);
             configuration.Bind("PayOs", AppConfig.PayOs);
+            configuration.Bind("AppSettings", AppConfig.AppSetting);
         }
     }
 }

@@ -13,7 +13,7 @@ namespace KSMS.Domain.Common
         public static GoogleImage GoogleImage { get; set; } = null!;
         public static MailSetting MailSetting { get; set; } = null!;
         public static PayOs PayOs { get; set; } = null!;
-
+        public static AppSetting AppSetting { get; set; } = null!;
     }
     public class ConnectionString
     {
@@ -47,5 +47,10 @@ namespace KSMS.Domain.Common
         public string? ClientId { get; set; }
         public string? ApiKey { get; set; }
         public string? ChecksumKey { get; set; }
+    }
+
+    public class AppSetting
+    {
+        public string BaseUrl { get; set; } = string.Empty;
     }
 }
