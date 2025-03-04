@@ -1,4 +1,5 @@
-﻿using KSMS.Application.Repositories;
+﻿using KSMS.Application.Extensions;
+using KSMS.Application.Repositories;
 using KSMS.Application.Services;
 using KSMS.Domain.Common;
 using KSMS.Domain.Dtos.Requests.Authentication;
@@ -34,6 +35,7 @@ public class AuthenticationService : BaseService<AuthenticationService>, IAuthen
         account.Role =RoleName.Member.ToString();
         account.HashedPassword = PasswordUtil.HashPassword(registerRequest.Password);
         account.ConfirmationToken = Guid.NewGuid().ToString();
+        //account.Status = AccountStatus.Active.GetDescription().ToLower();
         await _unitOfWork.GetRepository<Account>().InsertAsync(account);
         var confirmationLink = $"{AppConfig.AppSetting.BaseUrl}/swagger/confirm?token={account.ConfirmationToken}";
         if (!MailUtil.SendEmail(registerRequest.Email, MailUtil.ContentMailUtil.Title_ThankingForRegisAccount,
@@ -83,14 +85,14 @@ public class AuthenticationService : BaseService<AuthenticationService>, IAuthen
             
         if (account == null)
             throw new NotFoundException("Email is not existed.");
-        if (account.ResetPasswordOtp != null && account.ResetPasswordOtpexpiry > DateTime.UtcNow)
+        if (account.ResetPasswordOtp != null && account.ResetPasswordOtpexpiry > VietNamTimeUtil.GetVietnamTime())
         {
-            var remainingTime = (account.ResetPasswordOtpexpiry.Value - DateTime.UtcNow).TotalSeconds;
+            var remainingTime = (account.ResetPasswordOtpexpiry.Value - VietNamTimeUtil.GetVietnamTime()).TotalSeconds;
             throw new BadRequestException($"Please wait {(int)remainingTime} seconds before requesting a new OTP code.");
         }
         var otp = Random.Shared.Next(100000, 999999).ToString();
         account.ResetPasswordOtp = otp;
-        account.ResetPasswordOtpexpiry = DateTime.UtcNow.AddMinutes(OTP_EXPIRY_MINUTES);
+        account.ResetPasswordOtpexpiry = VietNamTimeUtil.GetVietnamTime().AddMinutes(OTP_EXPIRY_MINUTES);
         
         _unitOfWork.GetRepository<Account>().UpdateAsync(account);
         await _unitOfWork.CommitAsync();
@@ -116,7 +118,7 @@ public class AuthenticationService : BaseService<AuthenticationService>, IAuthen
         if (account.ResetPasswordOtp != otp)
             throw new BadRequestException("OTP code is incorrect.");
         
-        if (account.ResetPasswordOtpexpiry < DateTime.UtcNow)
+        if (account.ResetPasswordOtpexpiry < VietNamTimeUtil.GetVietnamTime())
             throw new BadRequestException("OTP code has expired.");
 
         // Cập nhật mật khẩu mới

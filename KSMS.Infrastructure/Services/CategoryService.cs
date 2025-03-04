@@ -11,6 +11,7 @@ using KSMS.Domain.Dtos.Responses.CompetitionCategory;
 using KSMS.Domain.Enums;
 using KSMS.Domain.Exceptions;
 using KSMS.Domain.Pagination;
+using KSMS.Infrastructure.Utils;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 
@@ -106,7 +107,7 @@ namespace KSMS.Infrastructure.Services
                         RefereeAccountId = r.RefereeAccountId,
                         CompetitionCategoryId = category.Id,
                         RoundType = rt,
-                        AssignedAt = DateTime.UtcNow,
+                        AssignedAt = VietNamTimeUtil.GetVietnamTime(),
                         AssignedBy = GetIdFromJwt()
                     })).ToList();
                 await _unitOfWork.GetRepository<RefereeAssignment>().InsertRangeAsync(refereeAssignments);

@@ -1,6 +1,7 @@
 using KSMS.API.Configuration;
 using KSMS.API.Middlewares;
 using System.Text.Json.Serialization;
+using KSMS.Application.Extensions;
 using KSMS.Domain.Common;
 using Net.payOS;
 using KSMS.Application.Repositories;
@@ -10,6 +11,9 @@ using KSMS.Infrastructure.Services;
 using KSMS.Infrastructure.Hubs;
 using KSMS.Application.Services;
 using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.OpenApi.Any;
+using Microsoft.OpenApi.Models;
+using Swashbuckle.AspNetCore.SwaggerGen;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -24,6 +28,10 @@ builder.Services.AddControllers().AddJsonOptions(options =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddHostedService<ShowStatusBackgroundService>();
 builder.Services.AddSwaggerGen();
+// builder.Services.AddSwaggerGen(options =>
+// {
+//     options.SchemaFilter<EnumSchemaFilter>();
+// });
 builder.Services.AddHttpContextAccessor();
 builder.ConfigureAutofacContainer();
 builder.Services.AddCors(options =>
@@ -81,3 +89,22 @@ app.MapHub<ScoreHub>("/scoreHub");
 app.MapHub<NotificationHub>("/notificationHub");
 
 await app.RunAsync();
+
+public class EnumSchemaFilter : ISchemaFilter
+{
+    public void Apply(OpenApiSchema schema, SchemaFilterContext context)
+    {
+        if (context.Type.IsEnum)
+        {
+            var enumDescriptions = Enum.GetValues(context.Type)
+                .Cast<Enum>()
+                .ToDictionary(e => e.ToString(), e => e.GetDescription());
+
+            schema.Enum.Clear();
+            foreach (var description in enumDescriptions.Values)
+            {
+                schema.Enum.Add(new OpenApiString(description));
+            }
+        }
+    }
+}
