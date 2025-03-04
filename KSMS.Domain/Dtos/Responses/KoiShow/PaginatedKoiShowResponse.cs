@@ -40,6 +40,10 @@ namespace KSMS.Domain.Dtos.Responses.KoiShow
         public decimal RegistrationFee { get; set; }
 
         public string? Status { get; set; }
+        
+        public DateTime CreatedAt { get; set; }
+        
+        public DateTime? UpdatedAt { get; set; }
 
         public virtual ICollection<ShowStatusResponse> ShowStatuses { get; set; } = new List<ShowStatusResponse>();
 
