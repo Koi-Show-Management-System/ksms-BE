@@ -18,7 +18,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Dtos\Responses\ShowStaff\" />
     <Folder Include="Entities\" />
   </ItemGroup>
 

@@ -62,7 +62,7 @@ public class TicketOrderService : BaseService<TicketOrder>, ITicketOrderService
             FullName = createTicketOrderRequest.FullName,
             Email = createTicketOrderRequest.Email,
             AccountId = accountId,
-            OrderDate = DateTime.UtcNow,
+            OrderDate = VietNamTimeUtil.GetVietnamTime(),
             TransactionCode = transactionCode.ToString(),
             TotalAmount = totalAmount,
             PaymentMethod = PaymentMethod.PayOs.ToString(),

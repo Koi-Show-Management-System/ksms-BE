@@ -12,7 +12,11 @@ using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using KSMS.Domain.Enums;
 using KSMS.Infrastructure.Database;
+using KSMS.Infrastructure.Utils;
+using ShowStatus = KSMS.Domain.Entities.ShowStatus;
+
 namespace KSMS.Infrastructure.Services
 {
     public class ShowStatusBackgroundService : BackgroundService
@@ -28,52 +32,59 @@ namespace KSMS.Infrastructure.Services
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            _logger.LogInformation("ShowStatusBackgroundService started.");
+            _logger.LogInformation("ShowStatusBackgroundService bắt đầu chạy.");
 
             while (!stoppingToken.IsCancellationRequested)
             {
                 try
                 {
-                    using (var scope = _scopeFactory.CreateScope())
+                    using var scope = _scopeFactory.CreateScope();
+                    var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork<KoiShowManagementSystemContext>>();
+                    var showStatusRepository = unitOfWork.GetRepository<ShowStatus>();
+                    var koiShowRepository = unitOfWork.GetRepository<KoiShow>();
+                    var currentTime = VietNamTimeUtil.GetVietnamTime();
+
+                    var showStatuses = await showStatusRepository.GetListAsync();
+                    foreach (var status in showStatuses)
                     {
-                     
-                        var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork<KoiShowManagementSystemContext>>();
-                        var showStatusRepository = unitOfWork.GetRepository<ShowStatus>();
+                        var isNowActive = currentTime >= status.StartDate && currentTime <= status.EndDate;
 
-                        var currentTime = DateTime.UtcNow;
-
-                        var showStatuses = await showStatusRepository.GetListAsync(
-                            predicate: s => s.IsActive && (s.StartDate <= currentTime || s.EndDate <= currentTime)
-                        );
-
-                        foreach (var status in showStatuses)
+                        if (status.IsActive != isNowActive)
                         {
-                            if (status.StartDate <= currentTime && status.EndDate > currentTime)
+                            status.IsActive = isNowActive; 
+                            showStatusRepository.UpdateAsync(status);
+                            if (isNowActive)
                             {
-                                status.StatusName = "Ongoing";
-                            }
-                            else if (status.EndDate <= currentTime)
-                            {
-                                status.StatusName = "Completed";
-                                status.IsActive = false;
-                            }
-                             showStatusRepository.UpdateAsync(status);
-                        }
+                                var koiShow = await koiShowRepository.SingleOrDefaultAsync(predicate: x => x.Id == status.KoiShowId);
+                                var showProgress = Enum.Parse<ShowProgress>(status.StatusName);
+                            
+                                var newStatus = showProgress switch
+                                {
+                                    ShowProgress.RegistrationOpen or ShowProgress.RegistrationClosed => "upcoming",
+                                    ShowProgress.Finished => "finished",
+                                    _ => "in progress"
+                                };
 
-                        if (showStatuses.Any())
-                        {
-                            await unitOfWork.CommitAsync();
-                            _logger.LogInformation($"Updated {showStatuses.Count} show statuses.");
+                                if (koiShow.Status != newStatus)
+                                {
+                                    koiShow.Status = newStatus; 
+                                    koiShowRepository.UpdateAsync(koiShow);
+                                }
+                            }
                         }
+                    }
+
+                    if (showStatuses.Any())
+                    {
+                        await unitOfWork.CommitAsync();
                     }
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError($"Error in ShowStatusBackgroundService: {ex.Message}");
+                    _logger.LogError($"Lỗi trong ShowStatusBackgroundService: {ex.Message}");
                 }
 
-                
-                await Task.Delay(TimeSpan.FromDays(1), stoppingToken);
+                await Task.Delay(TimeSpan.FromHours(2), stoppingToken);
             }
         }
     }

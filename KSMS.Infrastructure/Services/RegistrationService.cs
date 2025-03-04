@@ -109,9 +109,9 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
                 RegistrationId = registration.Id,
                 RoundId = roundId,
                 TankId = selectedTank.Id,
-                CheckInTime = DateTime.UtcNow,
+                CheckInTime = VietNamTimeUtil.GetVietnamTime(),
                 Status = "Assigned",
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = VietNamTimeUtil.GetVietnamTime()
             }).ToList();
 
             await regisRoundRepository.InsertRangeAsync(newRegisRounds);
@@ -194,9 +194,9 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
                         RegistrationId = fish.Id,
                         RoundId = round.Id,
                         TankId = selectedTank.Id,
-                        CheckInTime = DateTime.UtcNow,
+                        CheckInTime = VietNamTimeUtil.GetVietnamTime(),
                         Status = "Assigned",
-                        CreatedAt = DateTime.UtcNow
+                        CreatedAt = VietNamTimeUtil.GetVietnamTime()
                     };
 
                     await regisRoundRepository.InsertAsync(newRegisRound);
@@ -406,7 +406,7 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
         }
         if (registration.Status == RegistrationStatus.Confirmed.ToString().ToLower())
         {
-            registration.ApprovedAt = DateTime.UtcNow;
+            registration.ApprovedAt = VietNamTimeUtil.GetVietnamTime();
             
             // Generate QR code
             var qrCodeData = QrcodeUtil.GenerateQrCode(registration.RegistrationPayment.Id);
@@ -414,7 +414,7 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
                 FileUtils.ConvertBase64ToFile(qrCodeData), 
                 "qrCode/"
             );
-            registration.ApprovedAt = DateTime.UtcNow;
+            registration.ApprovedAt = VietNamTimeUtil.GetVietnamTime();
             
             _unitOfWork.GetRepository<Registration>().UpdateAsync(registration);
             _unitOfWork.GetRepository<RegistrationPayment>().UpdateAsync(registration.RegistrationPayment);
@@ -459,7 +459,7 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
         RegistrationPayment registrationPayment;
         if (registration.RegistrationPayment != null)
         {
-            registration.RegistrationPayment.PaymentDate = DateTime.UtcNow;
+            registration.RegistrationPayment.PaymentDate = VietNamTimeUtil.GetVietnamTime();
             registration.RegistrationPayment.TransactionCode = registrationCode.ToString();
             registration.RegistrationPayment.Status = RegistrationPaymentStatus.Pending.ToString().ToLower();
             registration.RegistrationPayment.PaidAmount = registration.RegistrationFee;
@@ -475,7 +475,7 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
                 Status = RegistrationPaymentStatus.Pending.ToString().ToLower(),
                 PaymentMethod = PaymentMethod.PayOs.ToString(),
                 PaidAmount = registration.RegistrationFee,
-                PaymentDate = DateTime.UtcNow
+                PaymentDate = VietNamTimeUtil.GetVietnamTime()
             };
             await _unitOfWork.GetRepository<RegistrationPayment>().InsertAsync(registrationPayment);
             

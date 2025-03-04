@@ -8,6 +8,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using KSMS.Infrastructure.Utils;
 using Microsoft.EntityFrameworkCore.Storage;
 
 namespace KSMS.Infrastructure.Repositories
@@ -77,15 +78,24 @@ namespace KSMS.Infrastructure.Repositories
                 if (entityEntry.State == EntityState.Added)
                 {
                     entityEntry.Property(x => x.CreatedAt)
-                        .CurrentValue = DateTime.UtcNow;
+                        .CurrentValue = VietNamTimeUtil.GetVietnamTime();
                 }
 
-                if (entityEntry.State == EntityState.Modified 
-                    && entityEntry.Properties.Any(p => p.IsModified 
-                        && p.Metadata.Name != nameof(BaseEntity.UpdatedAt)))
+                if (entityEntry.State == EntityState.Modified)
                 {
-                    entityEntry.Property(x => x.UpdatedAt)
-                        .CurrentValue = DateTime.UtcNow;
+                    // Chỉ lấy các scalar properties bị thay đổi (không bao gồm navigation properties)
+                    var modifiedProperties = entityEntry.Properties
+                        .Where(p => p.IsModified 
+                                    && p.Metadata.ClrType.IsPrimitive  // Chỉ lấy thuộc tính kiểu đơn giản
+                                    && p.Metadata.Name != nameof(BaseEntity.UpdatedAt))
+                        .ToList();
+
+                    // Nếu có thay đổi trong scalar properties, cập nhật UpdatedAt
+                    if (modifiedProperties.Any())
+                    {
+                        entityEntry.Property(x => x.UpdatedAt)
+                            .CurrentValue = VietNamTimeUtil.GetVietnamTime();
+                    }
                 }
             }
         }
