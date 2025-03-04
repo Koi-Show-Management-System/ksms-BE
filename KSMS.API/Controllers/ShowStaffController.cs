@@ -20,7 +20,7 @@ public class ShowStaffController : ControllerBase
     [HttpGet("get-page/{showId:guid}")]
     public async Task<ActionResult<ApiResponse<object>>> GetPageStaffAndManager(
         Guid showId,
-        [FromQuery] RoleName role,
+        [FromQuery] RoleName? role,
         [FromQuery] int page = 1,
         [FromQuery] int size = 10)
     {

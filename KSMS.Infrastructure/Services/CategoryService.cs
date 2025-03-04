@@ -129,7 +129,9 @@ namespace KSMS.Infrastructure.Services
                     .Include(x => x.RefereeAssignments)
                         .ThenInclude(x => x.RefereeAccount)
                     .Include(x => x.RefereeAssignments)
-                        .ThenInclude(x => x.AssignedByNavigation));
+                        .ThenInclude(x => x.AssignedByNavigation)
+                    .Include(x => x.Rounds));
+                
             if (category == null)
             {
                 throw new NotFoundException("Category not found");
