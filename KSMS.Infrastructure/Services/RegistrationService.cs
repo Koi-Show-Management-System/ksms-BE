@@ -17,6 +17,7 @@ using Net.payOS;
 using Net.payOS.Types;
 using System.Security.Claims;
 using System.Linq.Expressions;
+using Hangfire;
 using KSMS.Application.Extensions;
 using KSMS.Domain.Common;
 using KSMS.Domain.Pagination;
@@ -30,14 +31,18 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
     private readonly IFirebaseService _firebaseService;
     private readonly INotificationService _notificationService;
     private readonly ITankService _tankService;
+    private readonly IBackgroundJobClient _backgroundJobClient;
+    private readonly IEmailService _emailService;
     public RegistrationService(IUnitOfWork<KoiShowManagementSystemContext> unitOfWork, ILogger<RegistrationService> logger, 
-        IHttpContextAccessor httpContextAccessor, PayOS payOs, IMediaService mediaService, IFirebaseService firebaseService, INotificationService notificationService, ITankService tankService) : base(unitOfWork, logger, httpContextAccessor)
+        IHttpContextAccessor httpContextAccessor, PayOS payOs, IMediaService mediaService, IFirebaseService firebaseService, INotificationService notificationService, ITankService tankService, IBackgroundJobClient backgroundJobClient, IEmailService emailService) : base(unitOfWork, logger, httpContextAccessor)
     {
         _payOs = payOs;
         _mediaService = mediaService;
         _firebaseService = firebaseService;
         _notificationService = notificationService;
         _tankService = tankService;
+        _backgroundJobClient = backgroundJobClient;
+        _emailService = emailService;
     }
     public async Task AssignMultipleFishesToTankAndRound(Guid roundId, List<Guid> registrationIds)
     {
@@ -291,20 +296,20 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
                 await _mediaService.UploadRegistrationVideo(createRegistrationRequest.RegistrationVideos,
                     registration.Id);
             }
-            var staffList = await _unitOfWork.GetRepository<ShowStaff>()
-                .GetListAsync(predicate: s => s.KoiShowId == koiShow.Id,
-                    include: query => query.Include(s => s.Account));
-
-            // Gửi thông báo cho tất cả staff
-            foreach (var staff in staffList)
-            {
-                await _notificationService.SendNotification(
-                    staff.Account.Id,
-                    "New Registration",
-                    $"New registration from {registration.Account.FullName} for koi {koiProfile.Name}",
-                    NotificationType.NewRegistration
-                );
-            }
+            // var staffList = await _unitOfWork.GetRepository<ShowStaff>()
+            //     .GetListAsync(predicate: s => s.KoiShowId == koiShow.Id,
+            //         include: query => query.Include(s => s.Account));
+            //
+            // // Gửi thông báo cho tất cả staff
+            // foreach (var staff in staffList)
+            // {
+            //     await _notificationService.SendNotification(
+            //         staff.Account.Id,
+            //         "New Registration",
+            //         $"New registration from {registration.Account.FullName} for koi {koiProfile.Name}",
+            //         NotificationType.NewRegistration
+            //     );
+            // }
 
             return new
             {
@@ -359,14 +364,8 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
         var registration = await _unitOfWork.GetRepository<Registration>()
             .SingleOrDefaultAsync(
                 predicate: r => r.Id == registrationId,
-                include: query => query
-                    .Include(r => r.Account)
-                    .Include(r => r.KoiMedia)
-                    .Include(r => r.KoiProfile)
-                    .ThenInclude(r => r.Variety)
-                    .Include(r => r.CompetitionCategory)
-                    .Include(r => r.RegistrationPayment)
-                    .Include(r => r.KoiShow));
+                include:
+                query => query.Include(r => r.RegistrationPayment));
         if (registration is null)
         {
             throw new NotFoundException("Registration is not existed");
@@ -395,14 +394,7 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
         {
             _unitOfWork.GetRepository<Registration>().UpdateAsync(registration);
             await _unitOfWork.CommitAsync();
-            var sendMail = MailUtil.SendEmail(registration.Account.Email,
-                "KOI SHOW - Thông báo từ chối đơn đăng ký",
-                MailUtil.ContentMailUtil.RejectRegistration(registration), "");
-                
-            if (!sendMail)
-            {
-                throw new BadRequestException("Error sending rejection email.");
-            }
+            _backgroundJobClient.Enqueue(() => _emailService.SendRegistrationRejectionEmail(registrationId));
         }
         if (registration.Status == RegistrationStatus.Confirmed.ToString().ToLower())
         {
@@ -420,14 +412,7 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
             _unitOfWork.GetRepository<RegistrationPayment>().UpdateAsync(registration.RegistrationPayment);
             await _unitOfWork.CommitAsync();
 
-            var sendMail = MailUtil.SendEmail(registration.Account.Email,
-                MailUtil.ContentMailUtil.Title_ApproveForRegisterSh,
-                MailUtil.ContentMailUtil.ConfirmCategoryAssignment(registration), "");
-                
-            if (!sendMail)
-            {
-                throw new BadRequestException("Error sending confirmation email.");
-            }
+            _backgroundJobClient.Enqueue(() => _emailService.SendRegistrationConfirmationEmail(registrationId));
         }
         
     }
@@ -490,7 +475,7 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
         );
         items.Add(item);
 
-        var baseUrl = $"{AppConfig.AppSetting.BaseUrl}/api/registration" + "/call-back";
+        var baseUrl = $"{AppConfig.AppSetting.BaseUrl}/api/v1/registration" + "/call-back";
         var url = $"{baseUrl}?registrationPaymentId={registrationPayment.Id}";
         
         var paymentData = new PaymentData(

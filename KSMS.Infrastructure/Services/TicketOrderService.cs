@@ -16,6 +16,7 @@ using Net.payOS;
 using Net.payOS.Types;
 using System.Linq.Expressions;
 using System.Security.Claims;
+using Hangfire;
 using KSMS.Domain.Common;
 using KSMS.Domain.Pagination;
 using Mapster;
@@ -26,12 +27,14 @@ public class TicketOrderService : BaseService<TicketOrder>, ITicketOrderService
 {
     private readonly PayOS _payOs;
     private readonly IFirebaseService _firebaseService;
-    private readonly IHttpContextAccessor _httpContextAccessor;
-    public TicketOrderService(IUnitOfWork<KoiShowManagementSystemContext> unitOfWork, ILogger<TicketOrder> logger, IHttpContextAccessor httpContextAccessor, PayOS payOs, IFirebaseService firebaseService) : base(unitOfWork, logger, httpContextAccessor)
+    private readonly IBackgroundJobClient _backgroundJobClient;
+    private readonly IEmailService _emailService;
+    public TicketOrderService(IUnitOfWork<KoiShowManagementSystemContext> unitOfWork, ILogger<TicketOrder> logger, IHttpContextAccessor httpContextAccessor, PayOS payOs, IFirebaseService firebaseService, IBackgroundJobClient backgroundJobClient, IEmailService emailService) : base(unitOfWork, logger, httpContextAccessor)
     {
         _payOs = payOs;
         _firebaseService = firebaseService;
-        _httpContextAccessor = httpContextAccessor;
+        _backgroundJobClient = backgroundJobClient;
+        _emailService = emailService;
     }
 
     public async Task<CheckOutTicketResponse> CreateTicketOrder(CreateTicketOrderRequest createTicketOrderRequest)
@@ -95,7 +98,7 @@ public class TicketOrderService : BaseService<TicketOrder>, ITicketOrderService
             var item = new ItemData(x.TicketType.Name, x.Quantity, (int)x.UnitPrice);
             items.Add(item);
         }
-        var baseUrl = $"{AppConfig.AppSetting.BaseUrl}/api/ticket-order" + "/call-back";
+        var baseUrl = $"{AppConfig.AppSetting.BaseUrl}/api/v1/ticket-order" + "/call-back";
         var url = $"{baseUrl}?ticketOrderId={ticketOrder.Id}";
         var paymentData = new PaymentData(transactionCode, (int)(ticketOrder.TotalAmount), "Buy Ticket", items
             , url, url);
@@ -114,7 +117,6 @@ public class TicketOrderService : BaseService<TicketOrder>, ITicketOrderService
             include: query => query
                 .Include(x => x.TicketOrderDetails)
                     .ThenInclude(x => x.TicketType)
-                        .ThenInclude(x => x.KoiShow)
         );
 
         if (order == null)
@@ -169,23 +171,7 @@ public class TicketOrderService : BaseService<TicketOrder>, ITicketOrderService
             await _unitOfWork.GetRepository<Ticket>().InsertRangeAsync(tickets);
             _unitOfWork.GetRepository<TicketOrder>().UpdateAsync(order);
             await _unitOfWork.CommitAsync();
-            var orderForMail = order;
-            foreach (var detail in orderForMail.TicketOrderDetails)
-            {
-                detail.Tickets = tickets.Where(t => t.TicketOrderDetailId == detail.Id).ToList();
-            }
-
-            var sendMail = MailUtil.SendEmail(
-                order.Email,
-                "KOI SHOW - Xác nhận đơn hàng vé thành công",
-                MailUtil.ContentMailUtil.ConfirmTicketOrder(orderForMail),
-                ""
-            );
-
-            if (!sendMail)
-            {
-                throw new BadRequestException("Error sending confirmation email");
-            }
+            _backgroundJobClient.Enqueue(() => _emailService.SendConfirmationTicket(ticketOrderId));
         }
         else
         {
@@ -260,4 +246,6 @@ public class TicketOrderService : BaseService<TicketOrder>, ITicketOrderService
             include: query => query.Include(x => x.CheckedInByNavigation));
         return tickets.Adapt<List<GetTicketByOrderDetailResponse>>();
     }
+
+    
 }

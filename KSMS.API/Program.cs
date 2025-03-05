@@ -1,6 +1,7 @@
 using KSMS.API.Configuration;
 using KSMS.API.Middlewares;
 using System.Text.Json.Serialization;
+using Hangfire;
 using KSMS.Application.Extensions;
 using KSMS.Domain.Common;
 using Net.payOS;
@@ -57,6 +58,12 @@ builder.Services.AddSignalR();
 
 builder.Services.AddMvc()
                 .AddJsonOptions(x => x.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles);
+builder.Services.AddHangfire(configuration => configuration
+    .SetDataCompatibilityLevel(CompatibilityLevel.Version_170)
+    .UseSimpleAssemblyNameTypeSerializer()
+    .UseRecommendedSerializerSettings()
+    .UseSqlServerStorage(builder.Configuration.GetConnectionString("DefaultConnection")));
+builder.Services.AddHangfireServer();
 ConfigureFireBase.AddFirebase();
 var app = builder.Build();
 
@@ -72,7 +79,7 @@ app.UseSwaggerUI(c =>
 });
 
 app.UseCors("AllowAll");
-
+app.UseHangfireDashboard("/hangfire");
 app.UseMiddleware<GlobalExceptionMiddleware>();
 
 app.UseMiddleware<ConfirmationTokenMiddleware>();
