@@ -75,15 +75,10 @@ builder.Services.AddHangfireServer(options =>
 ConfigureFireBase.AddFirebase();
 var app = builder.Build();
 
-// BỎ đoạn if (app.Environment.IsDevelopment()) và thay bằng đoạn sau:
-// Configure the HTTP request pipeline.
-// Bật Swagger cho cả môi trường Production và Development
 app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
     c.SwaggerEndpoint("/swagger/v1/swagger.json", "KSMS API v1");
-    //c.DocExpansion(Swashbuckle.AspNetCore.SwaggerUI.DocExpansion.Full);
-    // c.RoutePrefix = string.Empty; // Uncomment nếu muốn đặt Swagger làm trang chủ
 });
 
 app.UseCors("AllowAll");

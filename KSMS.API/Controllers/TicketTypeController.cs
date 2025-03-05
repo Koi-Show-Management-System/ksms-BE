@@ -25,14 +25,14 @@ public class TicketTypeController : ControllerBase
     }
     [Authorize(Roles = "Admin, Manager, Staff")]
     [HttpPut("{id:guid}")]
-    public async Task<ActionResult<ApiResponse<object>>> UpdateRule(Guid id, [FromBody] UpdateTicketTypeRequestV2 request)
+    public async Task<ActionResult<ApiResponse<object>>> UpdateTicketType(Guid id, [FromBody] UpdateTicketTypeRequestV2 request)
     {
         await _ticketTypeService.UpdateTicketTypeAsync(id, request);
         return Ok(ApiResponse<object>.Success(null, "Update successfully"));
     }
     [Authorize(Roles = "Admin, Manager, Staff")]
     [HttpDelete("{id:guid}")]
-    public async Task<ActionResult<ApiResponse<object>>> DeleteRule(Guid id)
+    public async Task<ActionResult<ApiResponse<object>>> DeleteTicketType(Guid id)
     {
         await _ticketTypeService.DeleteTicketTypeAsync(id);
         return Ok(ApiResponse<object>.Success(null, "Delete successfully"));
