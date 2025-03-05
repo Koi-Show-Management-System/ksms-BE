@@ -3,5 +3,5 @@
 public enum ShowStatus
 {
     Draft,
-    Publish,
+    Published,
 }
