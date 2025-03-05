@@ -1,0 +1,53 @@
+﻿using KSMS.Application.Repositories;
+using KSMS.Application.Services;
+using KSMS.Domain.Dtos.Requests.Sponsor;
+using KSMS.Domain.Entities;
+using KSMS.Domain.Exceptions;
+using KSMS.Infrastructure.Database;
+using Mapster;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
+
+namespace KSMS.Infrastructure.Services;
+
+public class SponsorService : BaseService<SponsorService>, ISponsorService
+{
+    public SponsorService(IUnitOfWork<KoiShowManagementSystemContext> unitOfWork, ILogger<SponsorService> logger, IHttpContextAccessor httpContextAccessor) : base(unitOfWork, logger, httpContextAccessor)
+    {
+    }
+
+    public async Task CreateSponsorAsync(Guid koiShowId, CreateSponsorRequest request)
+    {
+        var show = await _unitOfWork.GetRepository<KoiShow>().SingleOrDefaultAsync(predicate: x => x.Id == koiShowId);
+        if (show == null)
+        {
+            throw new NotFoundException("Show not found");
+        }
+        var sponsor = request.Adapt<Sponsor>();
+        sponsor.KoiShowId = koiShowId;
+        await _unitOfWork.GetRepository<Sponsor>().InsertAsync(sponsor);
+    }
+
+    public async Task UpdateSponsorAsync(Guid id, UpdateSponsorRequestV2 request)
+    {
+        var sponsor = await _unitOfWork.GetRepository<Sponsor>().SingleOrDefaultAsync(predicate: x => x.Id == id);
+        if (sponsor == null)
+        {
+            throw new NotFoundException("Sponsor not found");
+        }
+        request.Adapt(sponsor);
+        _unitOfWork.GetRepository<Sponsor>().UpdateAsync(sponsor);
+        await _unitOfWork.CommitAsync();
+    }
+
+    public async Task DeleteSponsorAsync(Guid id)
+    {
+        var sponsor = await _unitOfWork.GetRepository<Sponsor>().SingleOrDefaultAsync(predicate: x => x.Id == id);
+        if (sponsor == null)
+        {
+            throw new NotFoundException("Sponsor not found");
+        }
+        _unitOfWork.GetRepository<Sponsor>().DeleteAsync(sponsor);
+        await _unitOfWork.CommitAsync();
+    }
+}
