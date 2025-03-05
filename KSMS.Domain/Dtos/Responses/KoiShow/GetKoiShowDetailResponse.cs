@@ -41,6 +41,8 @@ public class GetKoiShowDetailResponse
         
     public DateTime? UpdatedAt { get; set; }
 
+    public List<string> Criteria { get; set; } = [];
+
     public ICollection<RuleGetKoiShowDetailResponse> ShowRules { get; set; } = [];
 
     //public virtual ICollection<ShowStaff> ShowStaffs { get; set; } = new List<ShowStaff>();
