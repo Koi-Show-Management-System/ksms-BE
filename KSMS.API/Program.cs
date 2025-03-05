@@ -67,10 +67,10 @@ builder.Services.AddHangfireServer(options =>
 {
     options.WorkerCount = 1;
     options.Queues = ["default"];
-    options.ServerTimeout = TimeSpan.FromMinutes(1);
-    options.ShutdownTimeout = TimeSpan.FromSeconds(15);
-    options.ServerCheckInterval = TimeSpan.FromSeconds(30);
-    options.SchedulePollingInterval = TimeSpan.FromSeconds(30);
+    options.ServerTimeout = TimeSpan.FromMinutes(5);
+    options.ShutdownTimeout = TimeSpan.FromMinutes(2);
+    options.ServerCheckInterval = TimeSpan.FromMinutes(2);
+    options.SchedulePollingInterval = TimeSpan.FromMinutes(2);
 });
 ConfigureFireBase.AddFirebase();
 var app = builder.Build();
