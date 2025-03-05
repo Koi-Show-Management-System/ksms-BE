@@ -1,6 +1,6 @@
 ﻿namespace KSMS.Domain.Dtos.Requests.Ticket;
 
-public class UpdateTicketRequestV2
+public class UpdateTicketTypeRequestV2
 {
     public string Name { get; set; } = null!;
 

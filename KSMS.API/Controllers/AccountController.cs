@@ -23,7 +23,7 @@ namespace KSMS.API.Controllers
             _firebaseService = firebaseService;
         }
         [HttpPatch("{id:guid}")]
-        public async Task<ActionResult<ApiResponse<object>>> ToggleUserStatus(Guid id, AccountStatus status)
+        public async Task<ActionResult<ApiResponse<object>>> ToggleUserStatus(Guid id, [FromQuery]AccountStatus status)
         {
             var updatedUser = await _accountService.UpdateStatus(id, status);
             var statusMessage = status.ToString().ToLower();

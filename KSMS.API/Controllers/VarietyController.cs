@@ -15,7 +15,7 @@ public class VarietyController : ControllerBase
         _varietyService = varietyService;
     }
     [HttpPost("create")]
-    public async Task<ActionResult<ApiResponse<object>>> CreateVariety([FromForm]CreateVarietyRequest createVarietyRequest)
+    public async Task<ActionResult<ApiResponse<object>>> CreateVariety([FromBody]CreateVarietyRequest createVarietyRequest)
     {
         await _varietyService.CreateVariety(createVarietyRequest);
         return StatusCode(201, ApiResponse<object>.Created(null, "Create successfully"));
