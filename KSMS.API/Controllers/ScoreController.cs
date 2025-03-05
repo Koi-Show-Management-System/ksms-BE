@@ -21,13 +21,13 @@ namespace KSMS.API.Controllers
         {
             _scoreService = scoreService;
         }
-        [Route("get-all-referee-score")]
-        [HttpGet]
-        public async Task<ActionResult<ApiResponse<object>>> GetPagedScores([FromQuery] int page = 1, [FromQuery] int size = 10)
-        {
-            var pagedScores = await _scoreService.GetPagedScoresAsync(page, size);
-            return Ok(ApiResponse<object>.Success(pagedScores, "Get the list of score successfully"));
-        }
+        //[Route("get-all-referee-score")]
+        //[HttpGet]
+        //public async Task<ActionResult<ApiResponse<object>>> GetPagedScores([FromQuery] int page = 1, [FromQuery] int size = 10)
+        //{
+        //    var pagedScores = await _scoreService.GetPagedScoresAsync(page, size);
+        //    return Ok(ApiResponse<object>.Success(pagedScores, "Get the list of score successfully"));
+        //}
 
         [Route("create-score")]
         //   [Authorize(Roles = "Referee")] 

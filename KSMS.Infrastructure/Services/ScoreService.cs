@@ -39,7 +39,7 @@ namespace KSMS.Infrastructure.Services
                 include: query => query
                     .Include(s => s.ScoreDetailErrors)
                     .Include(s => s.RegistrationRound)
-                        .ThenInclude(s => s.Round),
+                     .Include(s => s.RegistrationRound),
                 page: page,
                 size: size
             );
@@ -160,8 +160,7 @@ namespace KSMS.Infrastructure.Services
                     RegistrationRoundsId = request.RegistrationRoundId,
                     TotalScore = finalScore,
                     Status = finalStatus,
-                    IsPublic = false,
-                    CreatedAt = DateTime.UtcNow
+                    IsPublic = false
                 };
 
                 await roundResultRepository.InsertAsync(roundResult);
