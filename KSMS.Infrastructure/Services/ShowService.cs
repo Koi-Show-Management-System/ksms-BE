@@ -55,12 +55,20 @@ namespace KSMS.Infrastructure.Services
                 include: query => query.Include(x => x.ShowRules)
                     .Include(x => x.ShowStatuses)
                     .Include(x => x.Sponsors)
-                    .Include(x => x.TicketTypes));
+                    .Include(x => x.TicketTypes)
+                    .Include(x => x.CompetitionCategories)
+                    .ThenInclude(c => c.CriteriaCompetitionCategories)
+                    .ThenInclude(cc => cc.Criteria));
             if (show is null)
             {
                 throw new NotFoundException("Show is not existed");
             }
-            return show.Adapt<GetKoiShowDetailResponse>();
+            var response = show.Adapt<GetKoiShowDetailResponse>();
+            var criteria = show.CompetitionCategories
+                .SelectMany(c => c.CriteriaCompetitionCategories
+                    .Select(cc => cc.Criteria.Name)).Distinct().ToList();
+            response.Criteria = criteria.ToList();
+            return response;
         }
 
         // private async Task UpdateShowRules(KoiShow show, List<UpdateShowRuleRequestV2> newRules)
