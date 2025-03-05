@@ -56,7 +56,7 @@ namespace KSMS.API.Controllers
 
 
         [HttpPost("create")]
-   //     [Authorize(Roles = "Member")]
+        [Authorize(Roles = "Member")]
         public async Task<ActionResult<ApiResponse<object>>> CreateRegistration([FromForm]CreateRegistrationRequest createRegistrationRequest)
         {
             var registration = await _registrationService.CreateRegistration(createRegistrationRequest);
@@ -65,9 +65,9 @@ namespace KSMS.API.Controllers
 
 
 
-        [HttpPost("checkout")]
+        [HttpPost("checkout/{registrationId:guid}")]
         [Authorize(Roles = "Member")]
-        public async Task<ActionResult<ApiResponse<CheckOutRegistrationResponse>>> CheckOut([FromQuery] Guid registrationId)
+        public async Task<ActionResult<ApiResponse<CheckOutRegistrationResponse>>> CheckOut(Guid registrationId)
         {
             var result = await _registrationService.CheckOut(registrationId);
             return StatusCode(201, ApiResponse<CheckOutRegistrationResponse>.Created(result, "Create payment successfully"));
@@ -89,7 +89,7 @@ namespace KSMS.API.Controllers
 
         [HttpPut("{id:guid}")]
         [Authorize(Roles = "Staff")]
-        public async Task<ActionResult<ApiResponse<object>>> ToggleUserStatus(Guid id, RegistrationStatus status)
+        public async Task<ActionResult<ApiResponse<object>>> ToggleUserStatus(Guid id, [FromQuery] RegistrationStatus status)
         {
             await _registrationService.UpdateStatusForRegistration(id, status);
 
@@ -99,7 +99,7 @@ namespace KSMS.API.Controllers
 
         [HttpGet("get-paging-registration-for-current-account")]
         [Authorize(Roles = "Staff, Admin, Manager, Member")]
-        public async Task<ActionResult<ApiResponse<object>>> GetAllRegistration([FromQuery]RegistrationFilter filter, [FromQuery]int page, [FromQuery]int size)
+        public async Task<ActionResult<ApiResponse<object>>> GetAllRegistration([FromQuery]RegistrationFilter filter, [FromQuery]int page = 1, [FromQuery]int size = 10)
         {
             var registrations = await _registrationService.GetAllRegistrationForCurrentMember(filter, page, size);
             return Ok(ApiResponse<object>.Success(registrations, "Get List successfully"));
