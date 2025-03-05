@@ -5,6 +5,9 @@ using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Threading.Tasks;
 using KSMS.Domain.Dtos;
+using KSMS.Domain.Dtos.Responses.Score;
+using Microsoft.AspNetCore.Authorization;
+using KSMS.Domain.Dtos.Requests.ScoreDetail;
 
 namespace KSMS.API.Controllers
 {
@@ -18,24 +21,39 @@ namespace KSMS.API.Controllers
         {
             _scoreService = scoreService;
         }
-        [Route("get-all-referee-score")]
-        [HttpGet]
-        public async Task<ActionResult<ApiResponse<object>>> GetPagedScores([FromQuery] int page = 1, [FromQuery] int size = 10)
-        {
-            var pagedScores = await _scoreService.GetPagedScoresAsync(page, size);
-            return Ok(ApiResponse<object>.Success(pagedScores, "Get the list of score successfully"));
-        }
+        //[Route("get-all-referee-score")]
+        //[HttpGet]
+        //public async Task<ActionResult<ApiResponse<object>>> GetPagedScores([FromQuery] int page = 1, [FromQuery] int size = 10)
+        //{
+        //    var pagedScores = await _scoreService.GetPagedScoresAsync(page, size);
+        //    return Ok(ApiResponse<object>.Success(pagedScores, "Get the list of score successfully"));
+        //}
 
         [Route("create-score")]
+        //   [Authorize(Roles = "Referee")] 
         [HttpPost]
         public async Task<ActionResult<ApiResponse<object>>> CreateScore([FromBody] CreateScoreDetailRequest request)
         {
-            if (!ModelState.IsValid)
-                return BadRequest(ApiResponse<object>.Fail(ModelState.ToString()));
-
-            var response = await _scoreService.CreateScoreAsync(request);
-            return StatusCode(201, ApiResponse<object>.Created(response, "Create score successfully"));
+            
+             await _scoreService.CreateScoreAsync(request);
+            return StatusCode(201, ApiResponse<object>.Created(null, "Create score successfully"));
         }
-
+        /// <summary>
+        /// Chấm điểm vòng loại (trọng tài chỉ chọn `Pass` hoặc `Fail`).
+        /// </summary>
+        [HttpPost("elimination")]
+     //   [Authorize(Roles = "Referee")] 
+        public async Task<ActionResult<ApiResponse<object>>> CreateEliminationScore([FromBody] CreateEliminationScoreRequest request)
+        {
+            try
+            {
+                await _scoreService.CreateEliminationScoreAsync(request);
+                return Ok(ApiResponse<ScoreDetailResponse>.Success(null, "Elimination score submitted successfully"));
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ApiResponse<ScoreDetailResponse>.Fail(ex.Message));
+            }
+        }
     }
 }

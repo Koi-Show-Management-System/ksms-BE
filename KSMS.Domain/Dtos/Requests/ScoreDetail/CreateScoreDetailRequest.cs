@@ -8,12 +8,12 @@ namespace KSMS.Domain.Dtos.Requests.Score
     public class CreateScoreDetailRequest
     {
         public Guid RefereeAccountId { get; set; }
-        public Guid RegistrationRoundId { get; set; } 
-        public decimal InitialScore { get; set; }
+        public Guid RegistrationRoundId { get; set; }
+        public decimal InitialScore { get; set; } = 100; 
 
         public decimal TotalPointMinus { get; set; }
 
-        public bool? IsPublic { get; set; }
+        public bool IsPublic { get; set; } = false;
 
         public string? Comments { get; set; }
 
@@ -21,4 +21,6 @@ namespace KSMS.Domain.Dtos.Requests.Score
         public virtual ICollection<CreateScoreDetailErrorRequest> CreateScoreDetailErrors { get; set; } = new List<CreateScoreDetailErrorRequest>();
 
     }
+
+  
 }
