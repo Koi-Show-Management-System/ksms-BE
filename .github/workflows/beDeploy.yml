@@ -526,14 +526,14 @@ jobs:
         # Determine if we should deploy
         DEPLOY="false"
         if [[ "${{ github.event_name }}" == "push" || "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-          DEPLOY="true"
+        DEPLOY="true"
         fi
-
+    
         # Upload script to VPS
         scp build-with-cache.sh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:~/build-with-cache.sh
-
-        # Execute remote build on VPS (with a timeout, and passing arguments)
-        ssh -o ConnectTimeout=10 ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "bash ~/build-with-cache.sh '${{ github.server_url }}/${{ github.repository }}.git' '${{ github.ref_name }}' '$DEPLOY'"
+    
+        # Execute remote build on VPS with GitHub token
+        ssh -o ConnectTimeout=10 ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "bash ~/build-with-cache.sh 'https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/Koi-Show-Management-System/ksms-BE.git' 'main' '$DEPLOY'"
 
     - name: Report Completion
       if: always()  # Run even if previous steps fail
