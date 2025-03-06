@@ -79,7 +79,6 @@ jobs:
         cat > setup-deploy.sh << 'EOL'
         #!/bin/bash
         set -e
-
         echo "Starting VPS setup and deployment..."
         
         # Check if this is first-time setup
@@ -141,10 +140,20 @@ jobs:
         # Copy application files
         cp -R /tmp/app/* $RELEASE_PATH/
         
-        # Store Identity Model DLLs in shared location only once
+        # Ensure identity-libs directory exists properly
+        if [ -e "$APP_PATH/shared/identity-libs" ] && [ ! -d "$APP_PATH/shared/identity-libs" ]; then
+          echo "Found identity-libs as a non-directory. Removing and recreating..."
+          rm -f "$APP_PATH/shared/identity-libs"
+        fi
+
+        # Create identity-libs directory if it doesn't exist
+        mkdir -p "$APP_PATH/shared/identity-libs"
+        chown www-data:www-data "$APP_PATH/shared/identity-libs"
+        
+        # Store Identity Model DLLs in shared location
         if [ -d "/tmp/identity-dlls" ] && [ "$(ls -A /tmp/identity-dlls)" ]; then
           echo "Updating shared Identity Model libraries..."
-          cp -v /tmp/identity-dlls/* $APP_PATH/shared/identity-libs/
+          cp -v /tmp/identity-dlls/* "$APP_PATH/shared/identity-libs/"
           
           # Also add them to current release
           cp -v /tmp/identity-dlls/* $RELEASE_PATH/
@@ -229,7 +238,6 @@ jobs:
         EOL
         
         chmod +x setup-deploy.sh
-
     - name: Setup SSH
       uses: webfactory/ssh-agent@v0.8.0
       with:
