@@ -45,7 +45,7 @@ namespace KSMS.Infrastructure.Services
             }
 
             var tank = request.Adapt<Tank>();
-
+            tank.CreatedBy = GetIdFromJwt();
             await tankRepository.InsertAsync(tank);
             await _unitOfWork.CommitAsync();
         }
