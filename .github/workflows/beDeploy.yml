@@ -1,4 +1,4 @@
-name: Optimized CI/CD Pipeline - Build on VPS with Cache
+Copyname: Optimized CI/CD Pipeline - Build on VPS with Cache
 
 on:
   push:
@@ -39,7 +39,7 @@ jobs:
         
     - name: Create Build Script with NuGet Cache
       run: |
-        cat > build-with-cache.sh << 'EOL'
+        cat > build-with-cache.sh << 'EOLSCRIPT'
 #!/bin/bash
 set -e
 
@@ -462,7 +462,7 @@ main() {
 
 # Run main function with arguments
 main "$@"
-EOL
+EOLSCRIPT
         
         chmod +x build-with-cache.sh
         
