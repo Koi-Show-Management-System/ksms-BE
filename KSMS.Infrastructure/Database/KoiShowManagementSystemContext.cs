@@ -142,7 +142,7 @@ public partial class KoiShowManagementSystemContext : DbContext
             entity.Property(e => e.AwardType).HasMaxLength(20);
             entity.Property(e => e.CreatedAt).HasColumnType("datetime");
             entity.Property(e => e.Name).HasMaxLength(100);
-            entity.Property(e => e.PrizeValue).HasColumnType("decimal(10, 2)");
+            entity.Property(e => e.PrizeValue).HasColumnType("decimal(18, 2)");
             entity.Property(e => e.UpdatedAt).HasColumnType("datetime");
 
             entity.HasOne(d => d.CompetitionCategories).WithMany(p => p.Awards)
