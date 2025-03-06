@@ -19,13 +19,32 @@ using System.IO;
 using Microsoft.Extensions.Configuration;
 using DotNetEnv;
 
-var builder = WebApplication.CreateBuilder(args);
-
 // Load environment variables from .env file
 Env.Load();
 
-// Add configuration that reads from environment variables
+var builder = WebApplication.CreateBuilder(args);
+
+// Configure the app to replace ${VAR} placeholders with environment variables
 builder.Configuration.AddEnvironmentVariables();
+
+// Add a custom configuration provider that replaces ${VAR} with env vars
+builder.Host.ConfigureAppConfiguration((hostingContext, config) =>
+{
+    config.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
+    config.AddJsonFile($"appsettings.{hostingContext.HostingEnvironment.EnvironmentName}.json", optional: true, reloadOnChange: true);
+    config.AddEnvironmentVariables();
+});
+
+// Add this after your builder setup
+builder.Services.AddTransient<IConfiguration>(provider =>
+{
+    var configuration = provider.GetService<IConfiguration>();
+    var configBuilder = new ConfigurationBuilder()
+        .AddConfiguration(configuration);
+
+    // This creates a new configuration that resolves placeholders
+    return configBuilder.Build();
+});
 
 // Add services to the container.
 var payOs = new PayOS(builder.Configuration["PayOs:ClientId"]!,
@@ -49,8 +68,8 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowAll", builder =>
     {
         builder
-            .WithOrigins("http://localhost:3000", 
-                "https://ksms.news", 
+            .WithOrigins("http://localhost:3000",
+                "https://ksms.news",
                 "https://www.ksms.news",
                 "https://api.ksms.news")
             .AllowAnyMethod()
