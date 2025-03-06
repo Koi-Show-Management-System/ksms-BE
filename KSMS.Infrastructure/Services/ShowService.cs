@@ -186,192 +186,193 @@ namespace KSMS.Infrastructure.Services
             newShow.CreatedAt = DateTime.UtcNow;
 
             await using var transaction = await _unitOfWork.BeginTransactionAsync();
-            try
+            
+            
+            var createdShow = await showRepository.InsertAsync(newShow);
+            await _unitOfWork.CommitAsync();
+            var showId = createdShow.Id;
+            if (createShowRequest.CreateShowRuleRequests.Any())
             {
-                var createdShow = await showRepository.InsertAsync(newShow);
-                await _unitOfWork.CommitAsync();
-                var showId = createdShow.Id;
-                if (createShowRequest.CreateShowRuleRequests.Any())
+                foreach (var ruleRequest in createShowRequest.CreateShowRuleRequests)
                 {
-                    foreach (var ruleRequest in createShowRequest.CreateShowRuleRequests)
-                    {
-                        var rule = ruleRequest.Adapt<ShowRule>();
-                        rule.KoiShowId = showId;
-                        await showRuleRepository.InsertAsync(rule);
-                        await _unitOfWork.CommitAsync();
-                    }
+                    var rule = ruleRequest.Adapt<ShowRule>();
+                    rule.KoiShowId = showId;
+                    await showRuleRepository.InsertAsync(rule);
+                    await _unitOfWork.CommitAsync();
                 }
+            }
 
-                if (createShowRequest.CreateShowStatusRequests.Any())
+            if (createShowRequest.CreateShowStatusRequests.Any())
+            {
+                foreach (var statusRequest in createShowRequest.CreateShowStatusRequests)
                 {
-                    foreach (var statusRequest in createShowRequest.CreateShowStatusRequests)
-                    {
-                        var showStatus = statusRequest.Adapt<ShowStatus>();
-                        showStatus.KoiShowId = showId; // Associate the show status with the show
-                        await showStatusRepository.InsertAsync(showStatus);
-                        await _unitOfWork.CommitAsync();
-                    }
+                    var showStatus = statusRequest.Adapt<ShowStatus>();
+                    showStatus.KoiShowId = showId; // Associate the show status with the show
+                    await showStatusRepository.InsertAsync(showStatus);
+                    await _unitOfWork.CommitAsync();
                 }
-                    // Process Sponsors for the Show
-                if (createShowRequest.CreateSponsorRequests.Any())
+            }
+                // Process Sponsors for the Show
+            if (createShowRequest.CreateSponsorRequests.Any())
+            {
+                foreach (var sponsorRequest in createShowRequest.CreateSponsorRequests)
                 {
-                    foreach (var sponsorRequest in createShowRequest.CreateSponsorRequests)
-                    {
-                        var sponsor = sponsorRequest.Adapt<Sponsor>();
-                        sponsor.KoiShowId = showId;
+                    var sponsor = sponsorRequest.Adapt<Sponsor>();
+                    sponsor.KoiShowId = showId;
 
-                        // Save Sponsor to database
-                        await sponsorRepository.InsertAsync(sponsor);
-                        await _unitOfWork.CommitAsync();
+                    // Save Sponsor to database
+                    await sponsorRepository.InsertAsync(sponsor);
+                    await _unitOfWork.CommitAsync();
+                }
+            }
+            // Process Ticket Types (TicketTypeRequest) associated with the show
+            if (createShowRequest.CreateTicketTypeRequests.Any())
+            {
+                foreach (var ticketTypeRequest in createShowRequest.CreateTicketTypeRequests)
+                {
+                    var ticketType = ticketTypeRequest.Adapt<TicketType>();
+                    ticketType.KoiShowId = showId;
+                    await _unitOfWork.GetRepository<TicketType>().InsertAsync(ticketType);
+                    await _unitOfWork.CommitAsync();
+                }
+            }
+            if (createShowRequest.AssignStaffRequests.Any())
+            {
+                foreach (var staffId in createShowRequest.AssignStaffRequests)
+                {
+                    var staff = new ShowStaff
+                    {
+                        KoiShowId = showId,
+                        AssignedBy = GetIdFromJwt(),
+                        AccountId = staffId,
+                        AssignedAt = DateTime.UtcNow,
+                        
+                    };
+                    await showStaffRepository.InsertAsync(staff);
+                    await _unitOfWork.CommitAsync();
+                    var staffAccount = await accountRepository.SingleOrDefaultAsync(predicate: a => a.Id == staffId);
+                    if (staffAccount != null)
+                    {
+                        string emailBody = ContentMailUtil.StaffRoleNotification(staffAccount.FullName, createShowRequest.Name, staffAccount.Email, "DefaultPassword123");
+                        MailUtil.SendEmail(staffAccount.Email, "[KOI SHOW SYSTEM] New Role Assigned", emailBody, null);
                     }
                 }
-                // Process Ticket Types (TicketTypeRequest) associated with the show
-                if (createShowRequest.CreateTicketTypeRequests.Any())
+            }
+            if (createShowRequest.AssignManagerRequests.Any())
+            {
+                foreach (var managerId in createShowRequest.AssignManagerRequests)
                 {
-                    foreach (var ticketTypeRequest in createShowRequest.CreateTicketTypeRequests)
+                    var manager = new ShowStaff
                     {
-                        var ticketType = ticketTypeRequest.Adapt<TicketType>();
-                        ticketType.KoiShowId = showId;
-                        await _unitOfWork.GetRepository<TicketType>().InsertAsync(ticketType);
-                        await _unitOfWork.CommitAsync();
+                        KoiShowId = showId,
+                        AssignedBy = GetIdFromJwt(),
+                        AccountId = managerId,
+                        AssignedAt = DateTime.UtcNow,
+                    };
+                    await showStaffRepository.InsertAsync(manager);
+                    await _unitOfWork.CommitAsync();
+                    var managerAccount = await accountRepository.SingleOrDefaultAsync(predicate: a => a.Id == managerId);
+                    if (managerAccount != null)
+                    {
+                        string emailBody = ContentMailUtil.StaffRoleNotification(managerAccount.FullName, createShowRequest.Name, managerAccount.Email, "DefaultPassword123");
+                        MailUtil.SendEmail(managerAccount.Email, "[KOI SHOW SYSTEM] New Role Assigned", emailBody, null);
                     }
                 }
-                if (createShowRequest.AssignStaffRequests.Any())
+            }
+            if (createShowRequest.CreateCategorieShowRequests.Any())
+            {
+                foreach (var categoryRequest in createShowRequest.CreateCategorieShowRequests)
                 {
-                    foreach (var staffId in createShowRequest.AssignStaffRequests)
+                    var category = categoryRequest.Adapt<CompetitionCategory>();
+                    category.KoiShowId = showId;
+                    var createdCategory = await categoryRepository.InsertAsync(category);
+                    await _unitOfWork.CommitAsync();
+                    foreach (var varietyId in categoryRequest.CreateCompetionCategoryVarieties)
                     {
-                        var staff = new ShowStaff
+                        var variety = await _unitOfWork.GetRepository<Variety>()
+                            .SingleOrDefaultAsync(predicate: x => x.Id == varietyId);
+                        if (variety is null)
                         {
-                            KoiShowId = showId,
-                            AssignedBy = GetIdFromJwt(),
-                            AccountId = staffId,
-                            AssignedAt = DateTime.UtcNow,
-                            
-                        };
-                        await showStaffRepository.InsertAsync(staff);
-                        await _unitOfWork.CommitAsync();
-                        var staffAccount = await accountRepository.SingleOrDefaultAsync(predicate: a => a.Id == staffId);
-                        if (staffAccount != null)
-                        {
-                            string emailBody = ContentMailUtil.StaffRoleNotification(staffAccount.FullName, createShowRequest.Name, staffAccount.Email, "DefaultPassword123");
-                            MailUtil.SendEmail(staffAccount.Email, "[KOI SHOW SYSTEM] New Role Assigned", emailBody, null);
+                            throw new NotFoundException("Variety with Id:" + varietyId + " not found");
                         }
-                    }
-                }
-                if (createShowRequest.AssignManagerRequests.Any())
-                {
-                    foreach (var managerId in createShowRequest.AssignManagerRequests)
-                    {
-                        var manager = new ShowStaff
+                        await categoryVarietyRepository.InsertAsync(new CategoryVariety
                         {
-                            KoiShowId = showId,
-                            AssignedBy = GetIdFromJwt(),
-                            AccountId = managerId,
-                            AssignedAt = DateTime.UtcNow,
-                        };
-                        await showStaffRepository.InsertAsync(manager);
+                            CompetitionCategoryId = category.Id,
+                            VarietyId = varietyId
+                        });
                         await _unitOfWork.CommitAsync();
-                        var managerAccount = await accountRepository.SingleOrDefaultAsync(predicate: a => a.Id == managerId);
-                        if (managerAccount != null)
-                        {
-                            string emailBody = ContentMailUtil.StaffRoleNotification(managerAccount.FullName, createShowRequest.Name, managerAccount.Email, "DefaultPassword123");
-                            MailUtil.SendEmail(managerAccount.Email, "[KOI SHOW SYSTEM] New Role Assigned", emailBody, null);
-                        }
                     }
-                }
-                if (createShowRequest.CreateCategorieShowRequests.Any())
-                {
-                    foreach (var categoryRequest in createShowRequest.CreateCategorieShowRequests)
+                    if (categoryRequest.CreateCriteriaCompetitionCategoryRequests.Any())
                     {
-                        var category = categoryRequest.Adapt<CompetitionCategory>();
-                        category.KoiShowId = showId;
-                        var createdCategory = await categoryRepository.InsertAsync(category);
-                        await _unitOfWork.CommitAsync();
-                        foreach (var varietyId in categoryRequest.CreateCompetionCategoryVarieties)
+                        foreach (var groupRequest in categoryRequest.CreateCriteriaCompetitionCategoryRequests)
                         {
-                            var variety = await _unitOfWork.GetRepository<Variety>()
-                                .SingleOrDefaultAsync(predicate: x => x.Id == varietyId);
-                            if (variety is null)
+                            var group = groupRequest.Adapt<CriteriaCompetitionCategory>();
+                            group.CompetitionCategoryId = createdCategory.Id;
+                            var criterion = await criteriaRepository.SingleOrDefaultAsync( predicate: c => c.Id == groupRequest.CriteriaId);
+                            if (criterion == null)
                             {
-                                throw new NotFoundException("Variety with Id:" + varietyId + " not found");
+                                throw new BadRequestException($"Criteria details are missing for CriteriaId: {groupRequest.CriteriaId}");
                             }
-                            await categoryVarietyRepository.InsertAsync(new CategoryVariety
-                            {
-                                CompetitionCategoryId = category.Id,
-                                VarietyId = varietyId
-                            });
-                            await _unitOfWork.CommitAsync();
+                            group.CriteriaId = criterion.Id;
+                            await criteriaGroupRepository.InsertAsync(group);
                         }
-                        if (categoryRequest.CreateCriteriaCompetitionCategoryRequests.Any())
+                        await _unitOfWork.CommitAsync();
+                    }
+                    if (categoryRequest.CreateRoundRequests.Any())
+                    {
+                        foreach (var roundRequest in categoryRequest.CreateRoundRequests)
                         {
-                            foreach (var groupRequest in categoryRequest.CreateCriteriaCompetitionCategoryRequests)
+                            var round = roundRequest.Adapt<Round>();
+                            round.CompetitionCategoriesId = createdCategory.Id;
+                            await roundRepository.InsertAsync(round);
+                        }
+                        await _unitOfWork.CommitAsync();
+                    }
+                    if (categoryRequest.CreateRefereeAssignmentRequests.Any())
+                    {
+                        foreach (var refereeAssignmentRequest in categoryRequest.CreateRefereeAssignmentRequests)
+                        {
+                            foreach (var x in refereeAssignmentRequest.RoundTypes)
                             {
-                                var group = groupRequest.Adapt<CriteriaCompetitionCategory>();
-                                group.CompetitionCategoryId = createdCategory.Id;
-                                var criterion = await criteriaRepository.SingleOrDefaultAsync( predicate: c => c.Id == groupRequest.CriteriaId);
-                                if (criterion == null)
+                                var refereeAssignment = new RefereeAssignment
                                 {
-                                    throw new BadRequestException($"Criteria details are missing for CriteriaId: {groupRequest.CriteriaId}");
-                                }
-                                group.CriteriaId = criterion.Id;
-                                await criteriaGroupRepository.InsertAsync(group);
-                            }
-                            await _unitOfWork.CommitAsync();
-                        }
-                        if (categoryRequest.CreateRoundRequests.Any())
-                        {
-                            foreach (var roundRequest in categoryRequest.CreateRoundRequests)
-                            {
-                                var round = roundRequest.Adapt<Round>();
-                                round.CompetitionCategoriesId = createdCategory.Id;
-                                await roundRepository.InsertAsync(round);
-                            }
-                            await _unitOfWork.CommitAsync();
-                        }
-                        if (categoryRequest.CreateRefereeAssignmentRequests.Any())
-                        {
-                            foreach (var refereeAssignmentRequest in categoryRequest.CreateRefereeAssignmentRequests)
-                            {
-                                foreach (var x in refereeAssignmentRequest.RoundTypes)
-                                {
-                                    var refereeAssignment = new RefereeAssignment
-                                    {
-                                        RefereeAccountId = refereeAssignmentRequest.RefereeAccountId,
-                                        CompetitionCategoryId = createdCategory.Id,
-                                        RoundType = x,
-                                        AssignedAt = DateTime.UtcNow,
-                                        AssignedBy = GetIdFromJwt()
-                                    };
-                                    await refereeAssignmentRepository.InsertAsync(refereeAssignment);
-                                    await _unitOfWork.CommitAsync();
-                                }
-                                var refereeAccount = await accountRepository.SingleOrDefaultAsync(predicate: a => a.Id == refereeAssignmentRequest.RefereeAccountId);
-
-                                var emailBody = ContentMailUtil.StaffRoleNotification(refereeAccount.FullName ?? "NoName", createShowRequest.Name, refereeAccount.Email?? "NoEmail", "DefaultPassword123");
-                                MailUtil.SendEmail(refereeAccount.Email?? "NoEmail", "[KOI SHOW SYSTEM] New Referee Assigned", emailBody, null);
-                            }
-                        }
-                        if (categoryRequest.CreateAwardCateShowRequests.Any())
-                        {
-                            foreach (var awardRequest in categoryRequest.CreateAwardCateShowRequests)
-                            {
-                                var award = awardRequest.Adapt<Award>();
-                                award.CompetitionCategoriesId = createdCategory.Id;
-                                await awardRepository.InsertAsync(award);
+                                    RefereeAccountId = refereeAssignmentRequest.RefereeAccountId,
+                                    CompetitionCategoryId = createdCategory.Id,
+                                    RoundType = x,
+                                    AssignedAt = DateTime.UtcNow,
+                                    AssignedBy = GetIdFromJwt()
+                                };
+                                await refereeAssignmentRepository.InsertAsync(refereeAssignment);
                                 await _unitOfWork.CommitAsync();
                             }
+                            var refereeAccount = await accountRepository.SingleOrDefaultAsync(predicate: a => a.Id == refereeAssignmentRequest.RefereeAccountId);
+
+                            var emailBody = ContentMailUtil.StaffRoleNotification(refereeAccount.FullName ?? "NoName", createShowRequest.Name, refereeAccount.Email?? "NoEmail", "DefaultPassword123");
+                            MailUtil.SendEmail(refereeAccount.Email?? "NoEmail", "[KOI SHOW SYSTEM] New Referee Assigned", emailBody, null);
+                        }
+                    }
+                    if (categoryRequest.CreateAwardCateShowRequests.Any())
+                    {
+                        foreach (var awardRequest in categoryRequest.CreateAwardCateShowRequests)
+                        {
+                            var award = awardRequest.Adapt<Award>();
+                            award.CompetitionCategoriesId = createdCategory.Id;
+                            await awardRepository.InsertAsync(award);
+                            await _unitOfWork.CommitAsync();
                         }
                     }
                 }
-                await _unitOfWork.CommitAsync();
+            }
+            var isSuccess = await _unitOfWork.CommitAsync();
+            if (isSuccess > 0)
+            {
                 await transaction.CommitAsync();
             }
-            catch (Exception ex)
+            else
             {
                 await transaction.RollbackAsync();
-                var detailedMessage = $"Failed to create show and related data.\nError details: {ex.Message}\nSource: {ex.Source}\nStackTrace: {ex.StackTrace}";
-                throw new Exception(detailedMessage, ex);
             }
+            
         }
         
 

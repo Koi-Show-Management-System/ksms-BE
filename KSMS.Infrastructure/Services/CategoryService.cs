@@ -160,11 +160,23 @@ namespace KSMS.Infrastructure.Services
                 filterQuery,
                 orderBy: query => query.OrderBy(x => x.Name),
                 include: query => query
-                    .Include(x => x.RefereeAssignments),
+                    .Include(x => x.RefereeAssignments)
+                    .Include(x => x.CategoryVarieties)
+                        .ThenInclude(x => x.Variety),
                 page: page,
                 size: size
             );
-            return categories.Adapt<Paginate<GetPageCompetitionCategoryResponse>>();
+            
+            var response = categories.Adapt<Paginate<GetPageCompetitionCategoryResponse>>();
+            foreach (var category in response.Items)
+            {
+                var categoryEntity = categories.Items.FirstOrDefault(x => x.Id == category.Id);
+                if (categoryEntity != null)
+                {
+                    category.Varieties = categoryEntity.CategoryVarieties.Select(cv => cv.Variety.Name).ToList();
+                }
+            }
+            return response;
         }
         
         
