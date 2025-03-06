@@ -1,6 +1,5 @@
 ﻿using KSMS.Application.Repositories;
 using KSMS.Application.Services;
-using KSMS.Domain.Dtos.Requests.Ticket;
 using KSMS.Domain.Dtos.Requests.TicketType;
 using KSMS.Domain.Entities;
 using KSMS.Domain.Exceptions;

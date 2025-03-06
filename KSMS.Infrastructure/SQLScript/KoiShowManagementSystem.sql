@@ -135,7 +135,7 @@ CREATE TABLE [dbo].[Award](
     [CompetitionCategoriesId] UNIQUEIDENTIFIER NOT NULL,
     [Name] nvarchar(100) NOT NULL,
     [AwardType] nvarchar(20) NULL,
-    [PrizeValue] decimal(10,2) NULL,
+    [PrizeValue] decimal(18,2) NULL,
     [Description] nvarchar(max) NULL,
     [CreatedAt] datetime NOT NULL,
     [UpdatedAt] datetime NULL,
