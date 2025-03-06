@@ -262,11 +262,11 @@ jobs:
         # Determine if we should deploy
         DEPLOY="false"
         if [[ "${{ github.event_name }}" == "push" || "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-          DEPLOY="true"
+        DEPLOY="true"
         fi
-        
+    
         # Upload script to VPS
-        scp remote-build.sh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:~/remote-build.sh
-        
-        # Execute remote build on VPS
-        ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "bash ~/remote-build.sh '${{ github.server_url }}/${{ github.repository }}.git' '${{ github.ref_name }}' '$DEPLOY'"
+        scp build-with-cache.sh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:~/build-with-cache.sh
+    
+        # Execute remote build on VPS with cache
+        ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "bash ~/build-with-cache.sh '${{ github.server_url }}/${{ github.repository }}.git' '${{ github.ref_name }}' '$DEPLOY'"
