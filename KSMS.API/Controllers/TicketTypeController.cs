@@ -1,6 +1,5 @@
 ﻿using KSMS.Application.Services;
 using KSMS.Domain.Dtos;
-using KSMS.Domain.Dtos.Requests.Ticket;
 using KSMS.Domain.Dtos.Requests.TicketType;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;

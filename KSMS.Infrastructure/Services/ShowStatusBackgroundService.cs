@@ -43,7 +43,7 @@ namespace KSMS.Infrastructure.Services
                     var showStatusRepository = unitOfWork.GetRepository<ShowStatus>();
                     var koiShowRepository = unitOfWork.GetRepository<KoiShow>();
                     var currentTime = VietNamTimeUtil.GetVietnamTime();
-
+                    
                     var showStatuses = await showStatusRepository.GetListAsync();
                     foreach (var status in showStatuses)
                     {

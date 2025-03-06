@@ -10,10 +10,10 @@ namespace KSMS.Domain.Dtos.Requests.ShowStatus
     public class CreateShowStatusRequest
     {
         [Required(ErrorMessage = "StatusName is required.")]
-        [StringLength(100, ErrorMessage = "StatusName must not exceed 100 characters.")]
+        [StringLength(50, ErrorMessage = "StatusName must not exceed 50 characters.")]
         public string StatusName { get; set; } = null!;
 
-        [StringLength(500, ErrorMessage = "Description must not exceed 500 characters.")]
+        [StringLength(255, ErrorMessage = "Description must not exceed 255 characters.")]
         public string? Description { get; set; }
 
         [Required(ErrorMessage = "StartDate is required.")]
