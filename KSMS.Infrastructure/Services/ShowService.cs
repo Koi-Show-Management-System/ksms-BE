@@ -369,7 +369,8 @@ namespace KSMS.Infrastructure.Services
             catch (Exception ex)
             {
                 await transaction.RollbackAsync();
-                throw new Exception("Failed to create show and related data.", ex);
+                var detailedMessage = $"Failed to create show and related data.\nError details: {ex.Message}\nSource: {ex.Source}\nStackTrace: {ex.StackTrace}";
+                throw new Exception(detailedMessage, ex);
             }
         }
         
