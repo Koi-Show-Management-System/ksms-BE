@@ -184,9 +184,9 @@ namespace KSMS.Infrastructure.Services
                 // Tạo show
                 var newShow = createShowRequest.Adapt<KoiShow>();
                 newShow.CreatedAt = DateTime.UtcNow;
-                var createdShow = await showRepository.InsertAsync(newShow);
+                await showRepository.InsertAsync(newShow);
                 await _unitOfWork.CommitAsync();
-                var showId = createdShow.Id;
+                var showId = newShow.Id;
                 
                 // Xử lý show rules
                 if (createShowRequest.CreateShowRuleRequests.Any())
@@ -291,7 +291,7 @@ namespace KSMS.Infrastructure.Services
                         // Tạo category
                         var category = categoryRequest.Adapt<CompetitionCategory>();
                         category.KoiShowId = showId;
-                        var createdCategory = await categoryRepository.InsertAsync(category);
+                        await categoryRepository.InsertAsync(category);
                         await _unitOfWork.CommitAsync();
                         // Xử lý varieties
                         if (categoryRequest.CreateCompetionCategoryVarieties.Any())
@@ -310,7 +310,7 @@ namespace KSMS.Infrastructure.Services
                             }
                             
                             var categoryVarieties = varieties.Select(v => new CategoryVariety {
-                                CompetitionCategoryId = createdCategory.Id,
+                                CompetitionCategoryId = category.Id,
                                 VarietyId = v.Id
                             }).ToList();
                             
@@ -340,7 +340,7 @@ namespace KSMS.Infrastructure.Services
                             var criteriaGroups = categoryRequest.CreateCriteriaCompetitionCategoryRequests
                                 .Select(g => {
                                     var group = g.Adapt<CriteriaCompetitionCategory>();
-                                    group.CompetitionCategoryId = createdCategory.Id;
+                                    group.CompetitionCategoryId = category.Id;
                                     return group;
                                 }).ToList();
                             
@@ -353,7 +353,7 @@ namespace KSMS.Infrastructure.Services
                             var rounds = categoryRequest.CreateRoundRequests
                                 .Select(r => {
                                     var round = r.Adapt<Round>();
-                                    round.CompetitionCategoriesId = createdCategory.Id;
+                                    round.CompetitionCategoriesId = category.Id;
                                     return round;
                                 }).ToList();
                             
@@ -382,7 +382,7 @@ namespace KSMS.Infrastructure.Services
                                 {
                                     refereeAssignments.Add(new RefereeAssignment {
                                         RefereeAccountId = refereeRequest.RefereeAccountId,
-                                        CompetitionCategoryId = createdCategory.Id,
+                                        CompetitionCategoryId = category.Id,
                                         RoundType = roundType,
                                         AssignedAt = DateTime.UtcNow,
                                         AssignedBy = currentUserId
@@ -402,7 +402,7 @@ namespace KSMS.Infrastructure.Services
                             var awards = categoryRequest.CreateAwardCateShowRequests
                                 .Select(a => {
                                     var award = a.Adapt<Award>();
-                                    award.CompetitionCategoriesId = createdCategory.Id;
+                                    award.CompetitionCategoriesId = category.Id;
                                     return award;
                                 }).ToList();
                             
