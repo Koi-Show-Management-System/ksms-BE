@@ -1,265 +1,272 @@
-# name: CI/CD Pipeline - C# Backend to Ubuntu VPS with Swagger Support
+name: Minimal CI/CD Pipeline - Build on VPS
 
-# on:
-#   push:
-#     branches: [ main ]
-#   pull_request:
-#     branches: [ main ]
-#   workflow_dispatch:
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
 
-# jobs:
-#   build:
-#     name: Build and Test
-#     runs-on: ubuntu-latest
+jobs:
+  trigger-vps-build:
+    name: Trigger Build on VPS
+    runs-on: ubuntu-latest
     
-#     steps:
-#     - uses: actions/checkout@v3
-#       with:
-#         fetch-depth: 0
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
 
-#     - name: Setup .NET
-#       uses: actions/setup-dotnet@v3
-#       with:
-#         dotnet-version: '8.0.x'
-        
-#     - name: Restore and Build
-#       run: |
-#         dotnet restore
-#         dotnet build --configuration Release --no-restore
-      
-#     - name: Test
-#       run: dotnet test --no-build --verbosity normal --configuration Release
-      
-#     - name: Publish
-#       run: dotnet publish --configuration Release --runtime linux-x64 --self-contained true -p:PublishTrimmed=false -p:PublishSingleFile=false --output ./publish
-      
-#     - name: Download Identity Model DLLs
-#       run: |
-#         mkdir -p ./identity-dlls
-#         wget -q https://www.nuget.org/api/v2/package/Microsoft.IdentityModel.Protocols/8.2.1 -O ./protocols.nupkg
-#         wget -q https://www.nuget.org/api/v2/package/Microsoft.IdentityModel.Logging/8.2.1 -O ./logging.nupkg
-#         wget -q https://www.nuget.org/api/v2/package/Microsoft.IdentityModel.Tokens/8.2.1 -O ./tokens.nupkg
-#         wget -q https://www.nuget.org/api/v2/package/Microsoft.IdentityModel.JsonWebTokens/8.2.1 -O ./jwt.nupkg
-#         wget -q https://www.nuget.org/api/v2/package/Microsoft.IdentityModel.Protocols.OpenIdConnect/8.2.1 -O ./openidconnect.nupkg
-#         wget -q https://www.nuget.org/api/v2/package/System.IdentityModel.Tokens.Jwt/8.2.1 -O ./systemjwt.nupkg
-        
-#         # Extract only the needed DLLs
-#         for pkg in protocols logging tokens jwt openidconnect systemjwt; do
-#           mkdir -p ./tmp-$pkg
-#           unzip -q ./$pkg.nupkg -d ./tmp-$pkg
-#           cp ./tmp-$pkg/lib/net8.0/*.dll ./identity-dlls/
-#           rm -rf ./tmp-$pkg
-#           rm ./$pkg.nupkg
-#         done
-      
-#     - name: Upload build artifacts
-#       uses: actions/upload-artifact@v4
-#       with:
-#         name: app-build
-#         path: |
-#           ./publish/
-#           ./identity-dlls/
-#         retention-days: 1
-        
-#   deploy:
-#     name: Deploy to VPS
-#     needs: build
-#     runs-on: ubuntu-latest
-#     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
-    
-#     steps:
-#     - name: Download build artifacts
-#       uses: actions/download-artifact@v4
-#       with:
-#         name: app-build
-#         path: ./deploy-package/
-        
-#     - name: Create deployment scripts
-#       run: |
-#         cat > setup-deploy.sh << 'EOL'
-#         #!/bin/bash
-#         set -e
-#         echo "Starting VPS setup and deployment..."
-        
-#         # Check if this is first-time setup
-#         if [ ! -d "/var/www/ksms-api" ]; then
-#           echo "First time setup detected. Installing dependencies..."
-          
-#           # Update system and install dependencies
-#           apt-get update && apt-get upgrade -y
-#           apt-get install -y curl wget apt-transport-https gnupg2 software-properties-common sudo unzip nginx supervisor
-          
-#           # Install .NET Runtime
-#           wget https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
-#           dpkg -i packages-microsoft-prod.deb
-#           apt-get update
-#           apt-get install -y dotnet-runtime-8.0 aspnetcore-runtime-8.0
-          
-#           # Enable and start services
-#           systemctl enable nginx supervisor
-#           systemctl start nginx supervisor
-          
-#           # Create app directory structure with optimized shared storage
-#           APP_NAME="ksms-api"
-#           APP_PATH="/var/www/$APP_NAME"
-#           mkdir -p $APP_PATH/{releases,shared/logs,shared/identity-libs}
-          
-#           # Create log directory
-#           mkdir -p /var/log/$APP_NAME
-#           chown -R www-data:www-data $APP_PATH /var/log/$APP_NAME
-          
-#           # Create fix-tokens utility script
-#           cat > /usr/local/bin/ksms-fix-tokens << 'SCRIPT'
-#         #!/bin/bash
-#         if [ ! -d "/var/www/ksms-api/shared/identity-libs" ]; then
-#           echo "Error: Identity libs directory not found!"
-#           exit 1
-#         fi
-        
-#         echo "Copying identity DLLs to current release..."
-#         cp -v /var/www/ksms-api/shared/identity-libs/* /var/www/ksms-api/current/
-#         chown -R www-data:www-data /var/www/ksms-api/current
-#         supervisorctl restart ksms-api
-#         echo "Done!"
-#         SCRIPT
-          
-#           chmod +x /usr/local/bin/ksms-fix-tokens
-#         fi
-        
-#         # Deploy application
-#         APP_NAME="ksms-api"
-#         APP_PATH="/var/www/$APP_NAME"
-#         TIMESTAMP=$(date +%Y%m%d%H%M%S)
-#         RELEASE_PATH="$APP_PATH/releases/$TIMESTAMP"
-        
-#         echo "Deploying new release to: $RELEASE_PATH"
-        
-#         # Create new release directory
-#         mkdir -p $RELEASE_PATH
-        
-#         # Copy application files
-#         cp -R /tmp/app/* $RELEASE_PATH/
-        
-#         # Ensure identity-libs directory exists properly
-#         if [ -e "$APP_PATH/shared/identity-libs" ] && [ ! -d "$APP_PATH/shared/identity-libs" ]; then
-#           echo "Found identity-libs as a non-directory. Removing and recreating..."
-#           rm -f "$APP_PATH/shared/identity-libs"
-#         fi
+    - name: Setup SSH
+      uses: webfactory/ssh-agent@v0.8.0
+      with:
+        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-#         # Create identity-libs directory if it doesn't exist
-#         mkdir -p "$APP_PATH/shared/identity-libs"
-#         chown www-data:www-data "$APP_PATH/shared/identity-libs"
+    - name: Add host to known hosts
+      run: |
+        mkdir -p ~/.ssh
+        ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
         
-#         # Store Identity Model DLLs in shared location
-#         if [ -d "/tmp/identity-dlls" ] && [ "$(ls -A /tmp/identity-dlls)" ]; then
-#           echo "Updating shared Identity Model libraries..."
-#           cp -v /tmp/identity-dlls/* "$APP_PATH/shared/identity-libs/"
+    - name: Create Remote Builder Scripts
+      run: |
+        cat > remote-build.sh << 'EOL'
+        #!/bin/bash
+        set -e
+        
+        # Setup build environment on the VPS
+        setup_build_env() {
+          echo "Setting up build environment..."
           
-#           # Also add them to current release
-#           cp -v /tmp/identity-dlls/* $RELEASE_PATH/
-#         fi
+          # Install .NET SDK if not present
+          if ! command -v dotnet &> /dev/null; then
+            echo "Installing .NET SDK..."
+            wget https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
+            sudo dpkg -i packages-microsoft-prod.deb
+            sudo apt-get update
+            sudo apt-get install -y dotnet-sdk-8.0
+          fi
+          
+          # Create build directories
+          mkdir -p ~/build-agent/{source,artifacts,logs}
+        }
         
-#         # Update current symlink
-#         ln -sfn $RELEASE_PATH $APP_PATH/current
+        # Clone repository to VPS
+        clone_repo() {
+          echo "Cloning repository..."
+          cd ~/build-agent/source
+          
+          # Clean previous build if exists
+          rm -rf ./app
+          
+          # Clone the repository
+          git clone $REPO_URL ./app
+          cd ./app
+          git checkout $BRANCH_NAME
+        }
         
-#         # Set permissions
-#         chown -R www-data:www-data $RELEASE_PATH $APP_PATH/shared
+        # Build, test and publish application
+        build_app() {
+          echo "Building application..."
+          cd ~/build-agent/source/app
+          
+          # Restore dependencies
+          dotnet restore | tee ~/build-agent/logs/restore.log
+          
+          # Build the application
+          dotnet build --configuration Release --no-restore | tee ~/build-agent/logs/build.log
+          
+          # Run tests if there are any
+          if find . -name "*.Tests.csproj" -o -name "*Tests.csproj" | grep -q .; then
+            echo "Running tests..."
+            dotnet test --no-build --verbosity normal --configuration Release | tee ~/build-agent/logs/test.log
+          else
+            echo "No test projects found, skipping tests"
+          fi
+          
+          # Publish the application - framework dependent to reduce size
+          echo "Publishing application..."
+          dotnet publish --configuration Release --runtime linux-x64 --self-contained false -p:PublishSingleFile=false --output ~/build-agent/artifacts/app | tee ~/build-agent/logs/publish.log
+        }
         
-#         # Find main DLL
-#         DLL_FILE=$(find $RELEASE_PATH -name "KSMS.API.dll")
-#         if [ -z "$DLL_FILE" ]; then
-#             echo "ERROR: Cannot find main DLL file. Deployment failed."
-#             exit 1
-#         fi
-#         DLL_NAME=$(basename $DLL_FILE)
-#         DLL_DIR=$(dirname $DLL_FILE)
+        # Deploy the application
+        deploy_app() {
+          echo "Deploying application..."
+          
+          # Create necessary directories
+          APP_NAME="ksms-api"
+          APP_PATH="/var/www/$APP_NAME"
+          
+          sudo mkdir -p $APP_PATH/{releases,shared/logs}
+          
+          # Create timestamp for release
+          TIMESTAMP=$(date +%Y%m%d%H%M%S)
+          RELEASE_PATH="$APP_PATH/releases/$TIMESTAMP"
+          
+          sudo mkdir -p $RELEASE_PATH
+          
+          # Copy files to release directory
+          sudo cp -R ~/build-agent/artifacts/app/* $RELEASE_PATH/
+          
+          # Update symlink
+          sudo ln -sfn $RELEASE_PATH $APP_PATH/current
+          
+          # Set permissions
+          sudo chown -R www-data:www-data $APP_PATH
+          
+          # Find main DLL
+          DLL_FILE=$(find $RELEASE_PATH -name "KSMS.API.dll")
+          if [ -z "$DLL_FILE" ]; then
+              echo "ERROR: Cannot find main DLL file. Deployment failed."
+              exit 1
+          fi
+          DLL_NAME=$(basename $DLL_FILE)
+          DLL_DIR=$(dirname $DLL_FILE)
+          
+          # Update supervisor config - only if necessary
+          if [ ! -f /etc/supervisor/conf.d/$APP_NAME.conf ] || ! grep -q "$DLL_FILE" /etc/supervisor/conf.d/$APP_NAME.conf; then
+            sudo bash -c "cat > /etc/supervisor/conf.d/$APP_NAME.conf << EOF
+          [program:$APP_NAME]
+          command=dotnet $DLL_FILE
+          directory=$DLL_DIR
+          autostart=true
+          autorestart=true
+          stderr_logfile=/var/log/$APP_NAME/$APP_NAME.err.log
+          stdout_logfile=/var/log/$APP_NAME/$APP_NAME.out.log
+          environment=ASPNETCORE_ENVIRONMENT=Production,ASPNETCORE_URLS=\"http://localhost:5000\"
+          user=www-data
+          stopsignal=INT
+          EOF"
+            
+            sudo mkdir -p /var/log/$APP_NAME
+            sudo chown -R www-data:www-data /var/log/$APP_NAME
+          fi
+          
+          # Update Nginx config - only if necessary
+          if [ ! -f /etc/nginx/sites-available/$APP_NAME ]; then
+            sudo bash -c "cat > /etc/nginx/sites-available/$APP_NAME << EOF
+          server {
+              listen 80;
+              server_name api.ksms.news;
+          
+              location / {
+                  proxy_pass http://localhost:5000;
+                  proxy_http_version 1.1;
+                  proxy_set_header Upgrade \\\$http_upgrade;
+                  proxy_set_header Connection keep-alive;
+                  proxy_set_header Host \\\$host;
+                  proxy_cache_bypass \\\$http_upgrade;
+                  proxy_set_header X-Forwarded-For \\\$proxy_add_x_forwarded_for;
+                  proxy_set_header X-Forwarded-Proto \\\$scheme;
+                  proxy_set_header X-Real-IP \\\$remote_addr;
+                  
+                  # Buffer settings for Swagger
+                  proxy_buffers 16 16k;
+                  proxy_buffer_size 16k;
+                  proxy_read_timeout 300s;
+                  proxy_connect_timeout 300s;
+              }
+          }
+          EOF"
+            
+            # Enable site if needed
+            sudo ln -sf /etc/nginx/sites-available/$APP_NAME /etc/nginx/sites-enabled/
+            sudo rm -f /etc/nginx/sites-enabled/default
+          fi
+          
+          # Restart services
+          sudo supervisorctl reread
+          sudo supervisorctl update
+          sudo supervisorctl restart $APP_NAME
+          sudo systemctl reload nginx
+          
+          # Cleanup - keep 3 latest releases
+          cd $APP_PATH/releases && ls -t | tail -n +4 | sudo xargs -I {} rm -rf {} 2>/dev/null || true
+          
+          # Clean build artifacts to save space
+          echo "Cleaning build artifacts..."
+          rm -rf ~/build-agent/artifacts/*
+        }
         
-#         # Update supervisor config
-#         cat > /etc/supervisor/conf.d/$APP_NAME.conf << EOF
-#         [program:$APP_NAME]
-#         command=dotnet $DLL_FILE
-#         directory=$DLL_DIR
-#         autostart=true
-#         autorestart=true
-#         stderr_logfile=/var/log/$APP_NAME/$APP_NAME.err.log
-#         stdout_logfile=/var/log/$APP_NAME/$APP_NAME.out.log
-#         environment=ASPNETCORE_ENVIRONMENT=Production,ASPNETCORE_URLS="http://localhost:5000"
-#         user=www-data
-#         stopsignal=INT
-#         EOF
+        # Automatically handle Identity Model DLLs if needed
+        handle_identity_dlls() {
+          # Check if we need identity DLLs (searching in project files)
+          if grep -q "Microsoft.IdentityModel" ~/build-agent/source/app/*.csproj 2>/dev/null; then
+            echo "Project uses Identity Model. Setting up DLLs..."
+            
+            mkdir -p ~/build-agent/identity-dlls
+            cd ~/build-agent/identity-dlls
+            
+            # Download and extract only if needed
+            if [ ! -f Microsoft.IdentityModel.Tokens.dll ]; then
+              echo "Downloading Identity Model packages..."
+              wget -q https://www.nuget.org/api/v2/package/Microsoft.IdentityModel.Protocols/8.2.1 -O ./protocols.nupkg
+              wget -q https://www.nuget.org/api/v2/package/Microsoft.IdentityModel.Logging/8.2.1 -O ./logging.nupkg
+              wget -q https://www.nuget.org/api/v2/package/Microsoft.IdentityModel.Tokens/8.2.1 -O ./tokens.nupkg
+              wget -q https://www.nuget.org/api/v2/package/Microsoft.IdentityModel.JsonWebTokens/8.2.1 -O ./jwt.nupkg
+              wget -q https://www.nuget.org/api/v2/package/Microsoft.IdentityModel.Protocols.OpenIdConnect/8.2.1 -O ./openidconnect.nupkg
+              wget -q https://www.nuget.org/api/v2/package/System.IdentityModel.Tokens.Jwt/8.2.1 -O ./systemjwt.nupkg
+              
+              # Extract DLLs
+              for pkg in protocols logging tokens jwt openidconnect systemjwt; do
+                mkdir -p ./tmp-$pkg
+                unzip -q ./$pkg.nupkg -d ./tmp-$pkg
+                cp ./tmp-$pkg/lib/net8.0/*.dll ./
+                rm -rf ./tmp-$pkg
+                rm ./$pkg.nupkg
+              done
+            fi
+            
+            # Copy to deployment location
+            APP_NAME="ksms-api"
+            APP_PATH="/var/www/$APP_NAME"
+            
+            sudo mkdir -p "$APP_PATH/shared/identity-libs"
+            sudo cp -v ./*.dll "$APP_PATH/shared/identity-libs/"
+            sudo cp -v ./*.dll "$APP_PATH/current/"
+            sudo chown -R www-data:www-data "$APP_PATH/shared/identity-libs" "$APP_PATH/current"
+          fi
+        }
         
-#         # Update Nginx config
-#         cat > /etc/nginx/sites-available/$APP_NAME << EOF
-#         server {
-#             listen 80;
-#             server_name api.ksms.news;
+        # Main execution
+        main() {
+          REPO_URL="${1:-https://github.com/yourusername/yourrepo.git}"
+          BRANCH_NAME="${2:-main}"
+          DEPLOY="${3:-true}"
+          
+          echo "==== Starting VPS Build Process ===="
+          echo "Repository: $REPO_URL"
+          echo "Branch: $BRANCH_NAME"
+          echo "Will deploy: $DEPLOY"
+          
+          setup_build_env
+          clone_repo
+          build_app
+          
+          if [ "$DEPLOY" == "true" ]; then
+            handle_identity_dlls
+            deploy_app
+            echo "==== Deployment Completed Successfully ===="
+          else
+            echo "==== Build Completed Successfully (No Deployment) ===="
+          fi
+        }
         
-#             location / {
-#                 proxy_pass http://localhost:5000;
-#                 proxy_http_version 1.1;
-#                 proxy_set_header Upgrade \$http_upgrade;
-#                 proxy_set_header Connection keep-alive;
-#                 proxy_set_header Host \$host;
-#                 proxy_cache_bypass \$http_upgrade;
-#                 proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-#                 proxy_set_header X-Forwarded-Proto \$scheme;
-#                 proxy_set_header X-Real-IP \$remote_addr;
-                
-#                 # Buffer settings for Swagger
-#                 proxy_buffers 16 16k;
-#                 proxy_buffer_size 16k;
-#                 proxy_read_timeout 300s;
-#                 proxy_connect_timeout 300s;
-#             }
-#         }
-#         EOF
+        # Run main function with arguments
+        main "$@"
+        EOL
         
-#         # Enable site if needed
-#         if [ ! -f /etc/nginx/sites-enabled/$APP_NAME ]; then
-#             ln -s /etc/nginx/sites-available/$APP_NAME /etc/nginx/sites-enabled/
-#             rm -f /etc/nginx/sites-enabled/default
-#         fi
+        chmod +x remote-build.sh
         
-#         # Validate Nginx config
-#         nginx -t
+    - name: Copy and Execute Build Script on VPS
+      run: |
+        # Determine if we should deploy
+        DEPLOY="false"
+        if [[ "${{ github.event_name }}" == "push" || "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+          DEPLOY="true"
+        fi
         
-#         # Restart services
-#         supervisorctl reread
-#         supervisorctl update
-#         supervisorctl restart $APP_NAME
-#         systemctl restart nginx
+        # Upload script to VPS
+        scp remote-build.sh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:~/remote-build.sh
         
-#         # Cleanup - keep 3 latest releases
-#         cd $APP_PATH/releases && ls -t | tail -n +4 | xargs -I {} rm -rf {} 2>/dev/null || true
-        
-#         echo "============================================"
-#         echo "Deployment completed successfully!"
-#         echo "============================================"
-#         EOL
-        
-#         chmod +x setup-deploy.sh
-#     - name: Setup SSH
-#       uses: webfactory/ssh-agent@v0.8.0
-#       with:
-#         ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-
-#     - name: Add host to known hosts
-#       run: |
-#         mkdir -p ~/.ssh
-#         ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
-        
-#     - name: Deploy to VPS
-#       run: |
-#         # Create deployment directory structure
-#         ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "mkdir -p /tmp/app /tmp/identity-dlls"
-        
-#         # Copy files to VPS
-#         scp -r ./deploy-package/publish/* ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/tmp/app/
-#         scp -r ./deploy-package/identity-dlls/* ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/tmp/identity-dlls/
-#         scp setup-deploy.sh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/tmp/
-        
-#         # Execute deployment script
-#         ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "sudo bash /tmp/setup-deploy.sh"
-        
-#         # Cleanup
-#         ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "rm -rf /tmp/app /tmp/identity-dlls /tmp/setup-deploy.sh"
+        # Execute remote build on VPS
+        ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "bash ~/remote-build.sh '${{ github.server_url }}/${{ github.repository }}.git' '${{ github.ref_name }}' '$DEPLOY'"
