@@ -15,8 +15,17 @@ using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.OpenApi.Any;
 using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.SwaggerGen;
+using System.IO;
+using Microsoft.Extensions.Configuration;
+using DotNetEnv;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Load environment variables from .env file
+Env.Load();
+
+// Add configuration that reads from environment variables
+builder.Configuration.AddEnvironmentVariables();
 
 // Add services to the container.
 var payOs = new PayOS(builder.Configuration["PayOs:ClientId"]!,
