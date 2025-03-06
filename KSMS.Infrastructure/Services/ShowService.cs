@@ -406,6 +406,7 @@ namespace KSMS.Infrastructure.Services
         var newShow = createShowRequest.Adapt<KoiShow>();
         newShow.CreatedAt = DateTime.UtcNow;
         var createdShow = await showRepository.InsertAsync(newShow);
+        await _unitOfWork.CommitAsync();
         var showId = createdShow.Id;
         
         // Xử lý show rules
@@ -512,7 +513,7 @@ namespace KSMS.Infrastructure.Services
                 var category = categoryRequest.Adapt<CompetitionCategory>();
                 category.KoiShowId = showId;
                 var createdCategory = await categoryRepository.InsertAsync(category);
-                
+                await _unitOfWork.CommitAsync();
                 // Xử lý varieties
                 if (categoryRequest.CreateCompetionCategoryVarieties.Any())
                 {
