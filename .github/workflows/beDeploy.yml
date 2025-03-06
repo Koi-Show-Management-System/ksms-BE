@@ -1,265 +1,265 @@
-name: CI/CD Pipeline - C# Backend to Ubuntu VPS with Swagger Support
+# name: CI/CD Pipeline - C# Backend to Ubuntu VPS with Swagger Support
 
-on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
-  workflow_dispatch:
+# on:
+#   push:
+#     branches: [ main ]
+#   pull_request:
+#     branches: [ main ]
+#   workflow_dispatch:
 
-jobs:
-  build:
-    name: Build and Test
-    runs-on: ubuntu-latest
+# jobs:
+#   build:
+#     name: Build and Test
+#     runs-on: ubuntu-latest
     
-    steps:
-    - uses: actions/checkout@v3
-      with:
-        fetch-depth: 0
+#     steps:
+#     - uses: actions/checkout@v3
+#       with:
+#         fetch-depth: 0
 
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v3
-      with:
-        dotnet-version: '8.0.x'
+#     - name: Setup .NET
+#       uses: actions/setup-dotnet@v3
+#       with:
+#         dotnet-version: '8.0.x'
         
-    - name: Restore and Build
-      run: |
-        dotnet restore
-        dotnet build --configuration Release --no-restore
+#     - name: Restore and Build
+#       run: |
+#         dotnet restore
+#         dotnet build --configuration Release --no-restore
       
-    - name: Test
-      run: dotnet test --no-build --verbosity normal --configuration Release
+#     - name: Test
+#       run: dotnet test --no-build --verbosity normal --configuration Release
       
-    - name: Publish
-      run: dotnet publish --configuration Release --runtime linux-x64 --self-contained true -p:PublishTrimmed=false -p:PublishSingleFile=false --output ./publish
+#     - name: Publish
+#       run: dotnet publish --configuration Release --runtime linux-x64 --self-contained true -p:PublishTrimmed=false -p:PublishSingleFile=false --output ./publish
       
-    - name: Download Identity Model DLLs
-      run: |
-        mkdir -p ./identity-dlls
-        wget -q https://www.nuget.org/api/v2/package/Microsoft.IdentityModel.Protocols/8.2.1 -O ./protocols.nupkg
-        wget -q https://www.nuget.org/api/v2/package/Microsoft.IdentityModel.Logging/8.2.1 -O ./logging.nupkg
-        wget -q https://www.nuget.org/api/v2/package/Microsoft.IdentityModel.Tokens/8.2.1 -O ./tokens.nupkg
-        wget -q https://www.nuget.org/api/v2/package/Microsoft.IdentityModel.JsonWebTokens/8.2.1 -O ./jwt.nupkg
-        wget -q https://www.nuget.org/api/v2/package/Microsoft.IdentityModel.Protocols.OpenIdConnect/8.2.1 -O ./openidconnect.nupkg
-        wget -q https://www.nuget.org/api/v2/package/System.IdentityModel.Tokens.Jwt/8.2.1 -O ./systemjwt.nupkg
+#     - name: Download Identity Model DLLs
+#       run: |
+#         mkdir -p ./identity-dlls
+#         wget -q https://www.nuget.org/api/v2/package/Microsoft.IdentityModel.Protocols/8.2.1 -O ./protocols.nupkg
+#         wget -q https://www.nuget.org/api/v2/package/Microsoft.IdentityModel.Logging/8.2.1 -O ./logging.nupkg
+#         wget -q https://www.nuget.org/api/v2/package/Microsoft.IdentityModel.Tokens/8.2.1 -O ./tokens.nupkg
+#         wget -q https://www.nuget.org/api/v2/package/Microsoft.IdentityModel.JsonWebTokens/8.2.1 -O ./jwt.nupkg
+#         wget -q https://www.nuget.org/api/v2/package/Microsoft.IdentityModel.Protocols.OpenIdConnect/8.2.1 -O ./openidconnect.nupkg
+#         wget -q https://www.nuget.org/api/v2/package/System.IdentityModel.Tokens.Jwt/8.2.1 -O ./systemjwt.nupkg
         
-        # Extract only the needed DLLs
-        for pkg in protocols logging tokens jwt openidconnect systemjwt; do
-          mkdir -p ./tmp-$pkg
-          unzip -q ./$pkg.nupkg -d ./tmp-$pkg
-          cp ./tmp-$pkg/lib/net8.0/*.dll ./identity-dlls/
-          rm -rf ./tmp-$pkg
-          rm ./$pkg.nupkg
-        done
+#         # Extract only the needed DLLs
+#         for pkg in protocols logging tokens jwt openidconnect systemjwt; do
+#           mkdir -p ./tmp-$pkg
+#           unzip -q ./$pkg.nupkg -d ./tmp-$pkg
+#           cp ./tmp-$pkg/lib/net8.0/*.dll ./identity-dlls/
+#           rm -rf ./tmp-$pkg
+#           rm ./$pkg.nupkg
+#         done
       
-    - name: Upload build artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: app-build
-        path: |
-          ./publish/
-          ./identity-dlls/
-        retention-days: 1
+#     - name: Upload build artifacts
+#       uses: actions/upload-artifact@v4
+#       with:
+#         name: app-build
+#         path: |
+#           ./publish/
+#           ./identity-dlls/
+#         retention-days: 1
         
-  deploy:
-    name: Deploy to VPS
-    needs: build
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+#   deploy:
+#     name: Deploy to VPS
+#     needs: build
+#     runs-on: ubuntu-latest
+#     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     
-    steps:
-    - name: Download build artifacts
-      uses: actions/download-artifact@v4
-      with:
-        name: app-build
-        path: ./deploy-package/
+#     steps:
+#     - name: Download build artifacts
+#       uses: actions/download-artifact@v4
+#       with:
+#         name: app-build
+#         path: ./deploy-package/
         
-    - name: Create deployment scripts
-      run: |
-        cat > setup-deploy.sh << 'EOL'
-        #!/bin/bash
-        set -e
-        echo "Starting VPS setup and deployment..."
+#     - name: Create deployment scripts
+#       run: |
+#         cat > setup-deploy.sh << 'EOL'
+#         #!/bin/bash
+#         set -e
+#         echo "Starting VPS setup and deployment..."
         
-        # Check if this is first-time setup
-        if [ ! -d "/var/www/ksms-api" ]; then
-          echo "First time setup detected. Installing dependencies..."
+#         # Check if this is first-time setup
+#         if [ ! -d "/var/www/ksms-api" ]; then
+#           echo "First time setup detected. Installing dependencies..."
           
-          # Update system and install dependencies
-          apt-get update && apt-get upgrade -y
-          apt-get install -y curl wget apt-transport-https gnupg2 software-properties-common sudo unzip nginx supervisor
+#           # Update system and install dependencies
+#           apt-get update && apt-get upgrade -y
+#           apt-get install -y curl wget apt-transport-https gnupg2 software-properties-common sudo unzip nginx supervisor
           
-          # Install .NET Runtime
-          wget https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
-          dpkg -i packages-microsoft-prod.deb
-          apt-get update
-          apt-get install -y dotnet-runtime-8.0 aspnetcore-runtime-8.0
+#           # Install .NET Runtime
+#           wget https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
+#           dpkg -i packages-microsoft-prod.deb
+#           apt-get update
+#           apt-get install -y dotnet-runtime-8.0 aspnetcore-runtime-8.0
           
-          # Enable and start services
-          systemctl enable nginx supervisor
-          systemctl start nginx supervisor
+#           # Enable and start services
+#           systemctl enable nginx supervisor
+#           systemctl start nginx supervisor
           
-          # Create app directory structure with optimized shared storage
-          APP_NAME="ksms-api"
-          APP_PATH="/var/www/$APP_NAME"
-          mkdir -p $APP_PATH/{releases,shared/logs,shared/identity-libs}
+#           # Create app directory structure with optimized shared storage
+#           APP_NAME="ksms-api"
+#           APP_PATH="/var/www/$APP_NAME"
+#           mkdir -p $APP_PATH/{releases,shared/logs,shared/identity-libs}
           
-          # Create log directory
-          mkdir -p /var/log/$APP_NAME
-          chown -R www-data:www-data $APP_PATH /var/log/$APP_NAME
+#           # Create log directory
+#           mkdir -p /var/log/$APP_NAME
+#           chown -R www-data:www-data $APP_PATH /var/log/$APP_NAME
           
-          # Create fix-tokens utility script
-          cat > /usr/local/bin/ksms-fix-tokens << 'SCRIPT'
-        #!/bin/bash
-        if [ ! -d "/var/www/ksms-api/shared/identity-libs" ]; then
-          echo "Error: Identity libs directory not found!"
-          exit 1
-        fi
+#           # Create fix-tokens utility script
+#           cat > /usr/local/bin/ksms-fix-tokens << 'SCRIPT'
+#         #!/bin/bash
+#         if [ ! -d "/var/www/ksms-api/shared/identity-libs" ]; then
+#           echo "Error: Identity libs directory not found!"
+#           exit 1
+#         fi
         
-        echo "Copying identity DLLs to current release..."
-        cp -v /var/www/ksms-api/shared/identity-libs/* /var/www/ksms-api/current/
-        chown -R www-data:www-data /var/www/ksms-api/current
-        supervisorctl restart ksms-api
-        echo "Done!"
-        SCRIPT
+#         echo "Copying identity DLLs to current release..."
+#         cp -v /var/www/ksms-api/shared/identity-libs/* /var/www/ksms-api/current/
+#         chown -R www-data:www-data /var/www/ksms-api/current
+#         supervisorctl restart ksms-api
+#         echo "Done!"
+#         SCRIPT
           
-          chmod +x /usr/local/bin/ksms-fix-tokens
-        fi
+#           chmod +x /usr/local/bin/ksms-fix-tokens
+#         fi
         
-        # Deploy application
-        APP_NAME="ksms-api"
-        APP_PATH="/var/www/$APP_NAME"
-        TIMESTAMP=$(date +%Y%m%d%H%M%S)
-        RELEASE_PATH="$APP_PATH/releases/$TIMESTAMP"
+#         # Deploy application
+#         APP_NAME="ksms-api"
+#         APP_PATH="/var/www/$APP_NAME"
+#         TIMESTAMP=$(date +%Y%m%d%H%M%S)
+#         RELEASE_PATH="$APP_PATH/releases/$TIMESTAMP"
         
-        echo "Deploying new release to: $RELEASE_PATH"
+#         echo "Deploying new release to: $RELEASE_PATH"
         
-        # Create new release directory
-        mkdir -p $RELEASE_PATH
+#         # Create new release directory
+#         mkdir -p $RELEASE_PATH
         
-        # Copy application files
-        cp -R /tmp/app/* $RELEASE_PATH/
+#         # Copy application files
+#         cp -R /tmp/app/* $RELEASE_PATH/
         
-        # Ensure identity-libs directory exists properly
-        if [ -e "$APP_PATH/shared/identity-libs" ] && [ ! -d "$APP_PATH/shared/identity-libs" ]; then
-          echo "Found identity-libs as a non-directory. Removing and recreating..."
-          rm -f "$APP_PATH/shared/identity-libs"
-        fi
+#         # Ensure identity-libs directory exists properly
+#         if [ -e "$APP_PATH/shared/identity-libs" ] && [ ! -d "$APP_PATH/shared/identity-libs" ]; then
+#           echo "Found identity-libs as a non-directory. Removing and recreating..."
+#           rm -f "$APP_PATH/shared/identity-libs"
+#         fi
 
-        # Create identity-libs directory if it doesn't exist
-        mkdir -p "$APP_PATH/shared/identity-libs"
-        chown www-data:www-data "$APP_PATH/shared/identity-libs"
+#         # Create identity-libs directory if it doesn't exist
+#         mkdir -p "$APP_PATH/shared/identity-libs"
+#         chown www-data:www-data "$APP_PATH/shared/identity-libs"
         
-        # Store Identity Model DLLs in shared location
-        if [ -d "/tmp/identity-dlls" ] && [ "$(ls -A /tmp/identity-dlls)" ]; then
-          echo "Updating shared Identity Model libraries..."
-          cp -v /tmp/identity-dlls/* "$APP_PATH/shared/identity-libs/"
+#         # Store Identity Model DLLs in shared location
+#         if [ -d "/tmp/identity-dlls" ] && [ "$(ls -A /tmp/identity-dlls)" ]; then
+#           echo "Updating shared Identity Model libraries..."
+#           cp -v /tmp/identity-dlls/* "$APP_PATH/shared/identity-libs/"
           
-          # Also add them to current release
-          cp -v /tmp/identity-dlls/* $RELEASE_PATH/
-        fi
+#           # Also add them to current release
+#           cp -v /tmp/identity-dlls/* $RELEASE_PATH/
+#         fi
         
-        # Update current symlink
-        ln -sfn $RELEASE_PATH $APP_PATH/current
+#         # Update current symlink
+#         ln -sfn $RELEASE_PATH $APP_PATH/current
         
-        # Set permissions
-        chown -R www-data:www-data $RELEASE_PATH $APP_PATH/shared
+#         # Set permissions
+#         chown -R www-data:www-data $RELEASE_PATH $APP_PATH/shared
         
-        # Find main DLL
-        DLL_FILE=$(find $RELEASE_PATH -name "KSMS.API.dll")
-        if [ -z "$DLL_FILE" ]; then
-            echo "ERROR: Cannot find main DLL file. Deployment failed."
-            exit 1
-        fi
-        DLL_NAME=$(basename $DLL_FILE)
-        DLL_DIR=$(dirname $DLL_FILE)
+#         # Find main DLL
+#         DLL_FILE=$(find $RELEASE_PATH -name "KSMS.API.dll")
+#         if [ -z "$DLL_FILE" ]; then
+#             echo "ERROR: Cannot find main DLL file. Deployment failed."
+#             exit 1
+#         fi
+#         DLL_NAME=$(basename $DLL_FILE)
+#         DLL_DIR=$(dirname $DLL_FILE)
         
-        # Update supervisor config
-        cat > /etc/supervisor/conf.d/$APP_NAME.conf << EOF
-        [program:$APP_NAME]
-        command=dotnet $DLL_FILE
-        directory=$DLL_DIR
-        autostart=true
-        autorestart=true
-        stderr_logfile=/var/log/$APP_NAME/$APP_NAME.err.log
-        stdout_logfile=/var/log/$APP_NAME/$APP_NAME.out.log
-        environment=ASPNETCORE_ENVIRONMENT=Production,ASPNETCORE_URLS="http://localhost:5000"
-        user=www-data
-        stopsignal=INT
-        EOF
+#         # Update supervisor config
+#         cat > /etc/supervisor/conf.d/$APP_NAME.conf << EOF
+#         [program:$APP_NAME]
+#         command=dotnet $DLL_FILE
+#         directory=$DLL_DIR
+#         autostart=true
+#         autorestart=true
+#         stderr_logfile=/var/log/$APP_NAME/$APP_NAME.err.log
+#         stdout_logfile=/var/log/$APP_NAME/$APP_NAME.out.log
+#         environment=ASPNETCORE_ENVIRONMENT=Production,ASPNETCORE_URLS="http://localhost:5000"
+#         user=www-data
+#         stopsignal=INT
+#         EOF
         
-        # Update Nginx config
-        cat > /etc/nginx/sites-available/$APP_NAME << EOF
-        server {
-            listen 80;
-            server_name api.ksms.news;
+#         # Update Nginx config
+#         cat > /etc/nginx/sites-available/$APP_NAME << EOF
+#         server {
+#             listen 80;
+#             server_name api.ksms.news;
         
-            location / {
-                proxy_pass http://localhost:5000;
-                proxy_http_version 1.1;
-                proxy_set_header Upgrade \$http_upgrade;
-                proxy_set_header Connection keep-alive;
-                proxy_set_header Host \$host;
-                proxy_cache_bypass \$http_upgrade;
-                proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-                proxy_set_header X-Forwarded-Proto \$scheme;
-                proxy_set_header X-Real-IP \$remote_addr;
+#             location / {
+#                 proxy_pass http://localhost:5000;
+#                 proxy_http_version 1.1;
+#                 proxy_set_header Upgrade \$http_upgrade;
+#                 proxy_set_header Connection keep-alive;
+#                 proxy_set_header Host \$host;
+#                 proxy_cache_bypass \$http_upgrade;
+#                 proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+#                 proxy_set_header X-Forwarded-Proto \$scheme;
+#                 proxy_set_header X-Real-IP \$remote_addr;
                 
-                # Buffer settings for Swagger
-                proxy_buffers 16 16k;
-                proxy_buffer_size 16k;
-                proxy_read_timeout 300s;
-                proxy_connect_timeout 300s;
-            }
-        }
-        EOF
+#                 # Buffer settings for Swagger
+#                 proxy_buffers 16 16k;
+#                 proxy_buffer_size 16k;
+#                 proxy_read_timeout 300s;
+#                 proxy_connect_timeout 300s;
+#             }
+#         }
+#         EOF
         
-        # Enable site if needed
-        if [ ! -f /etc/nginx/sites-enabled/$APP_NAME ]; then
-            ln -s /etc/nginx/sites-available/$APP_NAME /etc/nginx/sites-enabled/
-            rm -f /etc/nginx/sites-enabled/default
-        fi
+#         # Enable site if needed
+#         if [ ! -f /etc/nginx/sites-enabled/$APP_NAME ]; then
+#             ln -s /etc/nginx/sites-available/$APP_NAME /etc/nginx/sites-enabled/
+#             rm -f /etc/nginx/sites-enabled/default
+#         fi
         
-        # Validate Nginx config
-        nginx -t
+#         # Validate Nginx config
+#         nginx -t
         
-        # Restart services
-        supervisorctl reread
-        supervisorctl update
-        supervisorctl restart $APP_NAME
-        systemctl restart nginx
+#         # Restart services
+#         supervisorctl reread
+#         supervisorctl update
+#         supervisorctl restart $APP_NAME
+#         systemctl restart nginx
         
-        # Cleanup - keep 3 latest releases
-        cd $APP_PATH/releases && ls -t | tail -n +4 | xargs -I {} rm -rf {} 2>/dev/null || true
+#         # Cleanup - keep 3 latest releases
+#         cd $APP_PATH/releases && ls -t | tail -n +4 | xargs -I {} rm -rf {} 2>/dev/null || true
         
-        echo "============================================"
-        echo "Deployment completed successfully!"
-        echo "============================================"
-        EOL
+#         echo "============================================"
+#         echo "Deployment completed successfully!"
+#         echo "============================================"
+#         EOL
         
-        chmod +x setup-deploy.sh
-    - name: Setup SSH
-      uses: webfactory/ssh-agent@v0.8.0
-      with:
-        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+#         chmod +x setup-deploy.sh
+#     - name: Setup SSH
+#       uses: webfactory/ssh-agent@v0.8.0
+#       with:
+#         ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-    - name: Add host to known hosts
-      run: |
-        mkdir -p ~/.ssh
-        ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+#     - name: Add host to known hosts
+#       run: |
+#         mkdir -p ~/.ssh
+#         ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
         
-    - name: Deploy to VPS
-      run: |
-        # Create deployment directory structure
-        ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "mkdir -p /tmp/app /tmp/identity-dlls"
+#     - name: Deploy to VPS
+#       run: |
+#         # Create deployment directory structure
+#         ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "mkdir -p /tmp/app /tmp/identity-dlls"
         
-        # Copy files to VPS
-        scp -r ./deploy-package/publish/* ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/tmp/app/
-        scp -r ./deploy-package/identity-dlls/* ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/tmp/identity-dlls/
-        scp setup-deploy.sh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/tmp/
+#         # Copy files to VPS
+#         scp -r ./deploy-package/publish/* ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/tmp/app/
+#         scp -r ./deploy-package/identity-dlls/* ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/tmp/identity-dlls/
+#         scp setup-deploy.sh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/tmp/
         
-        # Execute deployment script
-        ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "sudo bash /tmp/setup-deploy.sh"
+#         # Execute deployment script
+#         ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "sudo bash /tmp/setup-deploy.sh"
         
-        # Cleanup
-        ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "rm -rf /tmp/app /tmp/identity-dlls /tmp/setup-deploy.sh"
+#         # Cleanup
+#         ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "rm -rf /tmp/app /tmp/identity-dlls /tmp/setup-deploy.sh"
