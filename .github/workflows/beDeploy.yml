@@ -19,11 +19,11 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
 
     - name: Setup .NET
       uses: actions/setup-dotnet@v3
-      with:
-        fetch-depth: 0
 
     - name: Setup .NET
       uses: actions/setup-dotnet@v3
@@ -54,7 +54,8 @@ jobs:
     - name: Publish
       run: dotnet publish -c Release -o ./publish
 
-    - uses: actions/upload-artifact@v3
+    - name: Set up SSH
+      uses: webfactory/ssh-agent@v0.8.0
       with:
         ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
