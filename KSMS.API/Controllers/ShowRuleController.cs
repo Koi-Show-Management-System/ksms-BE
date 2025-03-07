@@ -30,6 +30,13 @@ public class ShowRuleController : ControllerBase
         await _showRuleService.UpdateShowRuleAsync(id, request);
         return Ok(ApiResponse<object>.Success(null, "Update successfully"));
     }
+    [HttpGet("get-page/{showId:guid}")]
+    public async Task<ActionResult<ApiResponse<object>>> GetAllRules(Guid showId,
+        [FromQuery] int page = 1, [FromQuery]int size  = 10)
+    {
+        var rules = await _showRuleService.GetPageShowRuleAsync(showId, page, size);
+        return Ok(ApiResponse<object>.Success(rules, "Get list successfully"));
+    }
     [Authorize(Roles = "Admin, Manager, Staff")]
     [HttpDelete("{id:guid}")]
     public async Task<ActionResult<ApiResponse<object>>> DeleteRule(Guid id)
@@ -37,4 +44,5 @@ public class ShowRuleController : ControllerBase
         await _showRuleService.DeleteShowRuleAsync(id);
         return Ok(ApiResponse<object>.Success(null, "Delete successfully"));
     }
+    
 }
