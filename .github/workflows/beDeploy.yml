@@ -10,7 +10,6 @@ on:
       - 'KSMS.Infrastructure/**'
   pull_request:
     branches: [ main ]
-  workflow_dispatch:
 
 jobs:
   build-and-deploy:
@@ -19,7 +18,10 @@ jobs:
     timeout-minutes: 20
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
       with:
         fetch-depth: 0
 
@@ -40,8 +42,19 @@ jobs:
     - name: Publish
       run: dotnet publish --configuration Release --output ./publish
 
-    - name: Setup SSH
-      uses: webfactory/ssh-agent@v0.8.0
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Build
+      run: dotnet build --configuration Release --no-restore
+
+    - name: Test
+      run: dotnet test --no-build --verbosity normal
+
+    - name: Publish
+      run: dotnet publish -c Release -o ./publish
+
+    - uses: actions/upload-artifact@v3
       with:
         ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
