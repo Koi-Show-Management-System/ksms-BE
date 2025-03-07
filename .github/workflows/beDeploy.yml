@@ -3,11 +3,11 @@ name: Backend CI/CD Pipeline
 on:
   push:
     branches: [ main ]
-    paths:
-      - 'KSMS.API/**'
-      - 'KSMS.Application/**'
-      - 'KSMS.Domain/**'
-      - 'KSMS.Infrastructure/**'
+    # paths:
+    #   - 'KSMS.API/**'
+    #   - 'KSMS.Application/**'
+    #   - 'KSMS.Domain/**'
+    #   - 'KSMS.Infrastructure/**'
   pull_request:
     branches: [ main ]
 
