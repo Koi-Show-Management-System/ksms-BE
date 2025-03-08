@@ -325,11 +325,7 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
         var registrationPayment = await _unitOfWork.GetRepository<RegistrationPayment>()
             .SingleOrDefaultAsync(predicate: r => r.Id == registrationPaymentId,
                 include: query => query
-                    .Include(r => r.Registration).ThenInclude(r => r.Account)
-                    .Include(r => r.Registration).ThenInclude(r => r.KoiShow)
-                    .Include(r => r.Registration).ThenInclude(r => r.KoiMedia)
-                    .Include(r => r.Registration).ThenInclude(r => r.CompetitionCategory)
-                    .Include(r => r.Registration).ThenInclude(r => r.KoiProfile).ThenInclude(r => r.Variety));
+                    .Include(r => r.Registration));
         registrationPayment.Status = status switch
         {
             RegistrationPaymentStatus.Cancelled => RegistrationPaymentStatus.Cancelled.ToString().ToLower(),
@@ -349,13 +345,7 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
             _unitOfWork.GetRepository<RegistrationPayment>().UpdateAsync(registrationPayment);
             _unitOfWork.GetRepository<Registration>().UpdateAsync(registrationPayment.Registration);
             await _unitOfWork.CommitAsync();
-            var sendMail = MailUtil.SendEmail(registrationPayment.Registration.Account.Email,
-                MailUtil.ContentMailUtil.Title_ThankingForRegisterSh,
-                MailUtil.ContentMailUtil.ConfirmingRegistration(registrationPayment.Registration), "");
-            if (!sendMail)
-            {
-                throw new BadRequestException("Error sending confirmation email.");
-            }
+            _backgroundJobClient.Enqueue(() => _emailService.SendPaymentConfirmationEmail(registrationPaymentId));
         }
     }
     public async Task UpdateStatusForRegistration(Guid registrationId, RegistrationStatus status)
@@ -376,11 +366,17 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
             throw new NotFoundException("This Registration is not paid");
         }
         var accountId = GetIdFromJwt();
-        var showStaff = await _unitOfWork.GetRepository<ShowStaff>()
-            .SingleOrDefaultAsync(predicate: s => s.AccountId == accountId && s.KoiShowId == registration.KoiShowId);
-        if (showStaff is null)
+        var userRole = GetRoleFromJwt();
+
+        if (userRole != "ADMIN")
         {
-            throw new ForbiddenMethodException("You are not staff for this show!!!!");
+            var showStaff = await _unitOfWork.GetRepository<ShowStaff>()
+                .SingleOrDefaultAsync(predicate: s => s.AccountId == accountId && s.KoiShowId == registration.KoiShowId);
+
+            if (showStaff is null)
+            {
+                throw new ForbiddenMethodException("You are not authorized to update this registration.");
+            }
         }
         registration.Status = status switch
         {
