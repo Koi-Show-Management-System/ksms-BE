@@ -19,16 +19,16 @@ jobs:
       with:
         host: ${{ secrets.SSH_HOST }}
         username: ${{ secrets.SSH_USER }}
-        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        private_key: ${{ secrets.SSH_PRIVATE_KEY }}
         port: 22
         script: |
-          # Chuyển đến thư mục của dự án Backend (api)
+          # Chuyển đến thư mục backend (api) trên VPS
           cd /opt/ksms/api
 
-          # Kéo mã nguồn mới nhất từ Git
+          # Kéo mã nguồn mới nhất từ GitHub
           git pull origin main
 
-          # Cài đặt dependencies nếu cần (ví dụ: dotnet restore cho .NET)
+          # Cài đặt dependencies
           dotnet restore
 
           # Build API
