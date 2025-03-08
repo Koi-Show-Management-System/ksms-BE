@@ -13,6 +13,8 @@ namespace KSMS.Application.Services
     public interface ICategoryService
     {
         Task CreateCompetitionCategory(CreateCompetitionCategoryRequest request);
+        
+        Task UpdateCompetitionCategory(Guid id, UpdateCompetitionCategoryRequest request);
         Task<GetCompetitionCategoryDetailResponse> GetCompetitionCategoryDetailById(Guid id);
         Task<Paginate<GetPageCompetitionCategoryResponse>> GetPagedCompetitionCategory(Guid showId, int page, int size);
     }
