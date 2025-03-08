@@ -17,7 +17,7 @@ namespace KSMS.Application.Services
    //     Task<KoiShowResponse> GetShowByIdAsync(Guid id);
         Task<GetKoiShowDetailResponse> GetShowDetailByIdAsync(Guid id);
         Task CreateShowAsync(CreateShowRequest request);
-        Task UpdateShowAsync(Guid id, UpdateShowRequest request);
+        //Task UpdateShowAsync(Guid id, UpdateShowRequest request);
         //Task PatchShowStatusAsync(Guid id, string statusName);
     }
 
