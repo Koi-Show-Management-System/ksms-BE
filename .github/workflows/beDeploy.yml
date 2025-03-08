@@ -23,10 +23,17 @@ jobs:
         port: 22
         script: |
           # Chuyển đến thư mục backend (api) trên VPS
-          cd /opt/ksms/api
+          cd /opt/ksms
 
-          # Kéo mã nguồn mới nhất từ GitHub
-          git pull origin main
+          # Nếu thư mục đã tồn tại, sử dụng git pull
+          if [ -d "api/.git" ]; then
+              cd api
+              git pull origin main
+          else
+              # Nếu thư mục không phải git repo, clone lại
+              git clone https://github.com/yourusername/your-repository.git api
+              cd api
+          fi
 
           # Cài đặt dependencies
           dotnet restore
