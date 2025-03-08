@@ -497,11 +497,10 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
 
     public async Task<Paginate<GetRegistrationResponse>> GetAllRegistrationForCurrentMember(RegistrationFilter filter, int page, int size)
     {
-        var accountId = GetIdFromJwt();
-        var claims = _httpContextAccessor.HttpContext?.User;
-        var role = claims?.FindFirst(ClaimTypes.Role)?.Value;
         
-        var predicate = await GetRolePredicate(role, accountId);
+        var role = GetRoleFromJwt();
+        
+        var predicate = await GetRolePredicate(role);
         
         predicate = ApplyFilter(predicate, filter);
 
@@ -510,14 +509,11 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
                 predicate: predicate,
                 orderBy: q => q.OrderByDescending(r => r.CreatedAt),
                 include: q => q
-                    .Include(r => r.Account)
                     .Include(r => r.KoiShow)
                     .Include(r => r.KoiProfile)
-                        .ThenInclude(k => k.Variety)
+                    .ThenInclude(k => k.Variety)
                     .Include(r => r.CompetitionCategory)
-                    .ThenInclude(c => c.CategoryVarieties)
-                    .Include(r => r.KoiMedia)
-                    .Include(r => r.RegistrationPayment),
+                    .Include(r => r.KoiMedia),
                 page: page,
                 size: size
             );
@@ -525,7 +521,7 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
         return registrations.Adapt<Paginate<GetRegistrationResponse>>();
     }
 
-    private async Task<Expression<Func<Registration, bool>>> GetRolePredicate(string role, Guid accountId)
+    private async Task<Expression<Func<Registration, bool>>> GetRolePredicate(string role)
     {
         Expression<Func<Registration, bool>> predicate = null;
 
@@ -536,14 +532,14 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
             case "MANAGER":
             case "STAFF":
                 var staffShows = await _unitOfWork.GetRepository<ShowStaff>()
-                    .GetListAsync(predicate: s => s.AccountId == accountId);
+                    .GetListAsync(predicate: s => s.AccountId == GetIdFromJwt());
                 var showIds = staffShows.Select(s => s.KoiShowId).ToList();
                 predicate = r => showIds.Contains(r.KoiShowId);
                 break;
 
             default:
-                //predicate = r => r.Status == RegistrationStatus.Paid.ToString().ToLower();
-                predicate = r => r.AccountId == accountId;
+                //predicate = r => r.Status != RegistrationStatus..ToString().ToLower();
+                predicate = r => r.AccountId == GetIdFromJwt();
                 break;
         }
 
