@@ -8,4 +8,6 @@ public interface IEmailService
     Task SendRegistrationConfirmationEmail(Guid registrationId);
     
     Task SendConfirmationTicket(Guid orderId);
+    
+    Task SendPaymentConfirmationEmail(Guid registrationPaymentId);
 }
