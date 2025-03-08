@@ -1,140 +1,49 @@
-name: Optimized Backend CI/CD Pipeline
+name: Deploy Backend
 
 on:
   push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
-  workflow_dispatch:
+    branches:
+      - main  # Chạy khi có commit push lên nhánh main
+  workflow_dispatch:  # Cho phép trigger thủ công
 
 jobs:
-  build-and-deploy:
-    name: Fast Deploy Backend
+  deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
 
     steps:
-    - uses: actions/checkout@v3
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Deploy to VPS (SSH)
+      uses: appleboy/ssh-action@v0.1.5
       with:
-        fetch-depth: 0
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USER }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        port: 22
+        script: |
+          # Chuyển đến thư mục backend (api) trên VPS
+          cd /opt/ksms
 
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v3
-      with:
-        dotnet-version: '8.0.x'
-
-    - name: Cache NuGet packages
-      uses: actions/cache@v3
-      with:
-        path: ~/.nuget/packages
-        key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json', '**/packages.config', '**/*.csproj') }}
-        restore-keys: |
-          ${{ runner.os }}-nuget-
-
-    - name: Restore dependencies
-      run: dotnet restore --verbosity minimal
-
-    - name: Build
-      run: dotnet build --no-restore --configuration Release --verbosity minimal
-
-    - name: Test
-      run: dotnet test --no-build --configuration Release --verbosity minimal
-
-    - name: Publish
-      run: dotnet publish --configuration Release --output ./publish --verbosity minimal
-
-    - name: Setup SSH with multiplexing
-      uses: webfactory/ssh-agent@v0.8.0
-      with:
-        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-
-    - name: Configure SSH connections
-      run: |
-        mkdir -p ~/.ssh
-        cat > ~/.ssh/config << EOF
-        Host vps
-          HostName ${{ secrets.SSH_HOST }}
-          User ${{ secrets.SSH_USER }}
-          StrictHostKeyChecking no
-          ControlMaster auto
-          ControlPath ~/.ssh/control-%r@%h:%p
-          ControlPersist 10m
-          Compression yes
-          TCPKeepAlive yes
-          ServerAliveInterval 15
-          ServerAliveCountMax 3
-        EOF
-        ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
-        chmod 600 ~/.ssh/config
-
-    - name: Create deploy script
-      run: |
-        cat > deploy.sh << 'EOF'
-        #!/bin/bash
-        set -e
-        
-        # Thư mục gốc cho ứng dụng
-        APP_PATH="/var/www/ksms-api"
-        TIMESTAMP=$(date +%Y%m%d%H%M%S)
-        RELEASE_PATH="$APP_PATH/releases/$TIMESTAMP"
-        
-        # Tạo thư mục release
-        mkdir -p $RELEASE_PATH
-        
-        # Giải nén và cài đặt ứng dụng
-        tar -xzf /tmp/publish.tar.gz -C $RELEASE_PATH
-        
-        # Update symlink trước khi restart để giảm downtime
-        ln -sfn $RELEASE_PATH $APP_PATH/current
-        
-        # Danh sách các DLL cần sao chép từ các bản release cũ (để tránh build lại)
-        SYSTEM_DLLS=(
-          "Microsoft.IdentityModel.*.dll"
-          "System.IdentityModel.*.dll"
-        )
-        
-        # Sao chép các DLL hệ thống từ release cũ nếu có (để tăng tốc)
-        for dll_pattern in "${SYSTEM_DLLS[@]}"; do
-          if [ -d "$APP_PATH/current" ] && [ -n "$(find $APP_PATH/current -name "$dll_pattern" 2>/dev/null)" ]; then
-            echo "Reusing system DLLs matching $dll_pattern"
-            find $APP_PATH/current -name "$dll_pattern" -exec cp {} $RELEASE_PATH/ \;
-          fi
-        done
-        
-        # Khởi động lại service theo cách tối ưu
-        if systemctl is-active ksms-api > /dev/null; then
-          # Sử dụng reload nếu có thể (nhanh hơn restart)
-          if systemctl reload ksms-api 2>/dev/null; then
-            echo "Service reloaded successfully"
+          # Nếu thư mục đã tồn tại, sử dụng git pull
+          if [ -d "api/.git" ]; then
+              cd api
+              git pull origin main
           else
-            # Fallback to restart
-            systemctl restart ksms-api
+              # Nếu thư mục không phải git repo, clone lại
+              git clone https://github.com/yourusername/your-repository.git api
+              cd api
           fi
-        else
-          systemctl start ksms-api
-        fi
-        
-        # Đợi service khởi động hoàn tất
-        timeout 15 bash -c 'until systemctl is-active --quiet ksms-api; do sleep 1; done' || echo "Service started but not fully active yet"
-        
-        # Kiểm tra nhanh xem ứng dụng có chạy không
-        curl -s --head http://localhost:5000/health || echo "Health check failed, but continuing..."
-        
-        # Dọn dẹp - chỉ giữ 3 bản gần nhất
-        cd $APP_PATH/releases && ls -t | tail -n +4 | xargs -I {} rm -rf {}
-        
-        echo "✅ Deployment completed successfully!"
-        EOF
-        
-        chmod +x deploy.sh
 
-    - name: Compress publish folder for faster transfer
-      run: tar -czf publish.tar.gz -C ./publish .
-      
-    - name: Quick deploy to VPS
-      run: |
-        # Upload file nén và script trong một lệnh SSH duy nhất
-        scp -o ControlPath=~/.ssh/control-%r@%h:%p publish.tar.gz deploy.sh vps:/tmp/
-        
-        # Chạy script trên VPS (tận dụng CPU và RAM của VPS)
-        ssh -o ControlPath=~/.ssh/control-%r@%h:%p vps "sudo bash /tmp/deploy.sh"
+          # Cài đặt dependencies
+          dotnet restore
+
+          # Build API
+          dotnet publish -c Release -o /opt/ksms/publish-api
+
+          # Kiểm tra và khởi động lại dịch vụ Docker (nếu sử dụng Docker Compose)
+          if [ -f /opt/ksms/docker-compose.yml ]; then
+              docker-compose -f /opt/ksms/docker-compose.yml up -d
+          else
+              echo "docker-compose.yml không tìm thấy, bỏ qua khởi động lại container Docker"
+          fi
