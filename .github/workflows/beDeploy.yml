@@ -22,8 +22,8 @@ jobs:
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         port: 22
         script: |
-          # Chuyển đến thư mục của dự án
-          cd /path/to/backend
+          # Chuyển đến thư mục của dự án Backend (api)
+          cd /opt/ksms/api
 
           # Kéo mã nguồn mới nhất từ Git
           git pull origin main
@@ -32,7 +32,11 @@ jobs:
           dotnet restore
 
           # Build API
-          dotnet publish -c Release -o /app/publish-api
+          dotnet publish -c Release -o /opt/ksms/publish-api
 
-          # Restart service (hoặc chạy Docker container)
-          docker-compose -f /path/to/docker-compose.yml up -d
+          # Kiểm tra và khởi động lại dịch vụ Docker (nếu sử dụng Docker Compose)
+          if [ -f /opt/ksms/docker-compose.yml ]; then
+              docker-compose -f /opt/ksms/docker-compose.yml up -d
+          else
+              echo "docker-compose.yml không tìm thấy, bỏ qua khởi động lại container Docker"
+          fi
