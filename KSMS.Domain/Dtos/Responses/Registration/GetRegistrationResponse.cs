@@ -8,7 +8,6 @@ namespace KSMS.Domain.Dtos.Responses.Registration;
 public class GetRegistrationResponse // for user
 {
     public Guid Id { get; set; }
-    
 
     public string? RegistrationNumber { get; set; }
 
@@ -17,13 +16,14 @@ public class GetRegistrationResponse // for user
     public decimal KoiSize { get; set; }
 
     public int KoiAge { get; set; }
-    
 
     public decimal RegistrationFee { get; set; }
 
     public string? Status { get; set; }
 
     public string? Notes { get; set; }
+    
+    public DateTime? CreatedAt { get; set; }
 
     public DateTime? ApprovedAt { get; set; }
 
@@ -34,9 +34,4 @@ public class GetRegistrationResponse // for user
     public KoiProfileResponse KoiProfile { get; set; } = null!;
 
     public GetKoiShowResponse KoiShow { get; set; } = null!;
- 
-    
-    
-    
-    
 }
