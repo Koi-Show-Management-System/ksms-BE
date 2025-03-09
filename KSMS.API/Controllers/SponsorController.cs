@@ -29,6 +29,13 @@ public class SponsorController : ControllerBase
         await _sponsorService.UpdateSponsorAsync(id, request);
         return Ok(ApiResponse<object>.Success(null, "Update successfully"));
     }
+    [HttpGet("get-page/{koiShowId:guid}")]
+    public async Task<ActionResult<ApiResponse<object>>> GetPageSponsor(Guid koiShowId,
+        [FromQuery] int page = 1, [FromQuery]int size  = 10)
+    {
+        var sponsors = await _sponsorService.GetPageSponsorAsync(koiShowId, page, size);
+        return Ok(ApiResponse<object>.Success(sponsors, "Get list successfully"));
+    }
     [Authorize(Roles = "Admin, Manager, Staff")]
     [HttpDelete("{id:guid}")]
     public async Task<ActionResult<ApiResponse<object>>> DeleteSponsor(Guid id)
