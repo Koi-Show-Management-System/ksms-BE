@@ -1,49 +1,120 @@
-name: Deploy Backend
+name: Backend CI/CD Pipeline
 
 on:
   push:
-    branches:
-      - main  # Chạy khi có commit push lên nhánh main
-  workflow_dispatch:  # Cho phép trigger thủ công
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
 
 jobs:
-  deploy:
+  build-and-deploy:
+    name: Build and Deploy Backend
     runs-on: ubuntu-latest
-
+    timeout-minutes: 20
+    
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
-
-    - name: Deploy to VPS (SSH)
-      uses: appleboy/ssh-action@v0.1.5
-      with:
-        host: ${{ secrets.SSH_HOST }}
-        username: ${{ secrets.SSH_USER }}
-        key: ${{ secrets.SSH_PRIVATE_KEY }}
-        port: 22
-        script: |
-          # Chuyển đến thư mục backend (api) trên VPS
-          cd /opt/ksms
-
-          # Nếu thư mục đã tồn tại, sử dụng git pull
-          if [ -d "api/.git" ]; then
-              cd api
-              git pull origin main
-          else
-              # Nếu thư mục không phải git repo, clone lại
-              git clone https://github.com/yourusername/your-repository.git api
-              cd api
-          fi
-
-          # Cài đặt dependencies
-          dotnet restore
-
-          # Build API
-          dotnet publish -c Release -o /opt/ksms/publish-api
-
-          # Kiểm tra và khởi động lại dịch vụ Docker (nếu sử dụng Docker Compose)
-          if [ -f /opt/ksms/docker-compose.yml ]; then
-              docker-compose -f /opt/ksms/docker-compose.yml up -d
-          else
-              echo "docker-compose.yml không tìm thấy, bỏ qua khởi động lại container Docker"
-          fi
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '8.0.x'
+      
+      - name: Restore dependencies
+        run: dotnet restore
+      
+      - name: Build
+        run: dotnet build --no-restore --configuration Release
+      
+      - name: Test
+        run: dotnet test --no-build --verbosity normal --configuration Release
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+      
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: true
+          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/ksms-api:${{ github.sha }},${{ secrets.DOCKER_HUB_USERNAME }}/ksms-api:latest
+          cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/ksms-api:buildcache
+          cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/ksms-api:buildcache,mode=max
+      
+      - name: Deploy to VPS
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            # Login to Docker Hub
+            echo "${{ secrets.DOCKER_HUB_TOKEN }}" | docker login -u ${{ secrets.DOCKER_HUB_USERNAME }} --password-stdin
+            
+            # Pull the latest image
+            docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/ksms-api:${{ github.sha }}
+            
+            # Navigate to the API directory
+            cd /opt/ksms/api
+            
+            # Create or update .env file with secrets
+            cat > .env << EOL
+            JWT_KEY=${{ secrets.JWT_KEY }}
+            JWT_ISSUER=${{ secrets.JWT_ISSUER }}
+            JWT_AUDIENCE=${{ secrets.JWT_AUDIENCE }}
+            DB_SERVER=${{ secrets.DB_SERVER }}
+            DB_NAME=${{ secrets.DB_NAME }}
+            DB_USER=${{ secrets.DB_USER }}
+            DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+            FIREBASE_BUCKET=${{ secrets.FIREBASE_BUCKET }}
+            GOOGLE_PROJECT_ID=${{ secrets.GOOGLE_PROJECT_ID }}
+            GOOGLE_PRIVATE_KEY_ID=${{ secrets.GOOGLE_PRIVATE_KEY_ID }}
+            GOOGLE_PRIVATE_KEY=${{ secrets.GOOGLE_PRIVATE_KEY }}
+            GOOGLE_CLIENT_EMAIL=${{ secrets.GOOGLE_CLIENT_EMAIL }}
+            GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
+            MAIL_HOST=${{ secrets.MAIL_HOST }}
+            MAIL_PORT=${{ secrets.MAIL_PORT }}
+            MAIL_SENDER=${{ secrets.MAIL_SENDER }}
+            MAIL_PASSWORD=${{ secrets.MAIL_PASSWORD }}
+            PAYOS_CLIENT_ID=${{ secrets.PAYOS_CLIENT_ID }}
+            PAYOS_API_KEY=${{ secrets.PAYOS_API_KEY }}
+            PAYOS_CHECKSUM_KEY=${{ secrets.PAYOS_CHECKSUM_KEY }}
+            GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
+            EOL
+            
+            # Update docker-compose.yml to use the pre-built image
+            cat > docker-compose.yml << EOL
+            version: '3.8'
+            services:
+              api:
+                image: ${{ secrets.DOCKER_HUB_USERNAME }}/ksms-api:${{ github.sha }}
+                container_name: ksms-api
+                ports:
+                  - "5000:80"
+                env_file:
+                  - .env
+                restart: unless-stopped
+                networks:
+                  - ksms-network
+            
+            networks:
+              ksms-network:
+                external: true
+            EOL
+            
+            # Restart the container with the new image
+            docker-compose down
+            docker-compose up -d
+            
+            # Cleanup old images
+            docker image prune -f
