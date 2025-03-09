@@ -11,7 +11,7 @@ public class CreateCompetitionCategoryRequest
     [StringLength(100, ErrorMessage = "Category name cannot exceed 100 characters.")]
     public string Name { get; set; } = null!;
         
-    public Guid ShowId { get; set; }
+    public Guid KoiShowId { get; set; }
     [Range(0, 999.99, ErrorMessage = "Minimum size must be between 0 and 999.99.")]
     public decimal? SizeMin { get; set; }
 
