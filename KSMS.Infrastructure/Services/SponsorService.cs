@@ -1,8 +1,10 @@
 ﻿using KSMS.Application.Repositories;
 using KSMS.Application.Services;
 using KSMS.Domain.Dtos.Requests.Sponsor;
+using KSMS.Domain.Dtos.Responses.Sponsor;
 using KSMS.Domain.Entities;
 using KSMS.Domain.Exceptions;
+using KSMS.Domain.Pagination;
 using KSMS.Infrastructure.Database;
 using Mapster;
 using Microsoft.AspNetCore.Http;
@@ -49,5 +51,12 @@ public class SponsorService : BaseService<SponsorService>, ISponsorService
         }
         _unitOfWork.GetRepository<Sponsor>().DeleteAsync(sponsor);
         await _unitOfWork.CommitAsync();
+    }
+
+    public async Task<Paginate<SponsorGetKoiShowDetailResponse>> GetPageSponsorAsync(Guid koiShowId, int page, int size)
+    {
+        var sponsors = await _unitOfWork.GetRepository<Sponsor>()
+            .GetPagingListAsync(predicate: x => x.KoiShowId == koiShowId, page: page, size: size);
+        return sponsors.Adapt<Paginate<SponsorGetKoiShowDetailResponse>>();
     }
 }
