@@ -48,8 +48,9 @@ jobs:
           context: .
           push: true
           tags: ${{ secrets.DOCKER_HUB_USERNAME }}/ksms-api:${{ github.sha }},${{ secrets.DOCKER_HUB_USERNAME }}/ksms-api:latest
-          cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/ksms-api:buildcache
-          cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/ksms-api:buildcache,mode=max
+          # Bỏ qua cache trong lần build đầu tiên
+          # cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/ksms-api:buildcache
+          # cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/ksms-api:buildcache,mode=max
       
       - name: Deploy to VPS
         uses: appleboy/ssh-action@v0.1.10

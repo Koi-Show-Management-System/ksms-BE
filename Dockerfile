@@ -1,35 +1,27 @@
-# Use the official .NET SDK 8 image as the build image
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
 WORKDIR /app
+EXPOSE 80
+EXPOSE 443
 
-# Copy solution and project files first for better layer caching
-COPY ksms-BE.sln .
-COPY KSMS.API/*.csproj KSMS.API/
-COPY KSMS.Application/*.csproj KSMS.Application/
-COPY KSMS.Domain/*.csproj KSMS.Domain/
-COPY KSMS.Infrastructure/*.csproj KSMS.Infrastructure/
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+WORKDIR /src
 
-# Restore dependencies
-RUN dotnet restore
+# Sao chép các file .csproj và restore các dependency trước
+COPY ["KSMS.API/KSMS.API.csproj", "KSMS.API/"]
+COPY ["KSMS.Application/KSMS.Application.csproj", "KSMS.Application/"]
+COPY ["KSMS.Domain/KSMS.Domain.csproj", "KSMS.Domain/"]
+COPY ["KSMS.Infrastructure/KSMS.Infrastructure.csproj", "KSMS.Infrastructure/"]
+RUN dotnet restore "KSMS.API/KSMS.API.csproj"
 
-# Copy the rest of the code
+# Sao chép toàn bộ mã nguồn
 COPY . .
+WORKDIR "/src/KSMS.API"
+RUN dotnet build "KSMS.API.csproj" -c Release -o /app/build
 
-# Build the application
-RUN dotnet build -c Release --no-restore
-
-# Publish the application
 FROM build AS publish
-RUN dotnet publish KSMS.API/KSMS.API.csproj -c Release -o /app/publish --no-build
+RUN dotnet publish "KSMS.API.csproj" -c Release -o /app/publish
 
-# Build the runtime image
-FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS final
+FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
-
-# Set environment variables
-ENV ASPNETCORE_ENVIRONMENT=Production
-ENV ASPNETCORE_URLS=http://+:80
-
-EXPOSE 80
 ENTRYPOINT ["dotnet", "KSMS.API.dll"]
