@@ -81,7 +81,9 @@ jobs:
       PAYOS_API_KEY: ${{ secrets.PAYOS_API_KEY }}
       PAYOS_CHECKSUM_KEY: ${{ secrets.PAYOS_CHECKSUM_KEY }}
       GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-      BASE_URL: ${{secrets.MAIL_PASSWORD}}
+      BASE_URL: ${{secrets.BASE_URL}}
+      ROOT_DOMAIN: ${{secrets.ROOT_DOMAIN}}
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
