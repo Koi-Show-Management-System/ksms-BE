@@ -139,8 +139,9 @@ namespace KSMS.Infrastructure.Services
             }
 
             //  Xác định `Pass` hoặc `Fail`
-            const decimal PASS_THRESHOLD = 70; // Nếu điểm >= 70 thì "Pass", nếu < 60 thì "Fail"
-            string finalStatus = finalScore >= PASS_THRESHOLD ? "Pass" : "Fail";
+            decimal passThreshold = (decimal)registrationRound.Round.MinScoreToAdvance;
+            string finalStatus = finalScore >= passThreshold ? "Pass" : "Fail"; 
+             
 
             // Cập nhật `RoundResult`
             var existingRoundResult = await roundResultRepository.SingleOrDefaultAsync(
