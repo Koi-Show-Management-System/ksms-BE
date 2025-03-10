@@ -1,0 +1,40 @@
+version: '3.8'
+services:
+  ksms-api:
+    image: ${REGISTRY_NAME}/ksms-api:latest
+    restart: unless-stopped
+    container_name: ksms_api
+    environment:
+      ConnectionStrings__DefaultConnection: Server=${DB_SERVER};Initial Catalog=${DB_NAME};Persist Security Info=False;User ID=${DB_USER};Password=${DB_PASSWORD};MultipleActiveResultSets=True;TrustServerCertificate=True;Connection Timeout=60;Encrypt=False;
+      JwtSettings__Key: ${JWT_KEY}
+      JwtSettings__Issuer: ${JWT_ISSUER}
+      JwtSettings__Audience: ${JWT_AUDIENCE}
+      Firebase__Bucket: ${FIREBASE_BUCKET}
+      PayOs__ClientId: ${PAYOS_CLIENT_ID}
+      PayOs__ApiKey: ${PAYOS_API_KEY}
+      PayOs__ChecksumKey: ${PAYOS_CHECKSUM_KEY}
+      Gemini__ApiKey: ${GEMINI_API_KEY}
+      MailSettings__HostEmail: ${MAIL_HOST}
+      MailSettings__PortEmail: ${MAIL_PORT}
+      MailSettings__EmailSender: ${MAIL_SENDER}
+      MailSettings__PasswordSender: ${MAIL_PASSWORD}
+      AppSettings__BaseUrl: ${BASE_URL}
+      GoogleImages__Type: "service_account"
+      GoogleImages__ProjectId: ${GOOGLE_PROJECT_ID}
+      GoogleImages__PrivateKeyId: ${GOOGLE_PRIVATE_KEY_ID}
+      GoogleImages__PrivateKey: ${GOOGLE_PRIVATE_KEY}
+      GoogleImages__ClientEmail: ${GOOGLE_CLIENT_EMAIL}
+      GoogleImages__ClientId: ${GOOGLE_CLIENT_ID}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=ksms-network"
+      - "traefik.constraint=proxy-public"
+      - "traefik.http.routers.ksms-api.rule=Host(`api.${ROOT_DOMAIN}`)"
+      - "traefik.http.routers.ksms-api.entrypoints=web"
+      - "traefik.http.services.ksms-api.loadbalancer.server.port=5000"
+    networks:
+      - ksms-network
+networks:
+  ksms-network:
+    name: ksms-network
+    external: true

@@ -1,0 +1,10 @@
+version: '3.8'
+services:
+  ksms-api:
+    restart: unless-stopped
+    build:
+      context: .
+      dockerfile: Dockerfile
+      tags:
+        - "${REGISTRY_NAME}/ksms-api:latest"
+        - "${REGISTRY_NAME}/ksms-api:${GIT_COMMIT_SHA}"
