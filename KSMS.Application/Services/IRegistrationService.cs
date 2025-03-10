@@ -10,12 +10,13 @@ namespace KSMS.Application.Services;
 
 public interface IRegistrationService
 {
-    Task<Registration?> GetRegistrationById(Guid registrationId);
+    Task<List<Guid>> GetRegistrationIdsByKoiShowAsync(Guid koiShowId);
+    Task<CheckQRRegistrationResoponse> GetRegistrationByIdAndRoundAsync(Guid registrationId, Guid roundId);
     Task<object> CreateRegistration(CreateRegistrationRequest createRegistrationRequest); 
     Task UpdateRegistrationPaymentStatusForPayOs(Guid registrationPaymentId, RegistrationPaymentStatus status);
     Task UpdateStatusForRegistration(Guid registrationId, RegistrationStatus status);
     Task<CheckOutRegistrationResponse> CheckOut(Guid registrationId);
-    Task AssignAllFishToTankAndRound(Guid showId);
+ //   Task AssignAllFishToTankAndRound(Guid showId);
     Task AssignMultipleFishesToTankAndRound(Guid roundId, List<Guid> registrationIds);
 
 

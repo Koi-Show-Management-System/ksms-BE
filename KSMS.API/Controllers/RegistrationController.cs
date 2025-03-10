@@ -8,6 +8,8 @@ using Microsoft.AspNetCore.Mvc;
 using KSMS.Domain.Dtos;
 using KSMS.Domain.Models;
 using KSMS.Domain.Entities;
+using KSMS.Domain.Dtos.Responses.Round;
+using KSMS.Infrastructure.Utils;
 
 namespace KSMS.API.Controllers
 {
@@ -21,23 +23,21 @@ namespace KSMS.API.Controllers
         {
             _registrationService = registrationService;
         }
+        // generate mã qr cho từng đơn đăng kí để trọng tài quét
+        [HttpGet("generate-qr-list-regisation-referree")]
+        public async Task<ActionResult<ApiResponse<List<GetRegisByQrCodeResponse>>>> GenerateQrCodesForRegistrationsByKoiShow([FromQuery] Guid koiShowId)
+        {
+            var registrationIds = await _registrationService.GetRegistrationIdsByKoiShowAsync(koiShowId);
+            var qrCodes = registrationIds.Select(id => new GetRegisByQrCodeResponse
+            {
+                RegistrationId = id,
+                Qrcode = QrcodeUtil.GenerateQrCode(id)
+            }).ToList();
 
-        //[HttpPost("{showId:guid}/assign-all-fish")]
-        //public async Task<ActionResult<ApiResponse<object>>> AssignAllFishToTank(Guid showId)
-        //{
-        //    try
-        //    {
-        //        await _registrationService.AssignAllFishToTankAndRound(showId);
+            return Ok(ApiResponse<List<GetRegisByQrCodeResponse>>.Success(qrCodes, "QR Codes generated successfully"));
+        }
 
-        //        return Ok(ApiResponse<object>.Success(null, "Fish assigned successfully"));
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        return BadRequest(ApiResponse<object>.Fail(ex.Message));
-        //    }
-        //}
-        
-
+        // thả hết cá vào hồ theo roundi và đơn đăng kí 
         [HttpPatch("assign-to-tank")]
         public async Task<ActionResult<ApiResponse<object>>> AssignMultipleFishesToTankAndRound(
     [FromBody] AssignFishesRequest request)

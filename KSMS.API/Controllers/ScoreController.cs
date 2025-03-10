@@ -41,19 +41,15 @@ namespace KSMS.API.Controllers
         /// <summary>
         /// Chấm điểm vòng loại (trọng tài chỉ chọn `Pass` hoặc `Fail`).
         /// </summary>
-        [HttpPost("elimination")]
+        [HttpPost("Preliminary")]
      //   [Authorize(Roles = "Referee")] 
-        public async Task<ActionResult<ApiResponse<object>>> CreateEliminationScore([FromBody] CreateEliminationScoreRequest request)
+        public async Task<ActionResult<ApiResponse<object>>> CreatenPreliminaryScore([FromBody] CreateEliminationScoreRequest request)
         {
-            try
-            {
+           
+            
                 await _scoreService.CreateEliminationScoreAsync(request);
-                return Ok(ApiResponse<ScoreDetailResponse>.Success(null, "Elimination score submitted successfully"));
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ApiResponse<ScoreDetailResponse>.Fail(ex.Message));
-            }
+            return Ok(ApiResponse<ScoreDetailResponse>.Success(null, "Elimination score submitted successfully"));
+            
         }
     }
 }

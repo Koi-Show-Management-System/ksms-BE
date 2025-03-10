@@ -12,6 +12,6 @@ namespace KSMS.Application.Services
     {
 
         Task<RegistrationRoundResponse> CreateRegistrationRoundAsync(CreateRegistrationRoundRequest request);
-        Task<RegistrationRoundResponse> GetRegistrationRoundAsync(Guid registrationId, Guid roundId);
+        //Task<RegistrationRoundResponse> GetRegistrationRoundAsync(Guid registrationId, Guid roundId);
     }
 }
