@@ -58,6 +58,7 @@ jobs:
   api-deploy-stage:
     name: Backend Deploy Stage
     runs-on: self-hosted
+    needs: api-build-stage
     env:
       REGISTRY_NAME: ${{ secrets.DOCKER_HUB_USERNAME }}
       JWT_KEY: ${{ secrets.JWT_KEY }}
