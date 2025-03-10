@@ -28,7 +28,7 @@ namespace KSMS.API.Controllers
             var newRegistrationRound = await _registrationRoundService.CreateRegistrationRoundAsync(request);
             return StatusCode(201, ApiResponse<object>.Created(newRegistrationRound, "Registration round created successfully"));
         }
-
+        // quét mã qr cho trọng tài 
         [HttpGet("get-registration-by-round-info-reffreee")]
         public async Task<ActionResult<ApiResponse<CheckQRRegistrationResoponse>>> GetRegistrationByIdAndRoundAsync(
     [FromQuery] Guid registrationId,

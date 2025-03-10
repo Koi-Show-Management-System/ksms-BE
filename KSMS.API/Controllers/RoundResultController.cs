@@ -29,6 +29,8 @@ namespace KSMS.API.Controllers
 
         //    return StatusCode(201, ApiResponse<object>.Created(createdRoundResult, "Round result created successfully"));
         //}
+
+
         // phân trang danh sách đăng kí theo category và status pass hay k
         [HttpGet("paged-RoundResult-registrations-by-category")]
         public async Task<ActionResult<ApiResponse<Paginate<RegistrationGetByCategoryPagedResponse>>>> GetPagedRegistrationsByCategoryAndStatusAsync([FromQuery] Guid categoryId, [FromQuery] RoundResultStatus? status, [FromQuery] int page =1, [FromQuery] int size = 10)
@@ -36,6 +38,8 @@ namespace KSMS.API.Controllers
             var pagedRegistrations = await _roundResultService.GetPagedRegistrationsByCategoryAndStatusAsync(categoryId, status, page, size);
             return Ok(ApiResponse<Paginate<RegistrationGetByCategoryPagedResponse>>.Success(pagedRegistrations, "Fetched paged registrations successfully"));
         }
+
+
         // public điểm của từng cá theo category
         [HttpPatch("update-isPublic-status-roundresultByCategoryid")]
         public async Task<ActionResult<ApiResponse<object>>> UpdatePublicStatus(Guid categoryId, [FromQuery] bool isPublic)
