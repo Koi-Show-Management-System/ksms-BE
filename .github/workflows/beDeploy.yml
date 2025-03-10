@@ -36,7 +36,6 @@ jobs:
     runs-on: ubuntu-latest
     env:
       REGISTRY_NAME: ${{ secrets.DOCKER_HUB_USERNAME }}
-      GIT_COMMIT_SHA: ${{github.sha}}
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -53,7 +52,7 @@ jobs:
           password: ${{ secrets.DOCKER_HUB_TOKEN }}
 
       - name: Build and push Docker image
-        run: docker compose -f docker-compose.build.yaml build --parallel ksms-api && docker compose -f docker-compose.build.yaml push
+        run: docker compose -f docker-compose.build.yaml build --parallel ksms-api && docker compose -f docker-compose.build.yaml push ksms-api
         
   api-deploy-stage:
     name: Backend Deploy Stage
