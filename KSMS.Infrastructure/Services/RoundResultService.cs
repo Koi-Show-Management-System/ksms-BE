@@ -58,7 +58,8 @@ namespace KSMS.Infrastructure.Services
            
           
         }
-        public async Task<Paginate<RegistrationGetByCategoryPagedResponse>> GetPagedRegistrationsByCategoryAndStatusAsync(Guid categoryId, RoundResultStatus? status, int page, int size)
+        public async Task<Paginate<RegistrationGetByCategoryPagedResponse>> GetPagedRegistrationsByCategoryAndStatusAsync
+            (Guid categoryId, RoundResultStatus? status, int page, int size)
         {
             var registrationRepository = _unitOfWork.GetRepository<Registration>();
 

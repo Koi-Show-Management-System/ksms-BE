@@ -27,11 +27,7 @@ namespace KSMS.Infrastructure.Services
 
         public async Task CreateTankAsync(CreateTankRequest request)
         {
-            string role = GetRoleFromJwt();
-            if (role != "Staff" && role != "Manager")
-            {
-                throw new ForbiddenMethodException("You do not have permission to create a tank.");
-            }
+             
 
             var tankRepository = _unitOfWork.GetRepository<Tank>();
 
