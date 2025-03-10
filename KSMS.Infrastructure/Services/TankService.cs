@@ -30,18 +30,26 @@ namespace KSMS.Infrastructure.Services
              
 
             var tankRepository = _unitOfWork.GetRepository<Tank>();
-
+            var koiShowRepository = _unitOfWork.GetRepository<KoiShow>();
+            var show = await _unitOfWork.GetRepository<KoiShow>().SingleOrDefaultAsync(predicate: x=> x.Id == request.KoiShowId);
+            if (show == null)
+            {
+                throw new NotFoundException("Show not found");
+            }
             var existingTank = await tankRepository.SingleOrDefaultAsync(
-                predicate: t => t.Name == request.Name && t.KoiShowId == request.KoiShowId
-            );
-
+                predicate: t => t.Name == request.Name);
+            
             if (existingTank != null)
             {
                 throw new BadRequestException($"A tank with the name '{request.Name}' already exists in this KoiShow.");
             }
-
+            var showStaff = await _unitOfWork.GetRepository<ShowStaff>().SingleOrDefaultAsync(predicate: x => x.KoiShowId == request.KoiShowId && x.AccountId == GetIdFromJwt());
+            if (showStaff == null)
+            {
+                throw new ForbiddenMethodException("You are not allowed to create a tank in this KoiShow.");
+            }
             var tank = request.Adapt<Tank>();
-            tank.CreatedBy = GetIdFromJwt();
+            tank.CreatedBy = showStaff.Id;
             await tankRepository.InsertAsync(tank);
             await _unitOfWork.CommitAsync();
         }
@@ -88,11 +96,6 @@ namespace KSMS.Infrastructure.Services
         public async Task UpdateTankAsync(Guid id, UpdateTankRequest request)
         {
             string role = GetRoleFromJwt();
-            if (role != "Manager")
-            {
-                throw new ForbiddenMethodException("Only Managers can update a tank.");
-            }
-
             var tankRepository = _unitOfWork.GetRepository<Tank>();
 
             var existingTank = await tankRepository.SingleOrDefaultAsync(
@@ -103,7 +106,11 @@ namespace KSMS.Infrastructure.Services
             {
                 throw new NotFoundException($"Tank with ID {id} not found.");
             }
-
+            var showStaff = await _unitOfWork.GetRepository<ShowStaff>().SingleOrDefaultAsync(predicate: x => x.KoiShowId == existingTank.KoiShowId && x.AccountId == GetIdFromJwt());
+            if (showStaff == null)
+            {
+                throw new ForbiddenMethodException("You are not allowed to update a tank in this KoiShow.");
+            }
             existingTank.Name = request.Name ?? existingTank.Name;
             existingTank.Capacity = request.Capacity;
             existingTank.WaterType = request.WaterType ?? existingTank.WaterType;

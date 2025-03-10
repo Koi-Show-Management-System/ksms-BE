@@ -8,6 +8,7 @@ using KSMS.Infrastructure.Utils;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 
 namespace KSMS.API.Controllers
 {
@@ -43,6 +44,7 @@ namespace KSMS.API.Controllers
         /// API tạo một Tank mới (không trả về response)
         /// </summary>
         [HttpPost("create")]
+        [Authorize(Roles = "Staff, Manager")]
         public async Task<IActionResult> CreateTank([FromBody] CreateTankRequest tankRequest)
         {
             await _tankService.CreateTankAsync(tankRequest);
@@ -55,6 +57,7 @@ namespace KSMS.API.Controllers
         /// API cập nhật thông tin Tank theo ID (không trả về response)
         /// </summary>
         [HttpPut("{id:guid}")]
+        [Authorize(Roles = "Staff, Manager")]
         public async Task<IActionResult> UpdateTank(Guid id, [FromBody] UpdateTankRequest request)
         {
             await _tankService.UpdateTankAsync(id, request);
