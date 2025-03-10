@@ -21,6 +21,7 @@ using Hangfire;
 using KSMS.Application.Extensions;
 using KSMS.Domain.Common;
 using KSMS.Domain.Pagination;
+using KSMS.Domain.Dtos.Responses.KoiMedium;
 
 namespace KSMS.Infrastructure.Services;
 
@@ -44,6 +45,18 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
         _backgroundJobClient = backgroundJobClient;
         _emailService = emailService;
     }
+
+    public async Task<List<Guid>> GetRegistrationIdsByKoiShowAsync(Guid koiShowId)
+    {
+        var registrationRepository = _unitOfWork.GetRepository<Registration>();
+        var registrationIds = await registrationRepository.GetListAsync(
+            predicate: r => r.KoiShowId == koiShowId,
+            selector: r => r.Id
+        );
+
+        return (List<Guid>)registrationIds;
+    }
+
     public async Task AssignMultipleFishesToTankAndRound(Guid roundId, List<Guid> registrationIds)
     {
         using var transaction = await _unitOfWork.BeginTransactionAsync();
@@ -130,105 +143,31 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
         }
     }
 
-    
-    public async Task AssignAllFishToTankAndRound(Guid showId)
-    {
-        using var transaction = await _unitOfWork.BeginTransactionAsync();
-        try
-        {
-            var regisRoundRepository = _unitOfWork.GetRepository<RegistrationRound>();
-            var tankRepository = _unitOfWork.GetRepository<Tank>();
-            var roundRepository = _unitOfWork.GetRepository<Round>();
-            var registrationRepository = _unitOfWork.GetRepository<Registration>();
 
-            //  1. Lấy danh sách đơn đăng ký Confirmed và nhóm theo hạng mục
-            var registrations = await registrationRepository.GetListAsync(
-                predicate: r => r.KoiShowId == showId && r.Status == RegistrationStatus.Confirmed.ToString()
-            );
-
-            var groupedRegistrations = registrations.GroupBy(r => r.CompetitionCategoryId);
-
-            foreach (var categoryGroup in groupedRegistrations)
-            {
-                var categoryId = categoryGroup.Key;
-
-                //  2. Lấy danh sách hồ khả dụng cho hạng mục này
-                var availableTanks = await tankRepository.GetListAsync(
-                    predicate: t => t.KoiShowId == showId && t.Status == "Available"
-                );
-
-                if (!availableTanks.Any())
-                {
-                    throw new Exception($"No available tanks for show {showId}.");
-                }
-
-                // 3. Lấy vòng thi đang hoạt động cho hạng mục
-                var round = await roundRepository.SingleOrDefaultAsync(
-                    predicate: r => r.CompetitionCategoriesId == categoryId && r.Status == "Active"
-                );
-
-                if (round == null)
-                {
-                    throw new Exception($"No active round found for category {categoryId}.");
-                }
-
-                // 4. Gán cá vào hồ và vòng thi
-                foreach (var fish in categoryGroup)
-                {
-                    Tank? selectedTank = null;
-
-                    //  Lọc danh sách hồ để tìm hồ chưa đầy
-                    foreach (var tank in availableTanks)
-                    {
-                        if (!await _tankService.IsTankFull(tank.Id))
-                        {
-                            selectedTank = tank;
-                            break;
-                        }
-                    }
-
-                    if (selectedTank == null)
-                    {
-                        throw new Exception($"No more available tanks for category {categoryId} in show {showId}.");
-                    }
-
-                    //  Thêm cá vào vòng thi và hồ
-                    var newRegisRound = new RegistrationRound
-                    {
-                        Id = Guid.NewGuid(),
-                        RegistrationId = fish.Id,
-                        RoundId = round.Id,
-                        TankId = selectedTank.Id,
-                        CheckInTime = VietNamTimeUtil.GetVietnamTime(),
-                        Status = "Assigned",
-                        CreatedAt = VietNamTimeUtil.GetVietnamTime()
-                    };
-
-                    await regisRoundRepository.InsertAsync(newRegisRound);
-                }
-            }
-
-            await _unitOfWork.CommitAsync();
-            await transaction.CommitAsync();
-        }
-        catch (Exception ex)
-        {
-            await transaction.RollbackAsync();
-            throw new Exception("Error while assigning fish to tank and round.", ex);
-        }
-    }
-
-    public async Task<Registration?> GetRegistrationById(Guid registrationId)
+     
+    public async Task<CheckQRRegistrationResoponse> GetRegistrationByIdAndRoundAsync(Guid registrationId, Guid roundId)
     {
         var registrationRepository = _unitOfWork.GetRepository<Registration>();
 
-        // 📌 Tìm đơn đăng ký theo ID
         var registration = await registrationRepository.SingleOrDefaultAsync(
-            predicate: r => r.Id == registrationId
+            predicate: r => r.Id == registrationId &&
+                            r.RegistrationRounds.Any(rr => rr.RoundId == roundId), // Thêm điều kiện kiểm tra RoundId
+            include: query => query
+                .Include(r => r.KoiMedia)
+                .ThenInclude(km => km.KoiProfile)
+                .Include(r => r.RegistrationRounds)
+                .ThenInclude(rr => rr.Round) // Bao gồm thông tin về vòng thi
         );
 
-        return registration;
+        if (registration == null)
+        {
+            throw new NotFoundException("Registration not found in the specified round.");
+        }
+
+        return registration.Adapt<CheckQRRegistrationResoponse>();
     }
+
+
 
     public async Task<object> CreateRegistration(CreateRegistrationRequest createRegistrationRequest)
     {

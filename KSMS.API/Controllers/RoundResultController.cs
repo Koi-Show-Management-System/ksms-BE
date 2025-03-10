@@ -3,6 +3,10 @@ using KSMS.Application.Services;
 using KSMS.Domain.Dtos.Requests.RoundResult;
 using KSMS.Domain.Dtos;
 using System.Threading.Tasks;
+using KSMS.Domain.Enums;
+using KSMS.Domain.Dtos.Responses.Registration;
+using KSMS.Domain.Pagination;
+using KSMS.Infrastructure.Services;
 
 namespace KSMS.API.Controllers
 {
@@ -17,24 +21,34 @@ namespace KSMS.API.Controllers
             _roundResultService = roundResultService;
         }
 
-        [HttpPost("create")]
-        public async Task<ActionResult<ApiResponse<object>>> CreateRoundResult([FromBody] CreateRoundResult request)
+        //[HttpPost("create")]
+        //public async Task<ActionResult<ApiResponse<object>>> CreateRoundResult([FromBody] CreateRoundResult request)
+        //{
+
+        //    var createdRoundResult = await _roundResultService.CreateRoundResultAsync(request); 
+
+        //    return StatusCode(201, ApiResponse<object>.Created(createdRoundResult, "Round result created successfully"));
+        //}
+
+
+        // phân trang danh sách đăng kí theo category và status pass hay k
+        [HttpGet("paged-RoundResult-registrations-by-category")]
+        public async Task<ActionResult<ApiResponse<Paginate<RegistrationGetByCategoryPagedResponse>>>> GetPagedRegistrationsByCategoryAndStatusAsync([FromQuery] Guid categoryId, [FromQuery] RoundResultStatus? status, [FromQuery] int page =1, [FromQuery] int size = 10)
         {
-
-            var createdRoundResult = await _roundResultService.CreateRoundResultAsync(request); 
-
-            return StatusCode(201, ApiResponse<object>.Created(createdRoundResult, "Round result created successfully"));
+            var pagedRegistrations = await _roundResultService.GetPagedRegistrationsByCategoryAndStatusAsync(categoryId, status, page, size);
+            return Ok(ApiResponse<Paginate<RegistrationGetByCategoryPagedResponse>>.Success(pagedRegistrations, "Fetched paged registrations successfully"));
         }
 
 
-        [HttpPatch("{id:guid}/update-public-status")]
-        public async Task<ActionResult<ApiResponse<object>>> UpdatePublicStatus(Guid id, [FromQuery] bool isPublic)
+        // public điểm của từng cá theo category
+        [HttpPatch("update-isPublic-status-roundresultByCategoryid")]
+        public async Task<ActionResult<ApiResponse<object>>> UpdatePublicStatus(Guid categoryId, [FromQuery] bool isPublic)
         {
 
-            var updatedRoundResult = await _roundResultService.UpdateIsPublicAsync(id, isPublic);
+              await _roundResultService.UpdateIsPublicByCategoryIdAsync(categoryId, isPublic);
 
 
-            return Ok(ApiResponse<object>.Success(updatedRoundResult, "Updated IsPublic status successfully"));
+            return Ok(ApiResponse<object>.Success(null, "Updated IsPublic status successfully"));
         }
     }
 }

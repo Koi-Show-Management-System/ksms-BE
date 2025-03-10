@@ -49,21 +49,21 @@ namespace KSMS.Infrastructure.Services
         }
 
      
-        public async Task<RegistrationRoundResponse> GetRegistrationRoundAsync(Guid registrationId, Guid roundId)
-        {
-            var registrationRoundRepository = _unitOfWork.GetRepository<RegistrationRound>();
+        //public async Task<RegistrationRoundResponse> GetRegistrationRoundAsync(Guid registrationId, Guid roundId)
+        //{
+        //    var registrationRoundRepository = _unitOfWork.GetRepository<RegistrationRound>();
 
             
-            var registrationRound = await registrationRoundRepository.SingleOrDefaultAsync(
-                predicate: rr => rr.RegistrationId == registrationId && rr.RoundId == roundId
-            );
+        //    var registrationRound = await registrationRoundRepository.SingleOrDefaultAsync(
+        //        predicate: rr => rr.RegistrationId == registrationId && rr.RoundId == roundId
+        //    );
 
-            if (registrationRound == null)
-            {
-                throw new NotFoundException("Registration round not found.");
-            }
+        //    if (registrationRound == null)
+        //    {
+        //        throw new NotFoundException("Registration round not found.");
+        //    }
 
-            return registrationRound.Adapt<RegistrationRoundResponse>();
-        }
+        //    return registrationRound.Adapt<RegistrationRoundResponse>();
+        //}
     }
 }
