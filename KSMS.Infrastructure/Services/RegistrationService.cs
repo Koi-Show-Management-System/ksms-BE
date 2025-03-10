@@ -264,11 +264,7 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
         var registrationPayment = await _unitOfWork.GetRepository<RegistrationPayment>()
             .SingleOrDefaultAsync(predicate: r => r.Id == registrationPaymentId,
                 include: query => query
-                    .Include(r => r.Registration).ThenInclude(r => r.Account)
-                    .Include(r => r.Registration).ThenInclude(r => r.KoiShow)
-                    .Include(r => r.Registration).ThenInclude(r => r.KoiMedia)
-                    .Include(r => r.Registration).ThenInclude(r => r.CompetitionCategory)
-                    .Include(r => r.Registration).ThenInclude(r => r.KoiProfile).ThenInclude(r => r.Variety));
+                    .Include(r => r.Registration));
         registrationPayment.Status = status switch
         {
             RegistrationPaymentStatus.Cancelled => RegistrationPaymentStatus.Cancelled.ToString().ToLower(),
@@ -288,13 +284,7 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
             _unitOfWork.GetRepository<RegistrationPayment>().UpdateAsync(registrationPayment);
             _unitOfWork.GetRepository<Registration>().UpdateAsync(registrationPayment.Registration);
             await _unitOfWork.CommitAsync();
-            var sendMail = MailUtil.SendEmail(registrationPayment.Registration.Account.Email,
-                MailUtil.ContentMailUtil.Title_ThankingForRegisterSh,
-                MailUtil.ContentMailUtil.ConfirmingRegistration(registrationPayment.Registration), "");
-            if (!sendMail)
-            {
-                throw new BadRequestException("Error sending confirmation email.");
-            }
+            _backgroundJobClient.Enqueue(() => _emailService.SendPaymentConfirmationEmail(registrationPaymentId));
         }
     }
     public async Task UpdateStatusForRegistration(Guid registrationId, RegistrationStatus status)
@@ -315,11 +305,17 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
             throw new NotFoundException("This Registration is not paid");
         }
         var accountId = GetIdFromJwt();
-        var showStaff = await _unitOfWork.GetRepository<ShowStaff>()
-            .SingleOrDefaultAsync(predicate: s => s.AccountId == accountId && s.KoiShowId == registration.KoiShowId);
-        if (showStaff is null)
+        var userRole = GetRoleFromJwt();
+
+        if (userRole != "ADMIN")
         {
-            throw new ForbiddenMethodException("You are not staff for this show!!!!");
+            var showStaff = await _unitOfWork.GetRepository<ShowStaff>()
+                .SingleOrDefaultAsync(predicate: s => s.AccountId == accountId && s.KoiShowId == registration.KoiShowId);
+
+            if (showStaff is null)
+            {
+                throw new ForbiddenMethodException("You are not authorized to update this registration.");
+            }
         }
         registration.Status = status switch
         {
@@ -436,11 +432,10 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
 
     public async Task<Paginate<GetRegistrationResponse>> GetAllRegistrationForCurrentMember(RegistrationFilter filter, int page, int size)
     {
-        var accountId = GetIdFromJwt();
-        var claims = _httpContextAccessor.HttpContext?.User;
-        var role = claims?.FindFirst(ClaimTypes.Role)?.Value;
         
-        var predicate = await GetRolePredicate(role, accountId);
+        var role = GetRoleFromJwt();
+        
+        var predicate = await GetRolePredicate(role);
         
         predicate = ApplyFilter(predicate, filter);
 
@@ -449,14 +444,11 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
                 predicate: predicate,
                 orderBy: q => q.OrderByDescending(r => r.CreatedAt),
                 include: q => q
-                    .Include(r => r.Account)
                     .Include(r => r.KoiShow)
                     .Include(r => r.KoiProfile)
-                        .ThenInclude(k => k.Variety)
+                    .ThenInclude(k => k.Variety)
                     .Include(r => r.CompetitionCategory)
-                    .ThenInclude(c => c.CategoryVarieties)
-                    .Include(r => r.KoiMedia)
-                    .Include(r => r.RegistrationPayment),
+                    .Include(r => r.KoiMedia),
                 page: page,
                 size: size
             );
@@ -464,7 +456,7 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
         return registrations.Adapt<Paginate<GetRegistrationResponse>>();
     }
 
-    private async Task<Expression<Func<Registration, bool>>> GetRolePredicate(string role, Guid accountId)
+    private async Task<Expression<Func<Registration, bool>>> GetRolePredicate(string role)
     {
         Expression<Func<Registration, bool>> predicate = null;
 
@@ -475,14 +467,14 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
             case "MANAGER":
             case "STAFF":
                 var staffShows = await _unitOfWork.GetRepository<ShowStaff>()
-                    .GetListAsync(predicate: s => s.AccountId == accountId);
+                    .GetListAsync(predicate: s => s.AccountId == GetIdFromJwt());
                 var showIds = staffShows.Select(s => s.KoiShowId).ToList();
                 predicate = r => showIds.Contains(r.KoiShowId);
                 break;
 
             default:
-                //predicate = r => r.Status == RegistrationStatus.Paid.ToString().ToLower();
-                predicate = r => r.AccountId == accountId;
+                //predicate = r => r.Status != RegistrationStatus..ToString().ToLower();
+                predicate = r => r.AccountId == GetIdFromJwt();
                 break;
         }
 

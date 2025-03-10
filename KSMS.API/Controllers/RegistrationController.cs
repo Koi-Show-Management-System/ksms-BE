@@ -88,7 +88,7 @@ namespace KSMS.API.Controllers
 
 
         [HttpPut("{id:guid}")]
-        [Authorize(Roles = "Staff")]
+        [Authorize(Roles = "Staff, Admin, Manager")]
         public async Task<ActionResult<ApiResponse<object>>> ToggleUserStatus(Guid id, [FromQuery] RegistrationStatus status)
         {
             await _registrationService.UpdateStatusForRegistration(id, status);

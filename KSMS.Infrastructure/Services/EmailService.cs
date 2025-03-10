@@ -82,4 +82,23 @@ public class EmailService : BaseService<EmailService>, IEmailService
             throw new BadRequestException("Error sending confirmation email");
         }
     }
+
+    public async Task SendPaymentConfirmationEmail(Guid registrationPaymentId)
+    {
+        var registrationPayment = await _unitOfWork.GetRepository<RegistrationPayment>()
+            .SingleOrDefaultAsync(predicate: r => r.Id == registrationPaymentId,
+                include: query => query
+                    .Include(r => r.Registration).ThenInclude(r => r.Account)
+                    .Include(r => r.Registration).ThenInclude(r => r.KoiShow)
+                    .Include(r => r.Registration).ThenInclude(r => r.KoiMedia)
+                    .Include(r => r.Registration).ThenInclude(r => r.CompetitionCategory)
+                    .Include(r => r.Registration).ThenInclude(r => r.KoiProfile).ThenInclude(r => r.Variety));
+        var sendMail = MailUtil.SendEmail(registrationPayment.Registration.Account.Email,
+            MailUtil.ContentMailUtil.Title_ThankingForRegisterSh,
+            MailUtil.ContentMailUtil.ConfirmingRegistration(registrationPayment.Registration), "");
+        if (!sendMail)
+        {
+            throw new BadRequestException("Error sending confirmation email.");
+        }
+    }
 }

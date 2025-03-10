@@ -31,19 +31,25 @@ public class AuthenticationService : BaseService<AuthenticationService>, IAuthen
         {
             throw new BadRequestException("Email is already existed");
         }
+        var accountDb1 = await _unitOfWork.GetRepository<Account>().SingleOrDefaultAsync(predicate:x => x.Username == registerRequest.Username);
+        if (accountDb1 is not null)
+        {
+            throw new BadRequestException("Username is already existed");
+        }
         var account = registerRequest.Adapt<Account>();
         account.Role =RoleName.Member.ToString();
         account.HashedPassword = PasswordUtil.HashPassword(registerRequest.Password);
         account.ConfirmationToken = Guid.NewGuid().ToString();
-        //account.Status = AccountStatus.Active.GetDescription().ToLower();
+        account.Status = AccountStatus.Active.GetDescription().ToLower();
         await _unitOfWork.GetRepository<Account>().InsertAsync(account);
+        await _unitOfWork.CommitAsync();
         var confirmationLink = $"{AppConfig.AppSetting.BaseUrl}/swagger/confirm?token={account.ConfirmationToken}";
         if (!MailUtil.SendEmail(registerRequest.Email, MailUtil.ContentMailUtil.Title_ThankingForRegisAccount,
                 MailUtil.ContentMailUtil.ThankingForRegistration(registerRequest.FullName, confirmationLink), ""))
         {
             throw new BadRequestException("Error sending confirmation email.");
         }
-        await _unitOfWork.CommitAsync();
+        
     }
 
     public async Task<LoginResponse> Login(LoginRequest loginRequest)

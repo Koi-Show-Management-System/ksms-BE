@@ -27,7 +27,7 @@ namespace KSMS.Infrastructure.Services
         public async Task CreateCompetitionCategory(CreateCompetitionCategoryRequest request)
         {
             var show = await _unitOfWork.GetRepository<KoiShow>()
-                .SingleOrDefaultAsync(predicate: x => x.Id == request.ShowId);
+                .SingleOrDefaultAsync(predicate: x => x.Id == request.KoiShowId);
             if (show == null)
             {
                 throw new NotFoundException("Show not found");
@@ -141,7 +141,7 @@ namespace KSMS.Infrastructure.Services
                 throw new NotFoundException("Category not found");
             }
             var show = await _unitOfWork.GetRepository<KoiShow>()
-                .SingleOrDefaultAsync(predicate: x => x.Id == request.ShowId);
+                .SingleOrDefaultAsync(predicate: x => x.Id == request.KoiShowId);
             if (show == null)
             {
                 throw new NotFoundException("Show not found");
