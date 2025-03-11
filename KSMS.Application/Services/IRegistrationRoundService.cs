@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using KSMS.Domain.Pagination;
 
 namespace KSMS.Application.Services
 {
@@ -12,6 +13,6 @@ namespace KSMS.Application.Services
     {
 
         Task<RegistrationRoundResponse> CreateRegistrationRoundAsync(CreateRegistrationRoundRequest request);
-        Task<RegistrationRoundResponse> GetRegistrationRoundAsync(Guid registrationId, Guid roundId);
+        Task<Paginate<GetPageRegistrationRoundResponse>> GetPageRegistrationRound(Guid roundId, int page, int size);
     }
 }

@@ -132,6 +132,17 @@ public class KoiProfileService : BaseService<KoiProfileService>, IKoiProfileServ
         }
     }
 
+    public async Task<GetAllKoiProfileResponse> GetById(Guid id)
+    {
+        var koiProfile = await _unitOfWork.GetRepository<KoiProfile>().SingleOrDefaultAsync(predicate: x => x.Id == id);
+        if (koiProfile is null)
+        {
+            throw new NotFoundException("Koi is not found");
+        }
+
+        return koiProfile.Adapt<GetAllKoiProfileResponse>();
+    }
+
     private Expression<Func<KoiProfile, bool>> ApplyKoiFilter(KoiProfileFilter? filter, Guid accountId)
     {
         if (filter == null) return koi => koi.OwnerId == accountId;
@@ -152,6 +163,6 @@ public class KoiProfileService : BaseService<KoiProfileService>, IKoiProfileServ
         }
         return filterQuery;
     }
-
+    
     
 }
