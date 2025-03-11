@@ -60,7 +60,15 @@ namespace KSMS.Infrastructure.Services
             var registrationRounds = await _unitOfWork.GetRepository<RegistrationRound>().GetPagingListAsync(
                 predicate: x => x.RoundId == roundId,
                 include: query => query.Include(x => x.RoundResults)
-                    .Include(x => x.Tank),
+                    .Include(x => x.Tank)
+                    .Include(x => x.Registration)
+                        .ThenInclude(x => x.CompetitionCategory)
+                    .Include(x => x.Registration)
+                        .ThenInclude(x => x.KoiProfile)
+                    .Include(x => x.Registration)
+                        .ThenInclude(x => x.KoiShow)
+                    .Include(x => x.Registration)
+                        .ThenInclude(x => x.KoiMedia),
                 page: page, 
                 size: size);
             var response = registrationRounds.Adapt<Paginate<GetPageRegistrationRoundResponse>>();

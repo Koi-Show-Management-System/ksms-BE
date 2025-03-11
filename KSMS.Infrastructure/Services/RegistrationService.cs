@@ -307,7 +307,7 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
         var accountId = GetIdFromJwt();
         var userRole = GetRoleFromJwt();
 
-        if (userRole != "ADMIN")
+        if (userRole != "Admin")
         {
             var showStaff = await _unitOfWork.GetRepository<ShowStaff>()
                 .SingleOrDefaultAsync(predicate: s => s.AccountId == accountId && s.KoiShowId == registration.KoiShowId);

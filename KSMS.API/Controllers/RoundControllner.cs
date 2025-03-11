@@ -9,6 +9,7 @@ using KSMS.Infrastructure.Utils;
 using KSMS.Domain.Entities;
 using KSMS.Domain.Dtos.Responses.Round;
 using KSMS.Domain.Dtos.Responses.Registration;
+using KSMS.Domain.Enums;
 
 namespace KSMS.API.Controllers
 {
@@ -28,9 +29,9 @@ namespace KSMS.API.Controllers
             return Ok(ApiResponse<object>.Success(null, "Round statuses updated successfully"));
         }
         [HttpGet("{competitionCategoryId:guid}")]
-        public async Task<ActionResult<ApiResponse<object>>> GetPageRegistrationRounds(Guid competitionCategoryId, [FromQuery] int page = 1, [FromQuery] int size = 10)
+        public async Task<ActionResult<ApiResponse<object>>> GetPageRegistrationRounds(Guid competitionCategoryId, [FromQuery]RoundEnum roundType, [FromQuery] int page = 1, [FromQuery] int size = 10)
         {
-            var registrationRounds = await _roundService.GetPageRound(competitionCategoryId, page, size);
+            var registrationRounds = await _roundService.GetPageRound(competitionCategoryId, roundType, page, size);
             return Ok(ApiResponse<object>.Success(registrationRounds, "Get successfully"));
         }
     }
