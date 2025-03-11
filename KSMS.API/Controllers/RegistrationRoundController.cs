@@ -51,5 +51,11 @@ namespace KSMS.API.Controllers
         //    var registrationRound = await _registrationRoundService.GetRegistrationRoundAsync(registrationId, roundId);
         //    return Ok(ApiResponse<object>.Success(registrationRound, "Registration round details retrieved successfully"));
         //}
+        [HttpGet("{roundId:guid}")]
+        public async Task<ActionResult<ApiResponse<object>>> GetPageRegistrationRounds(Guid roundId, [FromQuery] int page = 1, [FromQuery] int size = 10)
+        {
+            var registrationRounds = await _registrationRoundService.GetPageRegistrationRound(roundId, page, size);
+            return Ok(ApiResponse<object>.Success(registrationRounds, "Get successfully"));
+        }
     }
 }

@@ -13,4 +13,6 @@ public interface IKoiProfileService
     Task<Paginate<GetAllKoiProfileResponse>> GetPagedKoiProfile(KoiProfileFilter filter, int page, int size);
 
     Task UpdateKoiProfile(Guid id, UpdateKoiProfileRequest updateKoiProfileRequest);
+
+    Task<GetAllKoiProfileResponse> GetById(Guid id);
 }

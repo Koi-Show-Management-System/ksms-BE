@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using KSMS.Domain.Dtos.Responses.Round;
+using KSMS.Domain.Pagination;
 
 namespace KSMS.Application.Services
 {
@@ -11,7 +13,8 @@ namespace KSMS.Application.Services
     {
         Task UpdateRoundStatusAsync(Guid roundId);
 
-         
+        Task<Paginate<GetPageRoundResponse>> GetPageRound(Guid competitionCategoryId, int page, int size);
+
     }
 
 }

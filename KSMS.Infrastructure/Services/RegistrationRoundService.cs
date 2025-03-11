@@ -9,6 +9,8 @@ using Mapster;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Threading.Tasks;
+using KSMS.Domain.Pagination;
+using Microsoft.EntityFrameworkCore;
 
 namespace KSMS.Infrastructure.Services
 {
@@ -22,8 +24,6 @@ namespace KSMS.Infrastructure.Services
             _unitOfWork = unitOfWork;
             _logger = logger;
         }
-
-        // Tạo mới một Registration Round
         public async Task<RegistrationRoundResponse> CreateRegistrationRoundAsync(CreateRegistrationRoundRequest request)
         {
             var registrationRoundRepository = _unitOfWork.GetRepository<RegistrationRound>();
@@ -48,22 +48,28 @@ namespace KSMS.Infrastructure.Services
             return createdRegistrationRound.Adapt<RegistrationRoundResponse>();
         }
 
-     
-        //public async Task<RegistrationRoundResponse> GetRegistrationRoundAsync(Guid registrationId, Guid roundId)
-        //{
-        //    var registrationRoundRepository = _unitOfWork.GetRepository<RegistrationRound>();
+        public async Task<Paginate<GetPageRegistrationRoundResponse>> GetPageRegistrationRound(Guid roundId, int page, int size)
+        {
+            var round = await _unitOfWork.GetRepository<Round>()
+                .SingleOrDefaultAsync(predicate: x => x.Id == roundId);
+            if (round == null)
+            {
+                throw new NotFoundException("Round not found");
+            }
 
-            
-        //    var registrationRound = await registrationRoundRepository.SingleOrDefaultAsync(
-        //        predicate: rr => rr.RegistrationId == registrationId && rr.RoundId == roundId
-        //    );
-
-        //    if (registrationRound == null)
-        //    {
-        //        throw new NotFoundException("Registration round not found.");
-        //    }
-
-        //    return registrationRound.Adapt<RegistrationRoundResponse>();
-        //}
+            var registrationRounds = await _unitOfWork.GetRepository<RegistrationRound>().GetPagingListAsync(
+                predicate: x => x.RoundId == roundId,
+                include: query => query.Include(x => x.RoundResults)
+                    .Include(x => x.Tank),
+                page: page, 
+                size: size);
+            var response = registrationRounds.Adapt<Paginate<GetPageRegistrationRoundResponse>>();
+            foreach (var registrationRound in response.Items)
+            {
+                var registrationRoundEntity = registrationRounds.Items.FirstOrDefault(x => x.Id == registrationRound.Id);
+                registrationRound.TankName = registrationRoundEntity?.Tank?.Name;
+            }
+            return response;
+        }
     }
 }

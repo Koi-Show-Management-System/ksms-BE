@@ -10,20 +10,17 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Threading.Tasks;
+using KSMS.Domain.Dtos.Responses.Round;
+using KSMS.Domain.Pagination;
+using Microsoft.AspNetCore.Http;
 
 namespace KSMS.Infrastructure.Services
 {
-    public class RoundService : IRoundService
+    public class RoundService : BaseService<RoundService>, IRoundService
     {
-        private readonly IUnitOfWork<KoiShowManagementSystemContext> _unitOfWork;
-        private readonly ILogger<RoundService> _logger;
-
-        public RoundService(IUnitOfWork<KoiShowManagementSystemContext> unitOfWork, ILogger<RoundService> logger)
+        public RoundService(IUnitOfWork<KoiShowManagementSystemContext> unitOfWork, ILogger<RoundService> logger, IHttpContextAccessor httpContextAccessor) : base(unitOfWork, logger, httpContextAccessor)
         {
-            _unitOfWork = unitOfWork;
-            _logger = logger;
         }
-       
 
         public async Task UpdateRoundStatusAsync(Guid roundId)
         {
@@ -63,5 +60,22 @@ namespace KSMS.Infrastructure.Services
             
         }
 
+        public async Task<Paginate<GetPageRoundResponse>> GetPageRound(Guid competitionCategoryId, int page, int size)
+        {
+            var competitionCategory = await _unitOfWork.GetRepository<CompetitionCategory>().SingleOrDefaultAsync(
+                predicate: x => x.Id == competitionCategoryId);
+            if (competitionCategory == null){
+                throw new NotFoundException("Competition Category not found");
+            }
+            var rounds = await _unitOfWork.GetRepository<Round>().GetPagingListAsync(
+                predicate: x => x.CompetitionCategoriesId == competitionCategoryId,
+                page: page,
+                size: size
+            );
+            return rounds.Adapt<Paginate<GetPageRoundResponse>>();
+        }
+
+
+        
     }
 }

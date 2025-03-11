@@ -33,6 +33,14 @@ namespace KSMS.API.Controllers
         {
             var result = await _koiProfileService.GetPagedKoiProfile(filter, page, size);
             return Ok(ApiResponse<object>.Success(result, "Get list of Koi records successfully"));
+            
+        }
+        [HttpGet("{id:guid}")]
+        public async Task<ActionResult<ApiResponse<object>>> GetKoiProfileById(Guid id)
+        {
+            var koi = await _koiProfileService.GetById(id);
+
+            return Ok(ApiResponse<object>.Success(koi, "Get koi successfully"));
         }
         [HttpPut("{id:guid}")]
         [Authorize(Roles = "Member")]

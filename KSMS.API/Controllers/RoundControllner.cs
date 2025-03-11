@@ -17,22 +17,21 @@ namespace KSMS.API.Controllers
     public class RoundController : ControllerBase
     {
         private readonly IRoundService _roundService;
-        private readonly IRegistrationService _registrationService;
-        public RoundController(IRoundService roundService, IRegistrationService registrationService)
+        public RoundController(IRoundService roundService)
         {
             _roundService = roundService;
-            
-            _registrationService = registrationService;
         }
-         
-
-        
-
         [HttpPatch("update-status-roundid")]
         public async Task<ActionResult<ApiResponse<object>>> UpdateRoundsStatusByKoiShow([FromQuery] Guid roundID)
         {
             await _roundService.UpdateRoundStatusAsync(roundID);
             return Ok(ApiResponse<object>.Success(null, "Round statuses updated successfully"));
+        }
+        [HttpGet("{competitionCategoryId:guid}")]
+        public async Task<ActionResult<ApiResponse<object>>> GetPageRegistrationRounds(Guid competitionCategoryId, [FromQuery] int page = 1, [FromQuery] int size = 10)
+        {
+            var registrationRounds = await _roundService.GetPageRound(competitionCategoryId, page, size);
+            return Ok(ApiResponse<object>.Success(registrationRounds, "Get successfully"));
         }
     }
 }
