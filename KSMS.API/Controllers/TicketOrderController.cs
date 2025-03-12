@@ -30,10 +30,10 @@ public class TicketOrderController : ControllerBase
         if (status == "CANCELLED")
         {
             await _ticketOrderService.UpdateTicketOrder(ticketOrderId, OrderStatus.Cancelled);
-            return Redirect("http://localhost:5173/fail");
+            return Redirect("ksms://app/fail?status=" + status);
         }
         await _ticketOrderService.UpdateTicketOrder(ticketOrderId, OrderStatus.Paid); 
-        return Redirect("http://localhost:5173/success");
+        return Redirect("ksms://app/success?status=" + status);
     }
 
     [HttpGet("get-paging-orders")]
