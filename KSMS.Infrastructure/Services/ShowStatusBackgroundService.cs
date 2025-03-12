@@ -62,7 +62,7 @@ namespace KSMS.Infrastructure.Services
                                 {
                                     ShowProgress.RegistrationOpen or ShowProgress.RegistrationClosed => "upcoming",
                                     ShowProgress.Finished => "finished",
-                                    _ => "in progress"
+                                    _ => "inprogress"
                                 };
 
                                 if (koiShow.Status != newStatus)

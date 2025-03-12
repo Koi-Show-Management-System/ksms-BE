@@ -365,7 +365,7 @@ namespace KSMS.Infrastructure.Services
             Expression<Func<KoiShow, bool>> filterQuery = show => true;
             if (role is "Guest" or "Member")
             {
-                filterQuery = filterQuery.AndAlso(show => show.Status != Domain.Enums.ShowStatus.Draft.ToString().ToLower());
+                filterQuery = filterQuery.AndAlso(show => show.Status != Domain.Enums.ShowStatus.Pending.ToString().ToLower());
             }
             else if (role is "Staff" or "Manager")
             {
