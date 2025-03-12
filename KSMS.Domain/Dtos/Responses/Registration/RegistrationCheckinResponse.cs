@@ -27,6 +27,6 @@ namespace KSMS.Domain.Dtos.Responses.Registration
         public virtual KoiProfileCheckinResponse KoiProfile { get; set; } = null!;
 
         public ICollection<GetKoiMediaResponse> KoiMedia { get; set; } = new List<GetKoiMediaResponse>();
-
+        
     }
 }

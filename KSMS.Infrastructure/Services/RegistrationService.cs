@@ -258,7 +258,50 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
 
         throw new NotFoundException("No suitable category was found for this Koi fish");
     }
+    
+    // New method to find suitable category
+    public async Task<CompetitionCategory> FindSuitableCategoryAsync(Guid koiShowId, Guid varietyId, decimal size)
+    {
+        // Get the variety with its category relationships
+        var variety = await _unitOfWork.GetRepository<Variety>()
+            .SingleOrDefaultAsync(
+                predicate: v => v.Id == varietyId,
+                include: query => query.Include(v => v.CategoryVarieties)
+                    .ThenInclude(cv => cv.CompetitionCategory));
 
+        if (variety == null)
+            throw new NotFoundException("Variety not found");
+
+        // Find eligible categories based on size and koi show
+        var eligibleCategories = variety.CategoryVarieties
+            .Select(cv => cv.CompetitionCategory)
+            .Where(cc =>
+                size >= cc.SizeMin &&
+                size <= cc.SizeMax &&
+                cc.KoiShowId == koiShowId)
+            .ToList();
+
+        if (!eligibleCategories.Any())
+            throw new BadRequestException("No suitable category was found for this Koi fish");
+
+        // Find the most suitable category (smallest size range)
+        var bestCategory = eligibleCategories.MinBy(c => c.SizeMax - c.SizeMin);
+        if (bestCategory == null)
+            throw new BadRequestException("No suitable category was found for this Koi fish");
+        // Check if the category has space
+        var registrationCount = await _unitOfWork.GetRepository<Registration>()
+            .GetListAsync(predicate: x =>
+                x.CompetitionCategoryId == bestCategory.Id &&
+                x.Status == RegistrationStatus.Confirmed.ToString().ToLower());
+
+        if (registrationCount.Count >= bestCategory.MaxEntries)
+            throw new BadRequestException("The selected category has reached maximum entries");
+
+        return bestCategory;
+    }
+    
+    
+    
     public async Task UpdateRegistrationPaymentStatusForPayOs(Guid registrationPaymentId, RegistrationPaymentStatus status)
     {
         var registrationPayment = await _unitOfWork.GetRepository<RegistrationPayment>()
@@ -471,7 +514,7 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
                 var showIds = staffShows.Select(s => s.KoiShowId).ToList();
                 predicate = r => showIds.Contains(r.KoiShowId);
                 break;
-
+                
             default:
                 //predicate = r => r.Status != RegistrationStatus..ToString().ToLower();
                 predicate = r => r.AccountId == GetIdFromJwt();

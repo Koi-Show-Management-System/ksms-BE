@@ -8,21 +8,19 @@ using KSMS.Infrastructure.Database;
 using Mapster;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
+using KSMS.Application.Extensions;
 using KSMS.Domain.Pagination;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 
 namespace KSMS.Infrastructure.Services
 {
-    public class RegistrationRoundService : IRegistrationRoundService
+    public class RegistrationRoundService : BaseService<RegistrationRoundService>,IRegistrationRoundService
     {
-        private readonly IUnitOfWork<KoiShowManagementSystemContext> _unitOfWork;
-        private readonly ILogger<RegistrationRoundService> _logger;
-
-        public RegistrationRoundService(IUnitOfWork<KoiShowManagementSystemContext> unitOfWork, ILogger<RegistrationRoundService> logger)
+        public RegistrationRoundService(IUnitOfWork<KoiShowManagementSystemContext> unitOfWork, ILogger<RegistrationRoundService> logger, IHttpContextAccessor httpContextAccessor) : base(unitOfWork, logger, httpContextAccessor)
         {
-            _unitOfWork = unitOfWork;
-            _logger = logger;
         }
         public async Task<RegistrationRoundResponse> CreateRegistrationRoundAsync(CreateRegistrationRoundRequest request)
         {
@@ -56,9 +54,17 @@ namespace KSMS.Infrastructure.Services
             {
                 throw new NotFoundException("Round not found");
             }
-
+            var role = GetRoleFromJwt();
+            // Tạo predicate cơ bản
+            Expression<Func<RegistrationRound, bool>> predicate = x => x.RoundId == roundId;
+    
+            // Nếu vai trò là REFEREE (trọng tài), chỉ lấy những RegistrationRound mà trọng tài đó chấm điểm
+            if (role.ToUpper() == "REFEREE")
+            {
+                predicate = predicate.AndAlso(x => x.ScoreDetails.Any(sd => sd.RefereeAccountId == GetIdFromJwt()));
+            }
             var registrationRounds = await _unitOfWork.GetRepository<RegistrationRound>().GetPagingListAsync(
-                predicate: x => x.RoundId == roundId,
+                predicate: predicate,
                 include: query => query.Include(x => x.RoundResults)
                     .Include(x => x.Tank)
                     .Include(x => x.Registration)
@@ -79,5 +85,7 @@ namespace KSMS.Infrastructure.Services
             }
             return response;
         }
+
+        
     }
 }
