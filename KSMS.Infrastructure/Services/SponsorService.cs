@@ -28,6 +28,7 @@ public class SponsorService : BaseService<SponsorService>, ISponsorService
         var sponsor = request.Adapt<Sponsor>();
         sponsor.KoiShowId = koiShowId;
         await _unitOfWork.GetRepository<Sponsor>().InsertAsync(sponsor);
+        await _unitOfWork.CommitAsync();
     }
 
     public async Task UpdateSponsorAsync(Guid id, UpdateSponsorRequestV2 request)

@@ -38,7 +38,7 @@ namespace KSMS.API.Controllers
         }
 
         // thả hết cá vào hồ theo roundi và đơn đăng kí 
-        [HttpPatch("assign-to-tank")]
+        [HttpPost("assign-to-tank")]
         public async Task<ActionResult<ApiResponse<object>>> AssignMultipleFishesToTankAndRound(
     [FromBody] AssignFishesRequest request)
         {

@@ -1,6 +1,8 @@
 ﻿namespace KSMS.Domain.Enums;
 
-public class RoundEnum
+public enum RoundEnum
 {
-    
+    Preliminary,
+    Evaluation,
+    Final    
 }
