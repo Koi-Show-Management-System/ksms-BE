@@ -2,6 +2,9 @@
 
 public enum ShowStatus
 {
-    Draft,
+    Pending,
     Published,
+    Upcoming,
+    InProgress,
+    Finished
 }
