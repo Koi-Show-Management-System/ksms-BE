@@ -60,7 +60,7 @@ namespace KSMS.Infrastructure.Services
             
         }
 
-        public async Task<Paginate<GetPageRoundResponse>> GetPageRound(Guid competitionCategoryId, int page, int size)
+        public async Task<Paginate<GetPageRoundResponse>> GetPageRound(Guid competitionCategoryId, RoundEnum roundType, int page, int size)
         {
             var competitionCategory = await _unitOfWork.GetRepository<CompetitionCategory>().SingleOrDefaultAsync(
                 predicate: x => x.Id == competitionCategoryId);
@@ -68,7 +68,7 @@ namespace KSMS.Infrastructure.Services
                 throw new NotFoundException("Competition Category not found");
             }
             var rounds = await _unitOfWork.GetRepository<Round>().GetPagingListAsync(
-                predicate: x => x.CompetitionCategoriesId == competitionCategoryId,
+                predicate: x => x.CompetitionCategoriesId == competitionCategoryId && x.RoundType == roundType.ToString(),
                 page: page,
                 size: size
             );

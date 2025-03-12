@@ -31,7 +31,7 @@ public class GetRegistrationResponse // for user
 
     public ICollection<GetKoiMediaResponse> KoiMedia { get; set; } = new List<GetKoiMediaResponse>();
 
-    public KoiProfileResponse KoiProfile { get; set; } = null!;
+    public KoiProfileResponse? KoiProfile { get; set; }
 
-    public GetKoiShowResponse KoiShow { get; set; } = null!;
+    public GetKoiShowResponse? KoiShow { get; set; } 
 }
