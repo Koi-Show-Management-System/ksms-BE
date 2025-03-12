@@ -78,6 +78,7 @@ public class AuthenticationService : BaseService<AuthenticationService>, IAuthen
         {
             Id = account.Id,
             Email = account.Email,
+            FullName = account.FullName,
             Token = JwtUtil.GenerateJwtToken(account),
             Role = account.Role
         };
