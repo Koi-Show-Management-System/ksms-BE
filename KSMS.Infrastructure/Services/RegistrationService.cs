@@ -522,11 +522,6 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
                 var showIds = staffShows.Select(s => s.KoiShowId).ToList();
                 predicate = r => showIds.Contains(r.KoiShowId);
                 break;
-                
-            default:
-                //predicate = r => r.Status != RegistrationStatus..ToString().ToLower();
-                predicate = r => r.AccountId == GetIdFromJwt();
-                break;
         }
 
         return predicate;

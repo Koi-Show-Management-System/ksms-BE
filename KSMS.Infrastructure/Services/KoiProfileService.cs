@@ -134,7 +134,10 @@ public class KoiProfileService : BaseService<KoiProfileService>, IKoiProfileServ
 
     public async Task<GetAllKoiProfileResponse> GetById(Guid id)
     {
-        var koiProfile = await _unitOfWork.GetRepository<KoiProfile>().SingleOrDefaultAsync(predicate: x => x.Id == id);
+        var koiProfile = await _unitOfWork.GetRepository<KoiProfile>().SingleOrDefaultAsync(predicate: x => x.Id == id,
+            include: query => query
+                .Include(k => k.Variety)
+                .Include(k => k.KoiMedia));
         if (koiProfile is null)
         {
             throw new NotFoundException("Koi is not found");
