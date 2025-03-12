@@ -22,6 +22,7 @@ using KSMS.Application.Extensions;
 using KSMS.Domain.Common;
 using KSMS.Domain.Pagination;
 using KSMS.Domain.Dtos.Responses.KoiMedium;
+using ShowStatus = KSMS.Domain.Enums.ShowStatus;
 
 namespace KSMS.Infrastructure.Services;
 
@@ -150,30 +151,36 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
         }
     }
 
-    
-
-
-    public async Task<CheckQRRegistrationResoponse> GetRegistrationByIdAndRoundAsync(Guid registrationId, Guid roundId)
+    public async Task<Paginate<GetPageRegistrationHistoryResponse>> GetPageRegistrationHistory(RegistrationStatus? registrationStatus, ShowStatus? showStatus, int page, int size)
     {
-        var registrationRepository = _unitOfWork.GetRepository<Registration>();
-
-        var registration = await registrationRepository.SingleOrDefaultAsync(
-            predicate: r => r.Id == registrationId &&
-                            r.RegistrationRounds.Any(rr => rr.RoundId == roundId), // Thêm điều kiện kiểm tra RoundId
-            include: query => query
-                .Include(r => r.KoiMedia)
-                .ThenInclude(km => km.KoiProfile)
-                .Include(r => r.RegistrationRounds)
-                .ThenInclude(rr => rr.Round) // Bao gồm thông tin về vòng thi
-        );
-
-        if (registration == null)
+        Expression<Func<Registration, bool>> filterQuery = registration => registration.AccountId == GetIdFromJwt();
+        if (registrationStatus.HasValue)
         {
-            throw new NotFoundException("Registration not found in the specified round.");
+            var status = registrationStatus.Value.ToString().ToLower();
+            filterQuery = filterQuery.AndAlso(r => r.Status == status);
         }
-
-        return registration.Adapt<CheckQRRegistrationResoponse>();
+        if (showStatus.HasValue)
+        {
+            var status = showStatus.Value.ToString().ToLower();
+            filterQuery = filterQuery.AndAlso(r => r.KoiShow.Status == status);
+        }
+        var registrations = await _unitOfWork.GetRepository<Registration>()
+            .GetPagingListAsync(predicate: filterQuery,
+                orderBy: query => query.OrderByDescending(r => r.CreatedAt),
+                include: query => query
+                    .Include(r => r.KoiShow)
+                    .Include(r => r.KoiProfile)
+                    .ThenInclude(k => k.Variety)
+                    .Include(r => r.CompetitionCategory)
+                    .Include(r => r.KoiMedia),
+                page: page,
+                size: size
+            );
+        return registrations.Adapt<Paginate<GetPageRegistrationHistoryResponse>>();
     }
+
+
+    
 
 
 
@@ -497,7 +504,7 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
                 include: q => q
                     .Include(r => r.KoiShow)
                     .Include(r => r.KoiProfile)
-                    .ThenInclude(k => k.Variety)
+                        .ThenInclude(k => k.Variety)
                     .Include(r => r.CompetitionCategory)
                     .Include(r => r.KoiMedia),
                 page: page,
@@ -554,4 +561,6 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
 
         return filterQuery;
     }
+    
+    
 }

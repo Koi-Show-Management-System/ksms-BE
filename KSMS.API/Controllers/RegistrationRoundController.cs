@@ -16,11 +16,9 @@ namespace KSMS.API.Controllers
     public class RegistrationRoundController : ControllerBase 
     {
         private readonly IRegistrationRoundService _registrationRoundService;
-        private readonly IRegistrationService _registrationService;
-        public RegistrationRoundController(IRegistrationRoundService registrationRoundService, IRegistrationService registrationService)
+        public RegistrationRoundController(IRegistrationRoundService registrationRoundService)
         {
             _registrationRoundService = registrationRoundService;
-            _registrationService = registrationService;
         }
         [HttpPost("create")]
         public async Task<ActionResult<ApiResponse<object>>> CreateRegistrationRound([FromBody] CreateRegistrationRoundRequest request)
@@ -29,28 +27,14 @@ namespace KSMS.API.Controllers
             return StatusCode(201, ApiResponse<object>.Created(newRegistrationRound, "Registration round created successfully"));
         }
         // quét mã qr cho trọng tài 
-        [HttpGet("get-registration-by-round-info-reffreee")]
-        public async Task<ActionResult<ApiResponse<CheckQRRegistrationResoponse>>> GetRegistrationByIdAndRoundAsync(
-    [FromQuery] Guid registrationId,
-    [FromQuery] Guid roundId)
+        [HttpGet("get-registration-round-for-referee")]
+        public async Task<ActionResult<ApiResponse<CheckQrRegistrationRoundResponse>>> GetRegistrationRoundByIdAndRoundAsync(
+            [FromQuery] Guid registrationId,
+            [FromQuery] Guid roundId)
         {
-            var registrationInfo = await _registrationService.GetRegistrationByIdAndRoundAsync(registrationId, roundId);
-            return Ok(ApiResponse<CheckQRRegistrationResoponse>.Success(registrationInfo, "Fetched registration info successfully"));
+            var registrationRoundInfo = await _registrationRoundService.GetRegistrationRoundByIdAndRoundAsync(registrationId, roundId);
+            return Ok(ApiResponse<CheckQrRegistrationRoundResponse>.Success(registrationRoundInfo, "Fetched registration info successfully"));
         }
-
-        //[HttpPost("generate-qr-registration")]
-        //public ActionResult<ApiResponse<string>> GenerateQrCode([FromBody] Guid registrationID)
-        //{
-        //    var qrCodeBase64 = QrcodeUtil.GenerateQrCode(registrationID);
-        //    return Ok(ApiResponse<string>.Success(qrCodeBase64, "Tạo mã QR thành công"));
-        //}
-
-        //[HttpGet("{registrationId:guid}/{roundId:guid}")]
-        //public async Task<ActionResult<ApiResponse<object>>> GetRegistrationRound(Guid registrationId, Guid roundId)
-        //{
-        //    var registrationRound = await _registrationRoundService.GetRegistrationRoundAsync(registrationId, roundId);
-        //    return Ok(ApiResponse<object>.Success(registrationRound, "Registration round details retrieved successfully"));
-        //}
         [HttpGet("{roundId:guid}")]
         public async Task<ActionResult<ApiResponse<object>>> GetPageRegistrationRounds(Guid roundId, [FromQuery] int page = 1, [FromQuery] int size = 10)
         {

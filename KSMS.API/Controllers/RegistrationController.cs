@@ -10,6 +10,7 @@ using KSMS.Domain.Models;
 using KSMS.Domain.Entities;
 using KSMS.Domain.Dtos.Responses.Round;
 using KSMS.Infrastructure.Utils;
+using ShowStatus = KSMS.Domain.Enums.ShowStatus;
 
 namespace KSMS.API.Controllers
 {
@@ -17,7 +18,7 @@ namespace KSMS.API.Controllers
     [ApiController]
     public class RegistrationController : ControllerBase
     {
-        private readonly    IRegistrationService _registrationService;
+        private readonly IRegistrationService _registrationService;
 
         public RegistrationController(IRegistrationService registrationService)
         {
@@ -103,6 +104,20 @@ namespace KSMS.API.Controllers
         {
             var registrations = await _registrationService.GetAllRegistrationForCurrentMember(filter, page, size);
             return Ok(ApiResponse<object>.Success(registrations, "Get List successfully"));
+        }
+        
+        [HttpGet("get-page-history-registration")]
+        [Authorize(Roles = "Member")]
+        public async Task<ActionResult<ApiResponse<object>>> GetPagedRegistrationHistory(
+            [FromQuery] RegistrationStatus? registrationStatus,
+            [FromQuery] ShowStatus? showStatus,
+            [FromQuery]int page = 1,
+            [FromQuery]int size = 10)
+        {
+            var result =
+                await _registrationService.GetPageRegistrationHistory(registrationStatus, showStatus, page, size);
+            return Ok(ApiResponse<object>.Success(result, "Get list successfully"));
+            
         }
     }
 }
