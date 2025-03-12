@@ -53,6 +53,15 @@ namespace KSMS.Infrastructure.Services
             await tankRepository.InsertAsync(tank);
             await _unitOfWork.CommitAsync();
         }
+        public async Task<int> GetCurrentFishCount(Guid tankId)
+        {
+            var regisRoundRepository = _unitOfWork.GetRepository<RegistrationRound>();
+
+            // Đếm số lượng cá hiện có trong hồ
+            return await regisRoundRepository.CountAsync(
+                predicate: rr => rr.TankId == tankId
+            );
+        }
         public async Task<bool> IsTankFull(Guid tankId)
         {
             var tankRepository = _unitOfWork.GetRepository<Tank>();
