@@ -31,6 +31,7 @@ namespace KSMS.Infrastructure.Services
                 predicate: p => p.Id == id , include: p =>
                         p.Include(r => r.Registration)
                                 .ThenInclude(r => r.KoiProfile)
+                                .ThenInclude(r => r.Variety)
                          .Include(r => r.Registration)
                                 .ThenInclude(r => r.KoiMedia)
                         .Include(r => r.Registration)
