@@ -170,6 +170,7 @@ namespace KSMS.Infrastructure.Services
             await _unitOfWork.CommitAsync();
 
             //  Gửi cập nhật điểm số qua SignalR
+
             await _scoreHub.Clients.All.SendAsync("ReceiveUpdatedScores", request.RegistrationRoundId, finalStatus);
 
          //   return score.Adapt<ScoreDetailResponse>();
