@@ -66,6 +66,7 @@ namespace KSMS.Infrastructure.Services
             var registrationRounds = await _unitOfWork.GetRepository<RegistrationRound>().GetPagingListAsync(
                 predicate: predicate,
                 include: query => query.Include(x => x.RoundResults)
+                    .Include(x => x.ScoreDetails)
                     .Include(x => x.Tank)
                     .Include(x => x.Registration)
                         .ThenInclude(x => x.CompetitionCategory)
@@ -85,7 +86,24 @@ namespace KSMS.Infrastructure.Services
             }
             return response;
         }
+        
+        public async Task<CheckQrRegistrationRoundResponse> GetRegistrationRoundByIdAndRoundAsync(Guid registrationId, Guid roundId)
+        {
+            var registrationRound = await _unitOfWork.GetRepository<RegistrationRound>().SingleOrDefaultAsync(
+                predicate: r => r.RegistrationId == registrationId && r.RoundId == roundId,
+                include: query => query
+                    .Include(r => r.Registration)
+                        .ThenInclude(r => r.KoiProfile)
+                            .ThenInclude(r => r.Variety)
+                    .Include(r => r.Registration)
+                        .ThenInclude(r => r.KoiMedia));
+            if (registrationRound == null)
+            {
+                throw new NotFoundException("Registration round not found.");
+            }
 
+            return registrationRound.Adapt<CheckQrRegistrationRoundResponse>();
+        }
         
     }
 }
