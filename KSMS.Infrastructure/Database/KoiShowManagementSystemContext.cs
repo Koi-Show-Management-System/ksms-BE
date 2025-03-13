@@ -570,7 +570,6 @@ public partial class KoiShowManagementSystemContext : DbContext
 
             entity.HasOne(d => d.Tank).WithMany(p => p.RegistrationRounds)
                 .HasForeignKey(d => d.TankId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__Registrat__TankI__6E01572D");
         });
 
