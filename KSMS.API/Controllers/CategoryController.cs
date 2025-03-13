@@ -24,6 +24,12 @@ namespace KSMS.API.Controllers
             await _categoryService.CreateCompetitionCategory(request);
             return StatusCode(201, ApiResponse<object>.Created(null, "Create category successfully"));
         }
+        [HttpPut("{id:guid}")]
+        public async Task<ActionResult<ApiResponse<object>>> UpdateCategory(Guid id, [FromBody] UpdateCompetitionCategoryRequest request)
+        {
+            await _categoryService.UpdateCompetitionCategory(id, request);
+            return Ok(ApiResponse<object>.Success(null, "Update category successfully"));
+        }
         [HttpGet("get-page")]
         public async Task<ActionResult<ApiResponse<object>>> GetPageCategory(
             [FromQuery] Guid showId,       

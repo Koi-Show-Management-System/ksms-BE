@@ -246,7 +246,7 @@ CREATE TABLE [dbo].[RegistrationRound](
   [RoundId] UNIQUEIDENTIFIER NOT NULL,
   [CheckInTime] datetime NULL,
   [CheckOutTime] datetime NULL,
-  [TankId]  UNIQUEIDENTIFIER NOT NULL,
+  [TankId]  UNIQUEIDENTIFIER NULL,
   [Status] varchar(20) NULL,
   [Notes] nvarchar(max) NULL,
   [CreatedAt] datetime NOT NULL,
