@@ -1,7 +1,6 @@
 ﻿using KSMS.Domain.Dtos.Responses.Round;
 using KSMS.Domain.Dtos.Responses.RoundResult;
 using KSMS.Domain.Dtos.Responses.Score;
-using KSMS.Domain.Entities;
 using System;
 using System.Collections.Generic;
 using System.Linq;

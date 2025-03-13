@@ -32,6 +32,8 @@ public partial class Account : BaseEntity
 
     public virtual ICollection<BlogsNews> BlogsNews { get; set; } = new List<BlogsNews>();
 
+    public virtual ICollection<CheckOutLog> CheckOutLogs { get; set; } = new List<CheckOutLog>();
+
     public virtual ICollection<Feedback> Feedbacks { get; set; } = new List<Feedback>();
 
     public virtual ICollection<KoiProfile> KoiProfiles { get; set; } = new List<KoiProfile>();
@@ -51,6 +53,8 @@ public partial class Account : BaseEntity
     public virtual ICollection<ShowStaff> ShowStaffAccounts { get; set; } = new List<ShowStaff>();
 
     public virtual ICollection<ShowStaff> ShowStaffAssignedByNavigations { get; set; } = new List<ShowStaff>();
+
+    public virtual ICollection<Tank> Tanks { get; set; } = new List<Tank>();
 
     public virtual ICollection<TicketOrder> TicketOrders { get; set; } = new List<TicketOrder>();
 

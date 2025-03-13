@@ -53,7 +53,6 @@ CREATE TABLE [dbo].[KoiShow](
     [HasGrandChampion] bit DEFAULT 0,
     [HasBestInShow] bit DEFAULT 0,
     [ImgURL] nvarchar(255) NULL,
-    [RegistrationFee] decimal(18,2) NOT NULL,
     [Status] varchar(20) NULL,
     [CreatedAt] datetime NOT NULL,
     [UpdatedAt] datetime NULL
@@ -80,6 +79,7 @@ CREATE TABLE [dbo].[CompetitionCategory](
     [SizeMax] decimal(5,2) NULL,
     [Description] nvarchar(max) NULL,
     [MaxEntries] int NULL,
+    [RegistrationFee] decimal(18,2) NOT NULL,
     [StartTime] datetime NULL,
     [EndTime] datetime NULL,
     [Status] varchar(20) NULL,
@@ -152,7 +152,7 @@ CREATE TABLE [dbo].[Round](
     [RoundType] varchar(20) NOT NULL,
     [StartTime] datetime NULL,
     [EndTime] datetime NULL,
-    [MinScoreToAdvance] decimal(5,2) NULL,
+    [NumberOfRegistrationToAdvance] int NULL,
     [Status] varchar(20) NULL,
     [CreatedAt] datetime NOT NULL,
     [UpdatedAt] datetime NULL,
@@ -223,7 +223,7 @@ GO
 -- Tanks table
 CREATE TABLE [dbo].[Tank](
   [Id] UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
-  [KoiShowId] UNIQUEIDENTIFIER NOT NULL,
+  [CompetitionCategoryId] UNIQUEIDENTIFIER NOT NULL,
   [Name] nvarchar(100) NOT NULL,
   [Capacity] int NOT NULL,
   [WaterType] nvarchar(50) NULL,
@@ -235,8 +235,8 @@ CREATE TABLE [dbo].[Tank](
   [CreatedBy] UNIQUEIDENTIFIER NOT NULL,
   [CreatedAt] datetime NOT NULL,
   [UpdatedAt] datetime NULL,
-  FOREIGN KEY ([KoiShowId]) REFERENCES [KoiShow]([Id]),
-  FOREIGN KEY ([CreatedBy]) REFERENCES [ShowStaff]([Id]),
+  FOREIGN KEY ([CompetitionCategoryId]) REFERENCES [CompetitionCategory]([Id]),
+  FOREIGN KEY ([CreatedBy]) REFERENCES [Account]([Id]),
 )
 GO
 -- RegistrationRounds table
@@ -483,7 +483,7 @@ CREATE TABLE [dbo].[CheckOutLog](
     [CheckedOutBy] UNIQUEIDENTIFIER NULL,
     [Notes] nvarchar(255) NULL,
     FOREIGN KEY ([RegistrationId]) REFERENCES [Registration]([Id]),
-    FOREIGN KEY ([CheckedOutBy]) REFERENCES [ShowStaff]([Id]),
+    FOREIGN KEY ([CheckedOutBy]) REFERENCES [Account]([Id]),
 )
 GO
 -- ShowRules table

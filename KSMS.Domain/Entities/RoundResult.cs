@@ -15,7 +15,6 @@ public partial class RoundResult : BaseEntity
     public string? Comments { get; set; }
 
     public string? Status { get; set; }
-    
 
     public virtual RegistrationRound RegistrationRounds { get; set; } = null!;
 }
