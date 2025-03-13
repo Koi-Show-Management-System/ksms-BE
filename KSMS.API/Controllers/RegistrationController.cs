@@ -38,21 +38,8 @@ namespace KSMS.API.Controllers
             return Ok(ApiResponse<List<GetRegisByQrCodeResponse>>.Success(qrCodes, "QR Codes generated successfully"));
         }
         
-        // thả hết cá vào hồ theo roundi và đơn đăng kí 
-        [HttpPost("assign-to-tank")]
-        public async Task<ActionResult<ApiResponse<object>>> AssignMultipleFishesToTankAndRound(
-    [FromBody] AssignFishesRequest request)
-        {
-            try
-            {
-                await _registrationService.AssignMultipleFishesToTankAndRound(request.RoundId, request.RegistrationIds);
-                return Ok(ApiResponse<object>.Success(null, "Assigned fishes successfully"));
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ApiResponse<object>.Fail(ex.Message));
-            }
-        }
+       
+
 
 
 
@@ -107,6 +94,7 @@ namespace KSMS.API.Controllers
             return Ok(ApiResponse<object>.Success(null, "Update registration status successfully"));
         }
 
+       
 
         [HttpGet("get-paging-registration-for-current-account")]
         [Authorize(Roles = "Staff, Admin, Manager, Member")]
