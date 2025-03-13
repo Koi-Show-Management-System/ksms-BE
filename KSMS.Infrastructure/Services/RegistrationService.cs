@@ -66,111 +66,104 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
             var regisRoundRepository = _unitOfWork.GetRepository<RegistrationRound>();
             var tankRepository = _unitOfWork.GetRepository<Tank>();
             var registrationRepository = _unitOfWork.GetRepository<Registration>();
+            var roundRepository = _unitOfWork.GetRepository<Round>();
 
-            // 1️⃣ Kiểm tra danh sách cá qua vòng (do người dùng chọn)
+            // 1️⃣ Kiểm tra danh sách cá hợp lệ
             if (registrationIds == null || !registrationIds.Any())
             {
                 throw new ArgumentException("The list of passed fishes cannot be empty.");
             }
 
-            // 2️⃣ Lấy danh sách đơn đăng ký của cá đã qua vòng
+            // 2️⃣ Kiểm tra `RoundId` có tồn tại không
+            var roundExists = (await roundRepository.GetListAsync(predicate: r => r.Id == roundId)).Any();
+            if (!roundExists)
+            {
+                throw new Exception($"Round {roundId} does not exist. Please create the round first.");
+            }
+
+            // 3️⃣ Lấy danh sách đơn đăng ký của cá
             var registrations = await registrationRepository.GetListAsync(
                 predicate: r => registrationIds.Contains(r.Id));
 
-            // 3️⃣ Kiểm tra cùng hạng mục
+            // 4️⃣ Kiểm tra cùng hạng mục
             var categoryId = registrations.First().CompetitionCategoryId;
             if (registrations.Any(r => r.CompetitionCategoryId != categoryId))
             {
                 throw new Exception("All passed registrations must belong to the same category.");
             }
 
-            // 4️⃣ Kiểm tra vòng thi hợp lệ
-            var roundExists = (await _unitOfWork.GetRepository<Round>().GetListAsync(
-                predicate: r => r.Id == roundId && r.CompetitionCategoriesId == categoryId && r.Status == "active")).Any();
-
-            if (!roundExists)
-            {
-                throw new Exception($"Round {roundId} is not valid for category {categoryId}.");
-            }
-
-            // 5️⃣ Lấy danh sách hồ đã được sử dụng trong vòng trước
-            var previousRoundTanks = await regisRoundRepository.GetListAsync(
-                predicate: rr => rr.RoundId != roundId,
-                selector: rr => rr.TankId
-            );
-
-            // 6️⃣ Lấy danh sách hồ có thể tái sử dụng hoặc hồ mới
+            // 5️⃣ Lấy danh sách hồ trống theo hạng mục
             var availableTanks = await tankRepository.GetListAsync(
-                predicate: t => //t.KoiShowId == registrations.First().KoiShowId &&
-                                t.Status == TankStatus.Available.ToString().ToLower());
+                predicate: t => t.CompetitionCategoryId == categoryId && t.Status == TankStatus.Available.ToString().ToLower()
+            );
 
             if (!availableTanks.Any())
             {
-                throw new Exception("No available tanks found. Please add more tanks before assigning fishes.");
+                throw new Exception("No available tanks found for this category. Please add more tanks before assigning fishes.");
             }
 
-            // 7️⃣ Kiểm tra danh sách cá đã có trong vòng trước
-            var existingRegistrations = await regisRoundRepository.GetListAsync(
-                predicate: rr => registrationIds.Contains(rr.RegistrationId)
-            );
+            // 6️⃣ Lấy danh sách số lượng cá trong từng hồ để tránh lỗi `OrderBy`
+            var tankFishCounts = await Task.WhenAll(availableTanks.Select(async tank =>
+                new { Tank = tank, FishCount = await _tankService.GetCurrentFishCount(tank.Id) }));
 
-            // 8️⃣ Cập nhật RoundId cho cá đã có thay vì gán lại hồ
-            foreach (var existingRegis in existingRegistrations)
+            // 7️⃣ Kiểm tra tổng sức chứa của hồ có đủ không
+            int totalCapacity = tankFishCounts.Sum(t => t.Tank.Capacity - t.FishCount);
+            if (totalCapacity < registrations.Count)
             {
-                existingRegis.RoundId = roundId;
-                regisRoundRepository.UpdateAsync(existingRegis);
+                throw new Exception($"Not enough tank space for {registrations.Count} fish in category {categoryId}. Required: {registrations.Count}, Available: {totalCapacity}.");
             }
 
-            // 9️⃣ Lọc ra cá chưa có trong vòng trước để gán vào hồ
-            var newRegistrations = registrations
-                .Where(r => !existingRegistrations.Select(er => er.RegistrationId).Contains(r.Id))
-                .ToList();
+            // 8️⃣ Lấy danh sách cá đã thi đấu trong vòng trước
+            var existingRegistrations = await regisRoundRepository.GetListAsync(
+                predicate: rr => registrationIds.Contains(rr.RegistrationId));
 
             List<RegistrationRound> newRegisRounds = new();
-            int fishCountRemaining = newRegistrations.Count;
+            int fishCountRemaining = registrations.Count;
 
-            // 🔟 Gán cá vào hồ trống
-            foreach (var tank in availableTanks)
+            // 9️⃣ Phân bổ cá vào từng hồ hợp lý
+            foreach (var tankData in tankFishCounts.OrderBy(t => t.FishCount))
             {
-                int currentFishCount = await _tankService.GetCurrentFishCount(tank.Id);
-                int availableSpace = tank.Capacity - currentFishCount;
+                var tank = tankData.Tank;
+                int availableSpace = tank.Capacity - tankData.FishCount;
 
                 if (availableSpace > 0)
                 {
-                    var assignedRegistrations = newRegistrations.Take(availableSpace).ToList();
-                    newRegistrations = newRegistrations.Skip(availableSpace).ToList();
+                    var assignedRegistrations = registrations.Take(availableSpace).ToList();
+                    registrations = registrations.Skip(availableSpace).ToList();
                     fishCountRemaining -= assignedRegistrations.Count;
 
                     newRegisRounds.AddRange(assignedRegistrations.Select(registration => new RegistrationRound
                     {
+                        Id = Guid.NewGuid(), // Luôn tạo mới
                         RegistrationId = registration.Id,
                         RoundId = roundId,
-                        TankId = tank.Id,
+                        TankId = tank.Id, // Gán vào từng hồ hợp lý
                         CheckInTime = VietNamTimeUtil.GetVietnamTime(),
                         Status = "assigned",
                         CreatedAt = VietNamTimeUtil.GetVietnamTime()
                     }));
 
-                    if (!newRegistrations.Any())
+                    if (!registrations.Any())
                         break;
                 }
             }
 
-            // 1️⃣1️⃣ Nếu vẫn còn cá nhưng không có hồ nào trống, báo lỗi
+            // 🔥 10️⃣ Nếu vẫn còn cá nhưng không có hồ nào trống, báo lỗi
             if (fishCountRemaining > 0)
             {
-                throw new Exception($"Not enough tank space for {fishCountRemaining} fish. Please add more tanks.");
+                throw new Exception($"Not enough tank space for {fishCountRemaining} remaining fish in category {categoryId}. Please add more tanks.");
             }
 
-            // 1️⃣2️⃣ Lưu danh sách cá vào hồ
+            // 🔥 11️⃣ Chèn bản ghi mới vào bảng
             await regisRoundRepository.InsertRangeAsync(newRegisRounds);
+
             await _unitOfWork.CommitAsync();
             await transaction.CommitAsync();
         }
         catch (Exception ex)
         {
             await transaction.RollbackAsync();
-            throw new Exception("Failed to assign fishes to next round.", ex);
+            throw new Exception("Failed to assign fishes to next round: " + ex.Message);
         }
     }
 
