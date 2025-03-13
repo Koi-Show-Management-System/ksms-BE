@@ -8,6 +8,7 @@ public class GetPageRoundResponse
     public int? RoundOrder { get; set; }
 
     public string? RoundType { get; set; }
+    public int? NumberOfRegistrationToAdvance { get; set; }
 
     public string? Status { get; set; }
 }

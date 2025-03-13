@@ -14,7 +14,7 @@ public partial class RegistrationRound : BaseEntity
 
     public DateTime? CheckOutTime { get; set; }
 
-    public Guid TankId { get; set; }
+    public Guid? TankId { get; set; }
 
     public string? Status { get; set; }
 
@@ -28,5 +28,5 @@ public partial class RegistrationRound : BaseEntity
 
     public virtual ICollection<ScoreDetail> ScoreDetails { get; set; } = new List<ScoreDetail>();
 
-    public virtual Tank Tank { get; set; } = null!;
+    public virtual Tank? Tank { get; set; } = null!;
 }
