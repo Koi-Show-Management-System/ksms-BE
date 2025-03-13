@@ -18,7 +18,7 @@ public partial class Round : BaseEntity
 
     public DateTime? EndTime { get; set; }
 
-    public decimal? MinScoreToAdvance { get; set; }
+    public int? NumberOfRegistrationToAdvance { get; set; }
 
     public string? Status { get; set; }
 

@@ -95,7 +95,8 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
 
             // 5️⃣ Lấy danh sách hồ khả dụng
             var availableTanks = await tankRepository.GetListAsync(
-                predicate: t => t.KoiShowId == registrations.First().KoiShowId && t.Status == TankStatus.Available.ToString().ToLower());
+                predicate: t => //t.KoiShowId == registrations.First().KoiShowId &&
+                                t.Status == TankStatus.Available.ToString().ToLower());
 
             if (!availableTanks.Any())
             {
@@ -233,7 +234,7 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
             var registration = createRegistrationRequest.Adapt<Registration>();
             registration.KoiAge = koiProfile.Age;
             registration.KoiSize = koiProfile.Size;
-            registration.RegistrationFee = koiShow.RegistrationFee;
+            registration.RegistrationFee = bestCategory.RegistrationFee;
             registration.AccountId = accountId;
             registration.CompetitionCategoryId = bestCategory.Id;
             registration.Status = RegistrationStatus.WaitToPaid.ToString().ToLower();

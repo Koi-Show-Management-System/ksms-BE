@@ -6,7 +6,7 @@ namespace KSMS.Domain.Entities;
 
 public partial class Tank : BaseEntity
 {
-    public Guid KoiShowId { get; set; }
+    public Guid CompetitionCategoryId { get; set; }
 
     public string Name { get; set; } = null!;
 
@@ -26,9 +26,9 @@ public partial class Tank : BaseEntity
 
     public Guid CreatedBy { get; set; }
 
-    public virtual ShowStaff CreatedByNavigation { get; set; } = null!;
+    public virtual CompetitionCategory CompetitionCategory { get; set; } = null!;
 
-    public virtual KoiShow KoiShow { get; set; } = null!;
+    public virtual Account CreatedByNavigation { get; set; } = null!;
 
     public virtual ICollection<RegistrationRound> RegistrationRounds { get; set; } = new List<RegistrationRound>();
 }

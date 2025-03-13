@@ -19,6 +19,8 @@ public class GetCompetitionCategoryDetailResponse
     public string? Description { get; set; }
 
     public int? MaxEntries { get; set; }
+    
+    public decimal? RegistrationFee { get; set; }
 
     public DateTime? StartTime { get; set; }
 

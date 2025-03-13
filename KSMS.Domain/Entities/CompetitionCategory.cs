@@ -18,11 +18,14 @@ public partial class CompetitionCategory : BaseEntity
 
     public int? MaxEntries { get; set; }
 
+    public decimal RegistrationFee { get; set; }
+
     public DateTime? StartTime { get; set; }
 
     public DateTime? EndTime { get; set; }
 
     public string? Status { get; set; }
+    
 
     public virtual ICollection<Award> Awards { get; set; } = new List<Award>();
 
@@ -37,4 +40,6 @@ public partial class CompetitionCategory : BaseEntity
     public virtual ICollection<Registration> Registrations { get; set; } = new List<Registration>();
 
     public virtual ICollection<Round> Rounds { get; set; } = new List<Round>();
+
+    public virtual ICollection<Tank> Tanks { get; set; } = new List<Tank>();
 }
