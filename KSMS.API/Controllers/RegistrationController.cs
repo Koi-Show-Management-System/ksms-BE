@@ -37,7 +37,7 @@ namespace KSMS.API.Controllers
 
             return Ok(ApiResponse<List<GetRegisByQrCodeResponse>>.Success(qrCodes, "QR Codes generated successfully"));
         }
-
+        
         // thả hết cá vào hồ theo roundi và đơn đăng kí 
         [HttpPost("assign-to-tank")]
         public async Task<ActionResult<ApiResponse<object>>> AssignMultipleFishesToTankAndRound(
@@ -64,7 +64,17 @@ namespace KSMS.API.Controllers
             return StatusCode(201, ApiResponse<object>.Created(registration, "Create registration successfully"));
         }
 
-
+        [HttpGet("find-suitable-category")]
+        public async Task<ActionResult<ApiResponse<object>>> FindSuitableCategory(
+            [FromQuery] Guid koiShowId,
+            [FromQuery] Guid varietyId,
+            [FromQuery] decimal size)
+        {
+            var result =
+                await _registrationService.FindSuitableCategoryAsync(koiShowId, varietyId, size);
+            return Ok(ApiResponse<object>.Success(result, "Get successfully"));
+            
+        }
 
         [HttpPost("checkout/{registrationId:guid}")]
         [Authorize(Roles = "Member")]

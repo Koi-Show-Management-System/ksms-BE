@@ -8,6 +8,8 @@ public class CreateRegistrationRequest
     [Required]
     public Guid KoiShowId { get; set; }
     [Required]
+    public Guid CompetitionCategoryId { get; set; }
+    [Required]
     public Guid KoiProfileId { get; set; }
     [Required]
     public required string RegisterName { get; set; }
