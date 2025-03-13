@@ -20,6 +20,7 @@ using System.Linq.Expressions;
 using Hangfire;
 using KSMS.Application.Extensions;
 using KSMS.Domain.Common;
+using KSMS.Domain.Dtos.Responses.CompetitionCategory;
 using KSMS.Domain.Pagination;
 using KSMS.Domain.Dtos.Responses.KoiMedium;
 using ShowStatus = KSMS.Domain.Enums.ShowStatus;
@@ -206,9 +207,9 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
         var koiShow = await _unitOfWork.GetRepository<KoiShow>()
             .SingleOrDefaultAsync(predicate: k => k.Id == createRegistrationRequest.KoiShowId);
         var koiProfile = await _unitOfWork.GetRepository<KoiProfile>()
-            .SingleOrDefaultAsync(predicate: k => k.Id == createRegistrationRequest.KoiProfileId,
-                include: query => query.Include(r => r.Variety)
-                    .ThenInclude(r => r.CategoryVarieties).ThenInclude(r => r.CompetitionCategory));
+            .SingleOrDefaultAsync(predicate: k => k.Id == createRegistrationRequest.KoiProfileId);
+        var category = await _unitOfWork.GetRepository<CompetitionCategory>().SingleOrDefaultAsync(
+            predicate: x => x.Id == createRegistrationRequest.CompetitionCategoryId);
         if (koiShow is null)
         {
             throw new NotFoundException("Show is not existed");
@@ -219,80 +220,76 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
             throw new NotFoundException("Koi is not existed");
         }
 
+        if (category is null)
+        {
+            throw new NotFoundException("Category is not existed");
+        }
         var registrations = await _unitOfWork.GetRepository<Registration>()
             .GetListAsync(predicate: x => x.KoiShowId == koiShow.Id && x.Status == RegistrationStatus.Confirmed.ToString().ToLower());
         if (registrations.Count > koiShow.MaxParticipants)
         {
-            throw new NotFoundException("");
+            throw new NotFoundException("The number of participants in this show exceeds the limit");
         }
-        var eligibleCategories = koiProfile.Variety.CategoryVarieties
-            .Select(cv => cv.CompetitionCategory)
-            .Where(cc =>
-                koiProfile.Size >= cc.SizeMin &&
-                koiProfile.Size <= cc.SizeMax &&
-                cc.KoiShowId == createRegistrationRequest.KoiShowId)
-            .ToList();
+        var registrationCount = await _unitOfWork.GetRepository<Registration>()
+            .GetListAsync(predicate: x =>
+                x.CompetitionCategoryId == category.Id &&
+                x.Status == RegistrationStatus.Confirmed.ToString().ToLower());
 
-        if (!eligibleCategories.Any())
-            throw new BadRequestException("No suitable category was found for this Koi fish");
-        var bestCategory = eligibleCategories.MinBy(c => c.SizeMax - c.SizeMin);
-        if (bestCategory != null)
+        if (registrationCount.Count >= category.MaxEntries)
+            throw new BadRequestException("The selected category has reached maximum entries");
+
+        var registration = createRegistrationRequest.Adapt<Registration>();
+        registration.KoiAge = koiProfile.Age;
+        registration.KoiSize = koiProfile.Size;
+        registration.RegistrationFee = category.RegistrationFee;
+        registration.AccountId = accountId;
+        registration.CompetitionCategoryId = category.Id;
+        registration.Status = RegistrationStatus.WaitToPaid.ToString().ToLower();
+        await _unitOfWork.GetRepository<Registration>().InsertAsync(registration);
+        await _unitOfWork.CommitAsync();
+        if (createRegistrationRequest.RegistrationImages is not [])
         {
-            var registrationCount =
-                await _unitOfWork.GetRepository<Registration>()
-                    .GetListAsync(predicate: x => x.CompetitionCategoryId == bestCategory.Id && x.Status == RegistrationStatus.Confirmed.ToString().ToLower());
-            if (registrationCount.Count > bestCategory.MaxEntries)
-            {
-                throw new NotFoundException("The number of participants in the category exceeds the limit");
-            }
-
-            var registration = createRegistrationRequest.Adapt<Registration>();
-            registration.KoiAge = koiProfile.Age;
-            registration.KoiSize = koiProfile.Size;
-            registration.RegistrationFee = bestCategory.RegistrationFee;
-            registration.AccountId = accountId;
-            registration.CompetitionCategoryId = bestCategory.Id;
-            registration.Status = RegistrationStatus.WaitToPaid.ToString().ToLower();
-            await _unitOfWork.GetRepository<Registration>().InsertAsync(registration);
-            await _unitOfWork.CommitAsync();
-            if (createRegistrationRequest.RegistrationImages is not [])
-            {
-                await _mediaService.UploadRegistrationImage(createRegistrationRequest.RegistrationImages,
-                    registration.Id);
-            }
-
-            if (createRegistrationRequest.RegistrationVideos is not [])
-            {
-                await _mediaService.UploadRegistrationVideo(createRegistrationRequest.RegistrationVideos,
-                    registration.Id);
-            }
-            // var staffList = await _unitOfWork.GetRepository<ShowStaff>()
-            //     .GetListAsync(predicate: s => s.KoiShowId == koiShow.Id,
-            //         include: query => query.Include(s => s.Account));
-            //
-            // // Gửi thông báo cho tất cả staff
-            // foreach (var staff in staffList)
-            // {
-            //     await _notificationService.SendNotification(
-            //         staff.Account.Id,
-            //         "New Registration",
-            //         $"New registration from {registration.Account.FullName} for koi {koiProfile.Name}",
-            //         NotificationType.NewRegistration
-            //     );
-            // }
-
-            return new
-            {
-                Id = registration.Id
-            };
+            await _mediaService.UploadRegistrationImage(createRegistrationRequest.RegistrationImages,
+                registration.Id);
         }
 
-        throw new NotFoundException("No suitable category was found for this Koi fish");
+        if (createRegistrationRequest.RegistrationVideos is not [])
+        {
+            await _mediaService.UploadRegistrationVideo(createRegistrationRequest.RegistrationVideos,
+                registration.Id);
+        }
+        // var staffList = await _unitOfWork.GetRepository<ShowStaff>()
+        //     .GetListAsync(predicate: s => s.KoiShowId == koiShow.Id,
+        //         include: query => query.Include(s => s.Account));
+        //
+        // // Gửi thông báo cho tất cả staff
+        // foreach (var staff in staffList)
+        // {
+        //     await _notificationService.SendNotification(
+        //         staff.Account.Id,
+        //         "New Registration",
+        //         $"New registration from {registration.Account.FullName} for koi {koiProfile.Name}",
+        //         NotificationType.NewRegistration
+        //     );
+        // }
+
+        return new
+        {
+            Id = registration.Id
+        };
+
+        //throw new NotFoundException("No suitable category was found for this Koi fish");
     }
 
     // New method to find suitable category
-    public async Task<CompetitionCategory> FindSuitableCategoryAsync(Guid koiShowId, Guid varietyId, decimal size)
+    public async Task<GetPageCompetitionCategoryResponse> FindSuitableCategoryAsync(Guid koiShowId, Guid varietyId, decimal size)
     {
+        var show = await _unitOfWork.GetRepository<KoiShow>()
+            .SingleOrDefaultAsync(predicate: s => s.Id == koiShowId);
+        if (show == null)
+        {
+            throw new NotFoundException("Show is not found");
+        }
         // Get the variety with its category relationships
         var variety = await _unitOfWork.GetRepository<Variety>()
             .SingleOrDefaultAsync(
@@ -320,15 +317,7 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
         if (bestCategory == null)
             throw new BadRequestException("No suitable category was found for this Koi fish");
         // Check if the category has space
-        var registrationCount = await _unitOfWork.GetRepository<Registration>()
-            .GetListAsync(predicate: x =>
-                x.CompetitionCategoryId == bestCategory.Id &&
-                x.Status == RegistrationStatus.Confirmed.ToString().ToLower());
-
-        if (registrationCount.Count >= bestCategory.MaxEntries)
-            throw new BadRequestException("The selected category has reached maximum entries");
-
-        return bestCategory;
+        return bestCategory.Adapt<GetPageCompetitionCategoryResponse>();
     }
 
 
@@ -497,6 +486,20 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
         );
 
         var createPayment = await _payOs.createPaymentLink(paymentData);
+        var staffList = await _unitOfWork.GetRepository<ShowStaff>()
+            .GetListAsync(predicate: s => s.KoiShowId == registration.KoiShowId,
+                include: query => query.Include(s => s.Account));
+
+        // Gửi thông báo cho tất cả staff
+        foreach (var staff in staffList)
+        {
+            await _notificationService.SendNotification(
+                staff.Account.Id,
+                "New Registration",
+                $"New registration from {registration.Account.FullName} for koi {registration.KoiProfile.Name}",
+                NotificationType.NewRegistration
+            );
+        }
         return new CheckOutRegistrationResponse()
         {
             Message = "Create payment Successfully",

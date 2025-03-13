@@ -1,5 +1,6 @@
 ﻿using System.Security.Claims;
 using KSMS.Domain.Dtos.Requests.Registration;
+using KSMS.Domain.Dtos.Responses.CompetitionCategory;
 using KSMS.Domain.Dtos.Responses.Registration;
 using KSMS.Domain.Entities;
 using KSMS.Domain.Enums;
@@ -12,7 +13,8 @@ namespace KSMS.Application.Services;
 public interface IRegistrationService
 {
     Task<List<Guid>> GetRegistrationIdsByKoiShowAsync(Guid koiShowId);
-    Task<object> CreateRegistration(CreateRegistrationRequest createRegistrationRequest); 
+    Task<object> CreateRegistration(CreateRegistrationRequest createRegistrationRequest);
+    Task<GetPageCompetitionCategoryResponse> FindSuitableCategoryAsync(Guid koiShowId, Guid varietyId, decimal size);
     Task UpdateRegistrationPaymentStatusForPayOs(Guid registrationPaymentId, RegistrationPaymentStatus status);
     Task UpdateStatusForRegistration(Guid registrationId, RegistrationStatus status);
     Task<CheckOutRegistrationResponse> CheckOut(Guid registrationId);
