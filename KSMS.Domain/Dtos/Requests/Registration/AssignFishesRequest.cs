@@ -12,4 +12,10 @@ namespace KSMS.Domain.Dtos.Requests.Registration
         public List<Guid> RegistrationIds { get; set; } = new List<Guid>();
     }
 
+    public class UpdateFishTankRequest
+    {
+        public Guid RegistrationRoundId { get; set; }  // ID của bản ghi cá trong vòng thi
+        public Guid TankId { get; set; }  // ID của hồ chứa cá
+    }
+
 }
