@@ -40,8 +40,9 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowAll", builder =>
     {
         builder
-            .WithOrigins("http://localhost:3000", 
-                "https://ksms.news", 
+            .WithOrigins("http://localhost:3000",
+                "http://localhost:8081",
+                "https://ksms.news",
                 "https://www.ksms.news",
                 "https://api.ksms.news")
             .AllowAnyMethod()
