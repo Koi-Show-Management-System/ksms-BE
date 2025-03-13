@@ -32,8 +32,6 @@ public partial class KoiShow : BaseEntity
 
     public string? ImgUrl { get; set; }
 
-    public decimal RegistrationFee { get; set; }
-
     public string? Status { get; set; }
 
     public virtual ICollection<CompetitionCategory> CompetitionCategories { get; set; } = new List<CompetitionCategory>();
@@ -51,8 +49,6 @@ public partial class KoiShow : BaseEntity
     public virtual ICollection<ShowStatus> ShowStatuses { get; set; } = new List<ShowStatus>();
 
     public virtual ICollection<Sponsor> Sponsors { get; set; } = new List<Sponsor>();
-
-    public virtual ICollection<Tank> Tanks { get; set; } = new List<Tank>();
 
     public virtual ICollection<TicketType> TicketTypes { get; set; } = new List<TicketType>();
 }

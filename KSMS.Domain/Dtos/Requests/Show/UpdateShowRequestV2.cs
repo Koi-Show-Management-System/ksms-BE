@@ -45,10 +45,6 @@ public class UpdateShowRequestV2
     [StringLength(255, ErrorMessage = "ImgUrl cannot exceed 255 characters.")]
     public string? ImgUrl { get; set; }
 
-       
-    [Range(0, double.MaxValue, ErrorMessage = "RegistrationFee must be a non-negative value.")]
-    public decimal RegistrationFee { get; set; }
-
          
     [StringLength(20, ErrorMessage = "Status cannot exceed 20 characters.")]
     public string? Status { get; set; }

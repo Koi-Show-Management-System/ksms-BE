@@ -17,7 +17,7 @@ public partial class CheckOutLog
 
     public string? Notes { get; set; }
 
-    public virtual ShowStaff? CheckedOutByNavigation { get; set; }
+    public virtual Account? CheckedOutByNavigation { get; set; }
 
     public virtual Registration? Registration { get; set; }
 }

@@ -22,11 +22,11 @@ namespace KSMS.API.Controllers
         {
             _tankService = tankService;
         }
-        [HttpGet("{koiShowId:guid}/paged")]
-        public async Task<ActionResult<ApiResponse<Paginate<TankResponse>>>> GetPagedTanksByKoiShowId(
-             Guid koiShowId, [FromQuery] int page = 1, [FromQuery] int size = 10)
+        [HttpGet("{competitionCategoryId:guid}/paged")]
+        public async Task<ActionResult<ApiResponse<Paginate<TankResponse>>>> GetPagedTanksByCompetitonCategoryId(
+             Guid competitionCategoryId, [FromQuery] int page = 1, [FromQuery] int size = 10)
         {
-            var tanks = await _tankService.GetPagedTanksByKoiShowIdAsync(koiShowId, page, size);
+            var tanks = await _tankService.GetPagedTanksByCategoryIdAsync(competitionCategoryId, page, size);
             return Ok(ApiResponse<Paginate<TankResponse>>.Success(tanks, "Get paged tanks successfully"));
         }
 
@@ -44,7 +44,7 @@ namespace KSMS.API.Controllers
         /// API tạo một Tank mới (không trả về response)
         /// </summary>
         [HttpPost("create")]
-        [Authorize(Roles = "Staff, Manager")]
+        [Authorize(Roles = "Admin, Staff, Manager")]
         public async Task<IActionResult> CreateTank([FromBody] CreateTankRequest tankRequest)
         {
             await _tankService.CreateTankAsync(tankRequest);
@@ -57,7 +57,7 @@ namespace KSMS.API.Controllers
         /// API cập nhật thông tin Tank theo ID (không trả về response)
         /// </summary>
         [HttpPut("{id:guid}")]
-        [Authorize(Roles = "Staff, Manager")]
+        [Authorize(Roles = "Admin, Staff, Manager")]
         public async Task<IActionResult> UpdateTank(Guid id, [FromBody] UpdateTankRequest request)
         {
             await _tankService.UpdateTankAsync(id, request);

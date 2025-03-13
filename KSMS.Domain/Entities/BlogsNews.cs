@@ -15,7 +15,7 @@ public partial class BlogsNews : BaseEntity
     public Guid AccountId { get; set; }
 
     public string? ImgUrl { get; set; }
-
+    
     public virtual Account Account { get; set; } = null!;
 
     public virtual BlogCategory BlogCategory { get; set; } = null!;

@@ -22,6 +22,7 @@ using KSMS.Application.Extensions;
 using KSMS.Domain.Common;
 using KSMS.Domain.Pagination;
 using KSMS.Domain.Dtos.Responses.KoiMedium;
+using ShowStatus = KSMS.Domain.Enums.ShowStatus;
 
 namespace KSMS.Infrastructure.Services;
 
@@ -34,7 +35,7 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
     private readonly ITankService _tankService;
     private readonly IBackgroundJobClient _backgroundJobClient;
     private readonly IEmailService _emailService;
-    public RegistrationService(IUnitOfWork<KoiShowManagementSystemContext> unitOfWork, ILogger<RegistrationService> logger, 
+    public RegistrationService(IUnitOfWork<KoiShowManagementSystemContext> unitOfWork, ILogger<RegistrationService> logger,
         IHttpContextAccessor httpContextAccessor, PayOS payOs, IMediaService mediaService, IFirebaseService firebaseService, INotificationService notificationService, ITankService tankService, IBackgroundJobClient backgroundJobClient, IEmailService emailService) : base(unitOfWork, logger, httpContextAccessor)
     {
         _payOs = payOs;
@@ -100,9 +101,8 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
 
             // 6️⃣ Lấy danh sách hồ có thể tái sử dụng hoặc hồ mới
             var availableTanks = await tankRepository.GetListAsync(
-                predicate: t => t.KoiShowId == registrations.First().KoiShowId &&
-                                (previousRoundTanks.Contains(t.Id) || t.Status == TankStatus.Available.ToString().ToLower())
-            );
+                predicate: t => //t.KoiShowId == registrations.First().KoiShowId &&
+                                t.Status == TankStatus.Available.ToString().ToLower());
 
             if (!availableTanks.Any())
             {
@@ -118,7 +118,7 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
             foreach (var existingRegis in existingRegistrations)
             {
                 existingRegis.RoundId = roundId;
-                  regisRoundRepository.UpdateAsync(existingRegis);
+                regisRoundRepository.UpdateAsync(existingRegis);
             }
 
             // 9️⃣ Lọc ra cá chưa có trong vòng trước để gán vào hồ
@@ -174,124 +174,36 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
         }
     }
 
-    //public async Task AssignMultipleFishesToTankAndRound(Guid roundId, List<Guid> registrationIds)
-    //{
-    //    using var transaction = await _unitOfWork.BeginTransactionAsync();
-
-    //    try
-    //    {
-    //        var regisRoundRepository = _unitOfWork.GetRepository<RegistrationRound>();
-    //        var tankRepository = _unitOfWork.GetRepository<Tank>();
-    //        var registrationRepository = _unitOfWork.GetRepository<Registration>();
-
-    //        // 1️⃣ Kiểm tra danh sách rỗng
-    //        if (registrationIds == null || !registrationIds.Any())
-    //        {
-    //            throw new ArgumentException("Registration list cannot be empty.");
-    //        }
-
-    //        // 2️⃣ Lấy danh sách đơn đăng ký
-    //        var registrations = await registrationRepository.GetListAsync(
-    //            predicate: r => registrationIds.Contains(r.Id));
-
-    //        // 3️⃣ Kiểm tra cùng hạng mục
-    //        var categoryId = registrations.First().CompetitionCategoryId;
-    //        if (registrations.Any(r => r.CompetitionCategoryId != categoryId))
-    //        {
-    //            throw new Exception("All registrations must belong to the same category.");
-    //        }
-
-    //        // 4️⃣ Kiểm tra vòng thi hợp lệ
-    //        var roundExists = (await _unitOfWork.GetRepository<Round>().GetListAsync(
-    //            predicate: r => r.Id == roundId && r.CompetitionCategoriesId == categoryId && r.Status == "active")).Any();
-
-    //        if (!roundExists)
-    //        {
-    //            throw new Exception($"Round {roundId} is not valid for category {categoryId}.");
-    //        }
-
-    //        // 5️⃣ Lấy danh sách hồ khả dụng
-    //        var availableTanks = await tankRepository.GetListAsync(
-    //            predicate: t => t.KoiShowId == registrations.First().KoiShowId && t.Status == TankStatus.Available.ToString().ToLower());
-
-    //        if (!availableTanks.Any())
-    //        {
-    //            throw new Exception("No available tanks found. Please add more tanks before assigning fishes.");
-    //        }
-
-    //        int fishCountRemaining = registrations.Count;
-    //        List<RegistrationRound> newRegisRounds = new();
-
-    //        foreach (var tank in availableTanks)
-    //        {
-    //            // 6️⃣ Kiểm tra số lượng cá còn có thể chứa trong hồ
-    //            int currentFishCount = await _tankService.GetCurrentFishCount(tank.Id);
-    //            int availableSpace = tank.Capacity - currentFishCount;
-
-    //            if (availableSpace > 0)
-    //            {
-    //                // 7️⃣ Chia số cá vào hồ này (nếu còn chỗ)
-    //                var assignedRegistrations = registrations.Take(availableSpace).ToList();
-    //                registrations = registrations.Skip(availableSpace).ToList();
-    //                fishCountRemaining -= assignedRegistrations.Count;
-
-    //                newRegisRounds.AddRange(assignedRegistrations.Select(registration => new RegistrationRound
-    //                {
-    //                    RegistrationId = registration.Id,
-    //                    RoundId = roundId,
-    //                    TankId = tank.Id,
-    //                    CheckInTime = VietNamTimeUtil.GetVietnamTime(),
-    //                    Status = "assigned",
-    //                    CreatedAt = VietNamTimeUtil.GetVietnamTime()
-    //                }));
-
-    //                if (fishCountRemaining <= 0)
-    //                    break;
-    //            }
-    //        }
-
-    //        // 8️⃣ Nếu vẫn còn cá mà không có hồ nào đủ sức chứa, báo lỗi
-    //        if (fishCountRemaining > 0)
-    //        {
-    //            throw new Exception($"Not enough tank space for {fishCountRemaining} fish. Please add more tanks.");
-    //        }
-
-    //        // 9️⃣ Lưu danh sách cá vào hồ
-    //        await regisRoundRepository.InsertRangeAsync(newRegisRounds);
-    //        await _unitOfWork.CommitAsync();
-    //        await transaction.CommitAsync();
-    //    }
-    //    catch (Exception ex)
-    //    {
-    //        await transaction.RollbackAsync();
-    //        throw new Exception("Failed to assign fishes.", ex);
-    //    }
-    //}
-
-
-
-
-    public async Task<CheckQRRegistrationResoponse> GetRegistrationByIdAndRoundAsync(Guid registrationId, Guid roundId)
+    public async Task<Paginate<GetPageRegistrationHistoryResponse>> GetPageRegistrationHistory(RegistrationStatus? registrationStatus, ShowStatus? showStatus, int page, int size)
     {
-        var registrationRepository = _unitOfWork.GetRepository<Registration>();
-
-        var registration = await registrationRepository.SingleOrDefaultAsync(
-            predicate: r => r.Id == registrationId &&
-                            r.RegistrationRounds.Any(rr => rr.RoundId == roundId), // Thêm điều kiện kiểm tra RoundId
-            include: query => query
-                .Include(r => r.KoiMedia)
-                .ThenInclude(km => km.KoiProfile)
-                .Include(r => r.RegistrationRounds)
-                .ThenInclude(rr => rr.Round) // Bao gồm thông tin về vòng thi
-        );
-
-        if (registration == null)
+        Expression<Func<Registration, bool>> filterQuery = registration => registration.AccountId == GetIdFromJwt();
+        if (registrationStatus.HasValue)
         {
-            throw new NotFoundException("Registration not found in the specified round.");
+            var status = registrationStatus.Value.ToString().ToLower();
+            filterQuery = filterQuery.AndAlso(r => r.Status == status);
         }
-
-        return registration.Adapt<CheckQRRegistrationResoponse>();
+        if (showStatus.HasValue)
+        {
+            var status = showStatus.Value.ToString().ToLower();
+            filterQuery = filterQuery.AndAlso(r => r.KoiShow.Status == status);
+        }
+        var registrations = await _unitOfWork.GetRepository<Registration>()
+            .GetPagingListAsync(predicate: filterQuery,
+                orderBy: query => query.OrderByDescending(r => r.CreatedAt),
+                include: query => query
+                    .Include(r => r.KoiShow)
+                    .Include(r => r.KoiProfile)
+                    .ThenInclude(k => k.Variety)
+                    .Include(r => r.CompetitionCategory)
+                    .Include(r => r.KoiMedia),
+                page: page,
+                size: size
+            );
+        return registrations.Adapt<Paginate<GetPageRegistrationHistoryResponse>>();
     }
+
+
+
 
 
 
@@ -313,17 +225,17 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
         {
             throw new NotFoundException("Koi is not existed");
         }
-        
+
         var registrations = await _unitOfWork.GetRepository<Registration>()
             .GetListAsync(predicate: x => x.KoiShowId == koiShow.Id && x.Status == RegistrationStatus.Confirmed.ToString().ToLower());
         if (registrations.Count > koiShow.MaxParticipants)
         {
             throw new NotFoundException("");
         }
-        var eligibleCategories =koiProfile.Variety.CategoryVarieties
+        var eligibleCategories = koiProfile.Variety.CategoryVarieties
             .Select(cv => cv.CompetitionCategory)
-            .Where(cc => 
-                koiProfile.Size >= cc.SizeMin && 
+            .Where(cc =>
+                koiProfile.Size >= cc.SizeMin &&
                 koiProfile.Size <= cc.SizeMax &&
                 cc.KoiShowId == createRegistrationRequest.KoiShowId)
             .ToList();
@@ -344,7 +256,7 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
             var registration = createRegistrationRequest.Adapt<Registration>();
             registration.KoiAge = koiProfile.Age;
             registration.KoiSize = koiProfile.Size;
-            registration.RegistrationFee = koiShow.RegistrationFee;
+            registration.RegistrationFee = bestCategory.RegistrationFee;
             registration.AccountId = accountId;
             registration.CompetitionCategoryId = bestCategory.Id;
             registration.Status = RegistrationStatus.WaitToPaid.ToString().ToLower();
@@ -385,6 +297,49 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
         throw new NotFoundException("No suitable category was found for this Koi fish");
     }
 
+    // New method to find suitable category
+    public async Task<CompetitionCategory> FindSuitableCategoryAsync(Guid koiShowId, Guid varietyId, decimal size)
+    {
+        // Get the variety with its category relationships
+        var variety = await _unitOfWork.GetRepository<Variety>()
+            .SingleOrDefaultAsync(
+                predicate: v => v.Id == varietyId,
+                include: query => query.Include(v => v.CategoryVarieties)
+                    .ThenInclude(cv => cv.CompetitionCategory));
+
+        if (variety == null)
+            throw new NotFoundException("Variety not found");
+
+        // Find eligible categories based on size and koi show
+        var eligibleCategories = variety.CategoryVarieties
+            .Select(cv => cv.CompetitionCategory)
+            .Where(cc =>
+                size >= cc.SizeMin &&
+                size <= cc.SizeMax &&
+                cc.KoiShowId == koiShowId)
+            .ToList();
+
+        if (!eligibleCategories.Any())
+            throw new BadRequestException("No suitable category was found for this Koi fish");
+
+        // Find the most suitable category (smallest size range)
+        var bestCategory = eligibleCategories.MinBy(c => c.SizeMax - c.SizeMin);
+        if (bestCategory == null)
+            throw new BadRequestException("No suitable category was found for this Koi fish");
+        // Check if the category has space
+        var registrationCount = await _unitOfWork.GetRepository<Registration>()
+            .GetListAsync(predicate: x =>
+                x.CompetitionCategoryId == bestCategory.Id &&
+                x.Status == RegistrationStatus.Confirmed.ToString().ToLower());
+
+        if (registrationCount.Count >= bestCategory.MaxEntries)
+            throw new BadRequestException("The selected category has reached maximum entries");
+
+        return bestCategory;
+    }
+
+
+
     public async Task UpdateRegistrationPaymentStatusForPayOs(Guid registrationPaymentId, RegistrationPaymentStatus status)
     {
         var registrationPayment = await _unitOfWork.GetRepository<RegistrationPayment>()
@@ -415,7 +370,7 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
     }
     public async Task UpdateStatusForRegistration(Guid registrationId, RegistrationStatus status)
     {
-         
+
         var registration = await _unitOfWork.GetRepository<Registration>()
             .SingleOrDefaultAsync(
                 predicate: r => r.Id == registrationId,
@@ -460,22 +415,22 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
         if (registration.Status == RegistrationStatus.Confirmed.ToString().ToLower())
         {
             registration.ApprovedAt = VietNamTimeUtil.GetVietnamTime();
-            
+
             // Generate QR code
             var qrCodeData = QrcodeUtil.GenerateQrCode(registration.RegistrationPayment.Id);
             registration.RegistrationPayment.QrcodeData = await _firebaseService.UploadImageAsync(
-                FileUtils.ConvertBase64ToFile(qrCodeData), 
+                FileUtils.ConvertBase64ToFile(qrCodeData),
                 "qrCode/"
             );
             registration.ApprovedAt = VietNamTimeUtil.GetVietnamTime();
-            
+
             _unitOfWork.GetRepository<Registration>().UpdateAsync(registration);
             _unitOfWork.GetRepository<RegistrationPayment>().UpdateAsync(registration.RegistrationPayment);
             await _unitOfWork.CommitAsync();
 
             _backgroundJobClient.Enqueue(() => _emailService.SendRegistrationConfirmationEmail(registrationId));
         }
-        
+
     }
 
     public async Task<CheckOutRegistrationResponse> CheckOut(Guid registrationId)
@@ -490,7 +445,7 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
         {
             throw new NotFoundException("Registration is not found");
         }
-        
+
         if (registration.AccountId != accountId)
         {
             throw new ForbiddenMethodException("This registration is not yours!!!!");
@@ -524,27 +479,27 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
                 PaymentDate = VietNamTimeUtil.GetVietnamTime()
             };
             await _unitOfWork.GetRepository<RegistrationPayment>().InsertAsync(registrationPayment);
-            
+
         }
 
         await _unitOfWork.CommitAsync();
         var items = new List<ItemData>();
         var item = new ItemData(
-            $"Registration #{registrationId.ToString().Substring(0,8)} - {registration.KoiProfile.Name}", 
-            1, 
+            $"Registration #{registrationId.ToString().Substring(0, 8)} - {registration.KoiProfile.Name}",
+            1,
             (int)registration.RegistrationFee
         );
         items.Add(item);
 
         var baseUrl = $"{AppConfig.AppSetting.BaseUrl}/api/v1/registration" + "/call-back";
         var url = $"{baseUrl}?registrationPaymentId={registrationPayment.Id}";
-        
+
         var paymentData = new PaymentData(
-            registrationCode, 
-            (int)registration.RegistrationFee, 
-            $"Registration", 
+            registrationCode,
+            (int)registration.RegistrationFee,
+            $"Registration",
             items,
-            url, 
+            url,
             url
         );
 
@@ -558,11 +513,11 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
 
     public async Task<Paginate<GetRegistrationResponse>> GetAllRegistrationForCurrentMember(RegistrationFilter filter, int page, int size)
     {
-        
+
         var role = GetRoleFromJwt();
-        
+
         var predicate = await GetRolePredicate(role);
-        
+
         predicate = ApplyFilter(predicate, filter);
 
         var registrations = await _unitOfWork.GetRepository<Registration>()
@@ -572,7 +527,7 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
                 include: q => q
                     .Include(r => r.KoiShow)
                     .Include(r => r.KoiProfile)
-                    .ThenInclude(k => k.Variety)
+                        .ThenInclude(k => k.Variety)
                     .Include(r => r.CompetitionCategory)
                     .Include(r => r.KoiMedia),
                 page: page,
@@ -597,11 +552,6 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
                 var showIds = staffShows.Select(s => s.KoiShowId).ToList();
                 predicate = r => showIds.Contains(r.KoiShowId);
                 break;
-
-            default:
-                //predicate = r => r.Status != RegistrationStatus..ToString().ToLower();
-                predicate = r => r.AccountId == GetIdFromJwt();
-                break;
         }
 
         return predicate;
@@ -612,7 +562,7 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
         if (filter == null) return basePredicate;
 
         Expression<Func<Registration, bool>> filterQuery = basePredicate ?? (r => true);
-        
+
         if (filter.ShowIds.Any())
         {
             filterQuery = filterQuery.AndAlso(r => filter.ShowIds.Contains(r.KoiShowId));
@@ -623,7 +573,7 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
         }
         if (filter.CategoryIds.Any())
         {
-            filterQuery = filterQuery.AndAlso(r =>  
+            filterQuery = filterQuery.AndAlso(r =>
                 filter.CategoryIds.Contains(r.CompetitionCategoryId));
         }
         if (filter.Status.HasValue)
@@ -634,4 +584,6 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
 
         return filterQuery;
     }
+
+
 }

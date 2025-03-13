@@ -44,28 +44,28 @@ VALUES
 
 -- Mock data for KoiShow table
 INSERT INTO [dbo].[KoiShow]
-([Id], [Name], [StartDate], [EndDate], [StartExhibitionDate], [EndExhibitionDate], [Location], [Description], [RegistrationDeadline], [MinParticipants], [MaxParticipants], [HasGrandChampion], [HasBestInShow], [ImgURL], [RegistrationFee], [Status], [CreatedAt], [UpdatedAt])
+([Id], [Name], [StartDate], [EndDate], [StartExhibitionDate], [EndExhibitionDate], [Location], [Description], [RegistrationDeadline], [MinParticipants], [MaxParticipants], [HasGrandChampion], [HasBestInShow], [ImgURL], [Status], [CreatedAt], [UpdatedAt])
 VALUES
     ('B1111111-1111-1111-1111-111111111111', N'Hội Chợ Koi Xuân 2025',
      DATEADD(DAY, 10, @CurrentDate), DATEADD(DAY, 15, @CurrentDate), -- Start & End Date
      DATEADD(DAY, 10, @CurrentDate), DATEADD(DAY, 15, @CurrentDate), -- Exhibition dates
      N'Nhà Thi Đấu Phú Thọ, TP.HCM', N'Triển lãm và thi đấu Koi lớn nhất năm 2025',
      DATEADD(DAY, -5, @CurrentDate), -- Registration deadline 
-     20, 200, 1, 1, 'show1.jpg', 1000000.00, 'upcoming', DATEADD(MONTH, -3, @CurrentDate), DATEADD(MONTH, -2, @CurrentDate)),
+     20, 200, 1, 1, 'show1.jpg', 'upcoming', DATEADD(MONTH, -3, @CurrentDate), DATEADD(MONTH, -2, @CurrentDate)),
 
     ('B2222222-2222-2222-2222-222222222222', N'Koi Cup Mùa Hè 2025',
      DATEADD(MONTH, 4, @CurrentDate), DATEADD(MONTH, 4, DATEADD(DAY, 5, @CurrentDate)), -- Start & End Date
      DATEADD(MONTH, 4, @CurrentDate), DATEADD(MONTH, 4, DATEADD(DAY, 5, @CurrentDate)), -- Exhibition dates
      N'Trung Tâm Hội Nghị Quốc Gia, Hà Nội', N'Giải đấu Koi toàn quốc dành cho hội viên Koi Việt Nam',
      DATEADD(MONTH, 3, DATEADD(DAY, 15, @CurrentDate)), -- Registration deadline
-     15, 150, 1, 0, 'show2.jpg', 800000.00, 'published', DATEADD(MONTH, -2, @CurrentDate), DATEADD(MONTH, -1, @CurrentDate)),
+     15, 150, 1, 0, 'show2.jpg', 'published', DATEADD(MONTH, -2, @CurrentDate), DATEADD(MONTH, -1, @CurrentDate)),
 
     ('B3333333-3333-3333-3333-333333333333', N'Koi Expo Đà Nẵng 2025',
      DATEADD(MONTH, 7, @CurrentDate), DATEADD(MONTH, 7, DATEADD(DAY, 5, @CurrentDate)), -- Start & End Date
      DATEADD(MONTH, 7, @CurrentDate), DATEADD(MONTH, 7, DATEADD(DAY, 5, @CurrentDate)), -- Exhibition dates
      N'Cung Thể Thao Tiên Sơn, Đà Nẵng', N'Triển lãm và thi đấu Koi khu vực miền Trung',
      DATEADD(MONTH, 6, DATEADD(DAY, 15, @CurrentDate)), -- Registration deadline
-     10, 100, 0, 1, 'show3.jpg', 750000.00, 'pending', DATEADD(DAY, -20, @CurrentDate), NULL);
+     10, 100, 0, 1, 'show3.jpg', 'pending', DATEADD(DAY, -20, @CurrentDate), NULL);
 
 -- Mock data for ShowStaff table
 INSERT INTO [dbo].[ShowStaff]
@@ -91,21 +91,21 @@ VALUES
 
 -- Mock data for CompetitionCategory table
 INSERT INTO [dbo].[CompetitionCategory]
-([Id], [KoiShowId], [Name], [SizeMin], [SizeMax], [Description], [MaxEntries], [StartTime], [EndTime], [Status], [CreatedAt], [UpdatedAt])
+([Id], [KoiShowId], [Name], [SizeMin], [SizeMax], [Description], [MaxEntries], [RegistrationFee], [StartTime], [EndTime], [Status], [CreatedAt], [UpdatedAt])
 VALUES
     -- Categories for KoiShow 1
-    ('D1111111-1111-1111-1111-111111111111', 'B1111111-1111-1111-1111-111111111111', N'Hạng mục nhỏ', 15.00, 30.00, N'Dành cho cá Koi kích thước nhỏ', 50, DATEADD(DAY, 10, @CurrentDate), DATEADD(DAY, 11, @CurrentDate), 'active', DATEADD(MONTH, -3, DATEADD(DAY, 5, @CurrentDate)), NULL),
-    ('D2222222-2222-2222-2222-222222222222', 'B1111111-1111-1111-1111-111111111111', N'Hạng mục trung bình', 30.01, 50.00, N'Dành cho cá Koi kích thước trung bình', 40, DATEADD(DAY, 11, @CurrentDate), DATEADD(DAY, 12, @CurrentDate), 'active', DATEADD(MONTH, -3, DATEADD(DAY, 5, @CurrentDate)), NULL),
-    ('D3333333-3333-3333-3333-333333333333', 'B1111111-1111-1111-1111-111111111111', N'Hạng mục lớn', 50.01, 75.00, N'Dành cho cá Koi kích thước lớn', 30, DATEADD(DAY, 12, @CurrentDate), DATEADD(DAY, 13, @CurrentDate), 'active', DATEADD(MONTH, -3, DATEADD(DAY, 5, @CurrentDate)), NULL),
-    ('D4444444-4444-4444-4444-444444444444', 'B1111111-1111-1111-1111-111111111111', N'Hạng mục jumbo', 75.01, 100.00, N'Dành cho cá Koi kích thước đặc biệt lớn', 20, DATEADD(DAY, 13, @CurrentDate), DATEADD(DAY, 14, @CurrentDate), 'active', DATEADD(MONTH, -3, DATEADD(DAY, 5, @CurrentDate)), NULL),
+    ('D1111111-1111-1111-1111-111111111111', 'B1111111-1111-1111-1111-111111111111', N'Hạng mục nhỏ', 15.00, 30.00, N'Dành cho cá Koi kích thước nhỏ', 50, 2500.00, DATEADD(DAY, 10, @CurrentDate), DATEADD(DAY, 11, @CurrentDate), 'active', DATEADD(MONTH, -3, DATEADD(DAY, 5, @CurrentDate)), NULL),
+    ('D2222222-2222-2222-2222-222222222222', 'B1111111-1111-1111-1111-111111111111', N'Hạng mục trung bình', 30.01, 50.00, N'Dành cho cá Koi kích thước trung bình', 40, 3000, DATEADD(DAY, 11, @CurrentDate), DATEADD(DAY, 12, @CurrentDate), 'active', DATEADD(MONTH, -3, DATEADD(DAY, 5, @CurrentDate)), NULL),
+    ('D3333333-3333-3333-3333-333333333333', 'B1111111-1111-1111-1111-111111111111', N'Hạng mục lớn', 50.01, 75.00, N'Dành cho cá Koi kích thước lớn', 30, 3000, DATEADD(DAY, 12, @CurrentDate), DATEADD(DAY, 13, @CurrentDate), 'active', DATEADD(MONTH, -3, DATEADD(DAY, 5, @CurrentDate)), NULL),
+    ('D4444444-4444-4444-4444-444444444444', 'B1111111-1111-1111-1111-111111111111', N'Hạng mục jumbo', 75.01, 100.00, N'Dành cho cá Koi kích thước đặc biệt lớn', 20, 3000, DATEADD(DAY, 13, @CurrentDate), DATEADD(DAY, 14, @CurrentDate), 'active', DATEADD(MONTH, -3, DATEADD(DAY, 5, @CurrentDate)), NULL),
 
     -- Categories for KoiShow 2
-    ('D5555555-5555-5555-5555-555555555555', 'B2222222-2222-2222-2222-222222222222', N'Hạng mục nhỏ', 15.00, 30.00, N'Dành cho cá Koi kích thước nhỏ', 40, DATEADD(MONTH, 4, @CurrentDate), DATEADD(MONTH, 4, DATEADD(DAY, 1, @CurrentDate)), 'active', DATEADD(MONTH, -2, DATEADD(DAY, 5, @CurrentDate)), NULL),
-    ('D6666666-6666-6666-6666-666666666666', 'B2222222-2222-2222-2222-222222222222', N'Hạng mục trung bình', 30.01, 60.00, N'Dành cho cá Koi kích thước trung bình', 35, DATEADD(MONTH, 4, DATEADD(DAY, 1, @CurrentDate)), DATEADD(MONTH, 4, DATEADD(DAY, 2, @CurrentDate)), 'active', DATEADD(MONTH, -2, DATEADD(DAY, 5, @CurrentDate)), NULL),
-    ('D7777777-7777-7777-7777-777777777777', 'B2222222-2222-2222-2222-222222222222', N'Hạng mục lớn', 60.01, 100.00, N'Dành cho cá Koi kích thước lớn', 25, DATEADD(MONTH, 4, DATEADD(DAY, 2, @CurrentDate)), DATEADD(MONTH, 4, DATEADD(DAY, 3, @CurrentDate)), 'active', DATEADD(MONTH, -2, DATEADD(DAY, 5, @CurrentDate)), NULL),
+    ('D5555555-5555-5555-5555-555555555555', 'B2222222-2222-2222-2222-222222222222', N'Hạng mục nhỏ', 15.00, 30.00, N'Dành cho cá Koi kích thước nhỏ', 40, 3000, DATEADD(MONTH, 4, @CurrentDate), DATEADD(MONTH, 4, DATEADD(DAY, 1, @CurrentDate)), 'active', DATEADD(MONTH, -2, DATEADD(DAY, 5, @CurrentDate)), NULL),
+    ('D6666666-6666-6666-6666-666666666666', 'B2222222-2222-2222-2222-222222222222', N'Hạng mục trung bình', 30.01, 60.00, N'Dành cho cá Koi kích thước trung bình', 35, 3000, DATEADD(MONTH, 4, DATEADD(DAY, 1, @CurrentDate)), DATEADD(MONTH, 4, DATEADD(DAY, 2, @CurrentDate)), 'active', DATEADD(MONTH, -2, DATEADD(DAY, 5, @CurrentDate)), NULL),
+    ('D7777777-7777-7777-7777-777777777777', 'B2222222-2222-2222-2222-222222222222', N'Hạng mục lớn', 60.01, 100.00, N'Dành cho cá Koi kích thước lớn', 25, 3000, DATEADD(MONTH, 4, DATEADD(DAY, 2, @CurrentDate)), DATEADD(MONTH, 4, DATEADD(DAY, 3, @CurrentDate)), 'active', DATEADD(MONTH, -2, DATEADD(DAY, 5, @CurrentDate)), NULL),
 
     -- Categories for KoiShow 3
-    ('D8888888-8888-8888-8888-888888888888', 'B3333333-3333-3333-3333-333333333333', N'Hạng mục chung', 15.00, 100.00, N'Tất cả các kích thước cá Koi', 100, DATEADD(MONTH, 7, @CurrentDate), DATEADD(MONTH, 7, DATEADD(DAY, 3, @CurrentDate)), 'inactive', DATEADD(DAY, -15, @CurrentDate), NULL);
+    ('D8888888-8888-8888-8888-888888888888', 'B3333333-3333-3333-3333-333333333333', N'Hạng mục chung', 15.00, 100.00, N'Tất cả các kích thước cá Koi', 100, 3000, DATEADD(MONTH, 7, @CurrentDate), DATEADD(MONTH, 7, DATEADD(DAY, 3, @CurrentDate)), 'inactive', DATEADD(DAY, -15, @CurrentDate), NULL);
 
 
 
@@ -151,47 +151,47 @@ VALUES
 
 -- Mock data for Round table
 INSERT INTO [dbo].[Round]
-([Id], [CompetitionCategoriesId], [Name], [RoundOrder], [RoundType], [StartTime], [EndTime], [MinScoreToAdvance], [Status], [CreatedAt], [UpdatedAt])
+([Id], [CompetitionCategoriesId], [Name], [RoundOrder], [RoundType], [StartTime], [EndTime], [NumberOfRegistrationToAdvance], [Status], [CreatedAt], [UpdatedAt])
 VALUES
     -- Rounds for KoiShow 1, Category 1 (Small)
-    ('F1111111-1111-1111-1111-111111111111', 'D1111111-1111-1111-1111-111111111111', N'Vòng sơ loại', 1, 'Preliminary', DATEADD(DAY, 10, @CurrentDate), DATEADD(DAY, 10, DATEADD(HOUR, 4, @CurrentDate)), 7.00, 'active', DATEADD(MONTH, -3, DATEADD(DAY, 6, @CurrentDate)), NULL),
-    ('F2222222-2222-2222-2222-222222222222', 'D1111111-1111-1111-1111-111111111111', N'Vòng đánh giá 1', 2, 'Evaluation', DATEADD(DAY, 10, DATEADD(HOUR, 5, @CurrentDate)), DATEADD(DAY, 10, DATEADD(HOUR, 9, @CurrentDate)), 7.50, 'active', DATEADD(MONTH, -3, DATEADD(DAY, 6, @CurrentDate)), NULL),
-    ('F3333333-3333-3333-3333-333333333333', 'D1111111-1111-1111-1111-111111111111', N'Vòng đánh giá 2', 3, 'Evaluation', DATEADD(DAY, 10, DATEADD(HOUR, 10, @CurrentDate)), DATEADD(DAY, 10, DATEADD(HOUR, 14, @CurrentDate)), 8.00, 'active', DATEADD(MONTH, -3, DATEADD(DAY, 6, @CurrentDate)), NULL),
+    ('F1111111-1111-1111-1111-111111111111', 'D1111111-1111-1111-1111-111111111111', N'Vòng sơ loại', 1, 'Preliminary', DATEADD(DAY, 10, @CurrentDate), DATEADD(DAY, 10, DATEADD(HOUR, 4, @CurrentDate)), 5 , 'active', DATEADD(MONTH, -3, DATEADD(DAY, 6, @CurrentDate)), NULL),
+    ('F2222222-2222-2222-2222-222222222222', 'D1111111-1111-1111-1111-111111111111', N'Vòng đánh giá 1', 2, 'Evaluation', DATEADD(DAY, 10, DATEADD(HOUR, 5, @CurrentDate)), DATEADD(DAY, 10, DATEADD(HOUR, 9, @CurrentDate)), 5, 'active', DATEADD(MONTH, -3, DATEADD(DAY, 6, @CurrentDate)), NULL),
+    ('F3333333-3333-3333-3333-333333333333', 'D1111111-1111-1111-1111-111111111111', N'Vòng đánh giá 2', 3, 'Evaluation', DATEADD(DAY, 10, DATEADD(HOUR, 10, @CurrentDate)), DATEADD(DAY, 10, DATEADD(HOUR, 14, @CurrentDate)), 5, 'active', DATEADD(MONTH, -3, DATEADD(DAY, 6, @CurrentDate)), NULL),
     ('F4444444-4444-4444-4444-444444444444', 'D1111111-1111-1111-1111-111111111111', N'Vòng chung kết', 4, 'Final', DATEADD(DAY, 10, DATEADD(HOUR, 15, @CurrentDate)), DATEADD(DAY, 10, DATEADD(HOUR, 18, @CurrentDate)), NULL, 'active', DATEADD(MONTH, -3, DATEADD(DAY, 6, @CurrentDate)), NULL),
 
     -- Rounds for KoiShow 1, Category 2 (Medium)
-    ('F5555555-5555-5555-5555-555555555555', 'D2222222-2222-2222-2222-222222222222', N'Vòng sơ loại', 1, 'Preliminary', DATEADD(DAY, 11, @CurrentDate), DATEADD(DAY, 11, DATEADD(HOUR, 4, @CurrentDate)), 7.00, 'active', DATEADD(MONTH, -3, DATEADD(DAY, 6, @CurrentDate)), NULL),
-    ('F6666666-6666-6666-6666-666666666666', 'D2222222-2222-2222-2222-222222222222', N'Vòng đánh giá 1', 2, 'Evaluation', DATEADD(DAY, 11, DATEADD(HOUR, 5, @CurrentDate)), DATEADD(DAY, 11, DATEADD(HOUR, 9, @CurrentDate)), 7.50, 'active', DATEADD(MONTH, -3, DATEADD(DAY, 6, @CurrentDate)), NULL),
-    ('F7777777-7777-7777-7777-777777777777', 'D2222222-2222-2222-2222-222222222222', N'Vòng đánh giá 2', 3, 'Evaluation', DATEADD(DAY, 11, DATEADD(HOUR, 10, @CurrentDate)), DATEADD(DAY, 11, DATEADD(HOUR, 14, @CurrentDate)), 8.00, 'active', DATEADD(MONTH, -3, DATEADD(DAY, 6, @CurrentDate)), NULL),
+    ('F5555555-5555-5555-5555-555555555555', 'D2222222-2222-2222-2222-222222222222', N'Vòng sơ loại', 1, 'Preliminary', DATEADD(DAY, 11, @CurrentDate), DATEADD(DAY, 11, DATEADD(HOUR, 4, @CurrentDate)), 5, 'active', DATEADD(MONTH, -3, DATEADD(DAY, 6, @CurrentDate)), NULL),
+    ('F6666666-6666-6666-6666-666666666666', 'D2222222-2222-2222-2222-222222222222', N'Vòng đánh giá 1', 2, 'Evaluation', DATEADD(DAY, 11, DATEADD(HOUR, 5, @CurrentDate)), DATEADD(DAY, 11, DATEADD(HOUR, 9, @CurrentDate)), 5, 'active', DATEADD(MONTH, -3, DATEADD(DAY, 6, @CurrentDate)), NULL),
+    ('F7777777-7777-7777-7777-777777777777', 'D2222222-2222-2222-2222-222222222222', N'Vòng đánh giá 2', 3, 'Evaluation', DATEADD(DAY, 11, DATEADD(HOUR, 10, @CurrentDate)), DATEADD(DAY, 11, DATEADD(HOUR, 14, @CurrentDate)), 5, 'active', DATEADD(MONTH, -3, DATEADD(DAY, 6, @CurrentDate)), NULL),
     ('F8888888-8888-8888-8888-888888888888', 'D2222222-2222-2222-2222-222222222222', N'Vòng chung kết', 4, 'Final', DATEADD(DAY, 11, DATEADD(HOUR, 15, @CurrentDate)), DATEADD(DAY, 11, DATEADD(HOUR, 18, @CurrentDate)), NULL, 'active', DATEADD(MONTH, -3, DATEADD(DAY, 6, @CurrentDate)), NULL),
 
     -- Rounds for KoiShow 1, Category 3 (Large)
-    ('F9999999-9999-9999-9999-999999999999', 'D3333333-3333-3333-3333-333333333333', N'Vòng sơ loại', 1, 'Preliminary', DATEADD(DAY, 12, @CurrentDate), DATEADD(DAY, 12, DATEADD(HOUR, 4, @CurrentDate)), 7.00, 'active', DATEADD(MONTH, -3, DATEADD(DAY, 6, @CurrentDate)), NULL),
-    ('FAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA', 'D3333333-3333-3333-3333-333333333333', N'Vòng đánh giá 1', 2, 'Evaluation', DATEADD(DAY, 12, DATEADD(HOUR, 5, @CurrentDate)), DATEADD(DAY, 12, DATEADD(HOUR, 9, @CurrentDate)), 7.50, 'active', DATEADD(MONTH, -3, DATEADD(DAY, 6, @CurrentDate)), NULL),
-    ('FAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAB', 'D3333333-3333-3333-3333-333333333333', N'Vòng đánh giá 2', 3, 'Evaluation', DATEADD(DAY, 12, DATEADD(HOUR, 10, @CurrentDate)), DATEADD(DAY, 12, DATEADD(HOUR, 14, @CurrentDate)), 8.00, 'active', DATEADD(MONTH, -3, DATEADD(DAY, 6, @CurrentDate)), NULL),
+    ('F9999999-9999-9999-9999-999999999999', 'D3333333-3333-3333-3333-333333333333', N'Vòng sơ loại', 1, 'Preliminary', DATEADD(DAY, 12, @CurrentDate), DATEADD(DAY, 12, DATEADD(HOUR, 4, @CurrentDate)), 5, 'active', DATEADD(MONTH, -3, DATEADD(DAY, 6, @CurrentDate)), NULL),
+    ('FAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA', 'D3333333-3333-3333-3333-333333333333', N'Vòng đánh giá 1', 2, 'Evaluation', DATEADD(DAY, 12, DATEADD(HOUR, 5, @CurrentDate)), DATEADD(DAY, 12, DATEADD(HOUR, 9, @CurrentDate)), 5, 'active', DATEADD(MONTH, -3, DATEADD(DAY, 6, @CurrentDate)), NULL),
+    ('FAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAB', 'D3333333-3333-3333-3333-333333333333', N'Vòng đánh giá 2', 3, 'Evaluation', DATEADD(DAY, 12, DATEADD(HOUR, 10, @CurrentDate)), DATEADD(DAY, 12, DATEADD(HOUR, 14, @CurrentDate)), 5, 'active', DATEADD(MONTH, -3, DATEADD(DAY, 6, @CurrentDate)), NULL),
     ('FAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAC', 'D3333333-3333-3333-3333-333333333333', N'Vòng chung kết', 4, 'Final', DATEADD(DAY, 12, DATEADD(HOUR, 15, @CurrentDate)), DATEADD(DAY, 12, DATEADD(HOUR, 18, @CurrentDate)), NULL, 'active', DATEADD(MONTH, -3, DATEADD(DAY, 6, @CurrentDate)), NULL),
 
     -- Rounds for KoiShow 1, Category 4 (Jumbo)
-    ('FAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAD', 'D4444444-4444-4444-4444-444444444444', N'Vòng sơ loại', 1, 'Preliminary', DATEADD(DAY, 13, @CurrentDate), DATEADD(DAY, 13, DATEADD(HOUR, 4, @CurrentDate)), 7.00, 'active', DATEADD(MONTH, -3, DATEADD(DAY, 6, @CurrentDate)), NULL),
-    ('FAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAE', 'D4444444-4444-4444-4444-444444444444', N'Vòng đánh giá 1', 2, 'Evaluation', DATEADD(DAY, 13, DATEADD(HOUR, 5, @CurrentDate)), DATEADD(DAY, 13, DATEADD(HOUR, 9, @CurrentDate)), 7.50, 'active', DATEADD(MONTH, -3, DATEADD(DAY, 6, @CurrentDate)), NULL),
-    ('FAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAF', 'D4444444-4444-4444-4444-444444444444', N'Vòng đánh giá 2', 3, 'Evaluation', DATEADD(DAY, 13, DATEADD(HOUR, 10, @CurrentDate)), DATEADD(DAY, 13, DATEADD(HOUR, 14, @CurrentDate)), 8.00, 'active', DATEADD(MONTH, -3, DATEADD(DAY, 6, @CurrentDate)), NULL),
+    ('FAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAD', 'D4444444-4444-4444-4444-444444444444', N'Vòng sơ loại', 1, 'Preliminary', DATEADD(DAY, 13, @CurrentDate), DATEADD(DAY, 13, DATEADD(HOUR, 4, @CurrentDate)), 5, 'active', DATEADD(MONTH, -3, DATEADD(DAY, 6, @CurrentDate)), NULL),
+    ('FAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAE', 'D4444444-4444-4444-4444-444444444444', N'Vòng đánh giá 1', 2, 'Evaluation', DATEADD(DAY, 13, DATEADD(HOUR, 5, @CurrentDate)), DATEADD(DAY, 13, DATEADD(HOUR, 9, @CurrentDate)), 5, 'active', DATEADD(MONTH, -3, DATEADD(DAY, 6, @CurrentDate)), NULL),
+    ('FAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAF', 'D4444444-4444-4444-4444-444444444444', N'Vòng đánh giá 2', 3, 'Evaluation', DATEADD(DAY, 13, DATEADD(HOUR, 10, @CurrentDate)), DATEADD(DAY, 13, DATEADD(HOUR, 14, @CurrentDate)), 5, 'active', DATEADD(MONTH, -3, DATEADD(DAY, 6, @CurrentDate)), NULL),
     ('FAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAA1', 'D4444444-4444-4444-4444-444444444444', N'Vòng chung kết', 4, 'Final', DATEADD(DAY, 13, DATEADD(HOUR, 15, @CurrentDate)), DATEADD(DAY, 13, DATEADD(HOUR, 18, @CurrentDate)), NULL, 'active', DATEADD(MONTH, -3, DATEADD(DAY, 6, @CurrentDate)), NULL),
     -- Rounds for KoiShow 2, Category 1 (Small)
-    ('FAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAA2', 'D5555555-5555-5555-5555-555555555555', N'Vòng sơ loại', 1, 'Preliminary', DATEADD(MONTH, 4, @CurrentDate), DATEADD(MONTH, 4, DATEADD(HOUR, 4, @CurrentDate)), 7.00, 'pending', DATEADD(MONTH, -2, DATEADD(DAY, 6, @CurrentDate)), NULL),
-    ('FAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAA3', 'D5555555-5555-5555-5555-555555555555', N'Vòng đánh giá 1', 2, 'Evaluation', DATEADD(MONTH, 4, DATEADD(HOUR, 5, @CurrentDate)), DATEADD(MONTH, 4, DATEADD(HOUR, 9, @CurrentDate)), 7.50, 'pending', DATEADD(MONTH, -2, DATEADD(DAY, 6, @CurrentDate)), NULL),
-    ('FAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAA4', 'D5555555-5555-5555-5555-555555555555', N'Vòng đánh giá 2', 3, 'Evaluation', DATEADD(MONTH, 4, DATEADD(HOUR, 10, @CurrentDate)), DATEADD(MONTH, 4, DATEADD(HOUR, 14, @CurrentDate)), 8.00, 'pending', DATEADD(MONTH, -2, DATEADD(DAY, 6, @CurrentDate)), NULL),
+    ('FAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAA2', 'D5555555-5555-5555-5555-555555555555', N'Vòng sơ loại', 1, 'Preliminary', DATEADD(MONTH, 4, @CurrentDate), DATEADD(MONTH, 4, DATEADD(HOUR, 4, @CurrentDate)), 5, 'pending', DATEADD(MONTH, -2, DATEADD(DAY, 6, @CurrentDate)), NULL),
+    ('FAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAA3', 'D5555555-5555-5555-5555-555555555555', N'Vòng đánh giá 1', 2, 'Evaluation', DATEADD(MONTH, 4, DATEADD(HOUR, 5, @CurrentDate)), DATEADD(MONTH, 4, DATEADD(HOUR, 9, @CurrentDate)), 5, 'pending', DATEADD(MONTH, -2, DATEADD(DAY, 6, @CurrentDate)), NULL),
+    ('FAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAA4', 'D5555555-5555-5555-5555-555555555555', N'Vòng đánh giá 2', 3, 'Evaluation', DATEADD(MONTH, 4, DATEADD(HOUR, 10, @CurrentDate)), DATEADD(MONTH, 4, DATEADD(HOUR, 14, @CurrentDate)), 5, 'pending', DATEADD(MONTH, -2, DATEADD(DAY, 6, @CurrentDate)), NULL),
     ('FAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAA5', 'D5555555-5555-5555-5555-555555555555', N'Vòng chung kết', 4, 'Final', DATEADD(MONTH, 4, DATEADD(HOUR, 15, @CurrentDate)), DATEADD(MONTH, 4, DATEADD(HOUR, 18, @CurrentDate)), NULL, 'pending', DATEADD(MONTH, -2, DATEADD(DAY, 6, @CurrentDate)), NULL),
 
     -- Rounds for KoiShow 2, Category 2 (Medium)
-    ('FAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAA6', 'D6666666-6666-6666-6666-666666666666', N'Vòng sơ loại', 1, 'Preliminary', DATEADD(MONTH, 4, DATEADD(DAY, 1, @CurrentDate)), DATEADD(MONTH, 4, DATEADD(DAY, 1, DATEADD(HOUR, 4, @CurrentDate))), 7.00, 'pending', DATEADD(MONTH, -2, DATEADD(DAY, 6, @CurrentDate)), NULL),
-    ('FAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAA7', 'D6666666-6666-6666-6666-666666666666', N'Vòng đánh giá 1', 2, 'Evaluation', DATEADD(MONTH, 4, DATEADD(DAY, 1, DATEADD(HOUR, 5, @CurrentDate))), DATEADD(MONTH, 4, DATEADD(DAY, 1, DATEADD(HOUR, 9, @CurrentDate))), 7.50, 'pending', DATEADD(MONTH, -2, DATEADD(DAY, 6, @CurrentDate)), NULL),
-    ('FAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAA8', 'D6666666-6666-6666-6666-666666666666', N'Vòng đánh giá 2', 3, 'Evaluation', DATEADD(MONTH, 4, DATEADD(DAY, 1, DATEADD(HOUR, 10, @CurrentDate))), DATEADD(MONTH, 4, DATEADD(DAY, 1, DATEADD(HOUR, 14, @CurrentDate))), 8.00, 'pending', DATEADD(MONTH, -2, DATEADD(DAY, 6, @CurrentDate)), NULL),
+    ('FAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAA6', 'D6666666-6666-6666-6666-666666666666', N'Vòng sơ loại', 1, 'Preliminary', DATEADD(MONTH, 4, DATEADD(DAY, 1, @CurrentDate)), DATEADD(MONTH, 4, DATEADD(DAY, 1, DATEADD(HOUR, 4, @CurrentDate))), 5, 'pending', DATEADD(MONTH, -2, DATEADD(DAY, 6, @CurrentDate)), NULL),
+    ('FAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAA7', 'D6666666-6666-6666-6666-666666666666', N'Vòng đánh giá 1', 2, 'Evaluation', DATEADD(MONTH, 4, DATEADD(DAY, 1, DATEADD(HOUR, 5, @CurrentDate))), DATEADD(MONTH, 4, DATEADD(DAY, 1, DATEADD(HOUR, 9, @CurrentDate))),5, 'pending', DATEADD(MONTH, -2, DATEADD(DAY, 6, @CurrentDate)), NULL),
+    ('FAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAA8', 'D6666666-6666-6666-6666-666666666666', N'Vòng đánh giá 2', 3, 'Evaluation', DATEADD(MONTH, 4, DATEADD(DAY, 1, DATEADD(HOUR, 10, @CurrentDate))), DATEADD(MONTH, 4, DATEADD(DAY, 1, DATEADD(HOUR, 14, @CurrentDate))), 5, 'pending', DATEADD(MONTH, -2, DATEADD(DAY, 6, @CurrentDate)), NULL),
     ('FAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAA9', 'D6666666-6666-6666-6666-666666666666', N'Vòng chung kết', 4, 'Final', DATEADD(MONTH, 4, DATEADD(DAY, 1, DATEADD(HOUR, 15, @CurrentDate))), DATEADD(MONTH, 4, DATEADD(DAY, 1, DATEADD(HOUR, 18, @CurrentDate))), NULL, 'pending', DATEADD(MONTH, -2, DATEADD(DAY, 6, @CurrentDate)), NULL),
 
     -- Rounds for KoiShow 2, Category 3 (Large)
-    ('FAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAA10', 'D7777777-7777-7777-7777-777777777777', N'Vòng sơ loại', 1, 'Preliminary', DATEADD(MONTH, 4, DATEADD(DAY, 2, @CurrentDate)), DATEADD(MONTH, 4, DATEADD(DAY, 2, DATEADD(HOUR, 4, @CurrentDate))), 7.00, 'pending', DATEADD(MONTH, -2, DATEADD(DAY, 6, @CurrentDate)), NULL),
-    ('FAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAA11', 'D7777777-7777-7777-7777-777777777777', N'Vòng đánh giá 1', 2, 'Evaluation', DATEADD(MONTH, 4, DATEADD(DAY, 2, DATEADD(HOUR, 5, @CurrentDate))), DATEADD(MONTH, 4, DATEADD(DAY, 2, DATEADD(HOUR, 9, @CurrentDate))), 7.50, 'pending', DATEADD(MONTH, -2, DATEADD(DAY, 6, @CurrentDate)), NULL),
-    ('FAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAA12', 'D7777777-7777-7777-7777-777777777777', N'Vòng đánh giá 2', 3, 'Evaluation', DATEADD(MONTH, 4, DATEADD(DAY, 2, DATEADD(HOUR, 10, @CurrentDate))), DATEADD(MONTH, 4, DATEADD(DAY, 2, DATEADD(HOUR, 14, @CurrentDate))), 8.00, 'pending', DATEADD(MONTH, -2, DATEADD(DAY, 6, @CurrentDate)), NULL),
+    ('FAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAA10', 'D7777777-7777-7777-7777-777777777777', N'Vòng sơ loại', 1, 'Preliminary', DATEADD(MONTH, 4, DATEADD(DAY, 2, @CurrentDate)), DATEADD(MONTH, 4, DATEADD(DAY, 2, DATEADD(HOUR, 4, @CurrentDate))), 5, 'pending', DATEADD(MONTH, -2, DATEADD(DAY, 6, @CurrentDate)), NULL),
+    ('FAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAA11', 'D7777777-7777-7777-7777-777777777777', N'Vòng đánh giá 1', 2, 'Evaluation', DATEADD(MONTH, 4, DATEADD(DAY, 2, DATEADD(HOUR, 5, @CurrentDate))), DATEADD(MONTH, 4, DATEADD(DAY, 2, DATEADD(HOUR, 9, @CurrentDate))), 5, 'pending', DATEADD(MONTH, -2, DATEADD(DAY, 6, @CurrentDate)), NULL),
+    ('FAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAA12', 'D7777777-7777-7777-7777-777777777777', N'Vòng đánh giá 2', 3, 'Evaluation', DATEADD(MONTH, 4, DATEADD(DAY, 2, DATEADD(HOUR, 10, @CurrentDate))), DATEADD(MONTH, 4, DATEADD(DAY, 2, DATEADD(HOUR, 14, @CurrentDate))), 5, 'pending', DATEADD(MONTH, -2, DATEADD(DAY, 6, @CurrentDate)), NULL),
     ('FAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAA13', 'D7777777-7777-7777-7777-777777777777', N'Vòng chung kết', 4, 'Final', DATEADD(MONTH, 4, DATEADD(DAY, 2, DATEADD(HOUR, 15, @CurrentDate))), DATEADD(MONTH, 4, DATEADD(DAY, 2, DATEADD(HOUR, 18, @CurrentDate))), NULL, 'pending', DATEADD(MONTH, -2, DATEADD(DAY, 6, @CurrentDate)), NULL);
 
 

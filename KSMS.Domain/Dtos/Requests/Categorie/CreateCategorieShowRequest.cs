@@ -26,6 +26,9 @@ namespace KSMS.Domain.Dtos.Requests.Categorie
 
         [Range(0, 999.99, ErrorMessage = "Maximum size must be between 0 and 999.99.")]
         public decimal? SizeMax { get; set; }
+        
+        [Range(0, double.MaxValue, ErrorMessage = "RegistrationFee must be a non-negative value.")]
+        public decimal RegistrationFee { get; set; }
 
         public string? Description { get; set; }
 

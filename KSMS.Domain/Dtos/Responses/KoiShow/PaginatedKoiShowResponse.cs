@@ -37,8 +37,6 @@ namespace KSMS.Domain.Dtos.Responses.KoiShow
 
         public string? ImgUrl { get; set; }
 
-        public decimal RegistrationFee { get; set; }
-
         public string? Status { get; set; }
         
         public DateTime CreatedAt { get; set; }

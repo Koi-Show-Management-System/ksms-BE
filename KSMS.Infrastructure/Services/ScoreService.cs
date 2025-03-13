@@ -139,7 +139,8 @@ namespace KSMS.Infrastructure.Services
             }
 
             //  Xác định `Pass` hoặc `Fail`
-            decimal passThreshold = (decimal)registrationRound.Round.MinScoreToAdvance;
+            decimal passThreshold = 50;
+            //decimal passThreshold = (decimal)registrationRound.Round.MinScoreToAdvance;
             string finalStatus = finalScore >= passThreshold ? "Pass" : "Fail"; 
              
 

@@ -22,6 +22,9 @@ public class CreateCompetitionCategoryRequest
 
     [Range(1, int.MaxValue, ErrorMessage = "Maximum entries must be greater than 0.")]
     public int? MaxEntries { get; set; }
+    
+    [Range(0, double.MaxValue, ErrorMessage = "RegistrationFee must be a non-negative value.")]
+    public decimal RegistrationFee { get; set; }
 
     public DateTime? StartTime { get; set; }
 
