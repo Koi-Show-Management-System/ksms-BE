@@ -65,7 +65,8 @@ namespace KSMS.Infrastructure.Services
             }
             var registrationRounds = await _unitOfWork.GetRepository<RegistrationRound>().GetPagingListAsync(
                 predicate: predicate,
-                include: query => query.Include(x => x.RoundResults)
+                include: query => query.AsSplitQuery()
+                    .Include(x => x.RoundResults)
                     .Include(x => x.ScoreDetails)
                     .Include(x => x.Tank)
                     .Include(x => x.Registration)
@@ -75,7 +76,9 @@ namespace KSMS.Infrastructure.Services
                     .Include(x => x.Registration)
                         .ThenInclude(x => x.KoiShow)
                     .Include(x => x.Registration)
-                        .ThenInclude(x => x.KoiMedia),
+                        .ThenInclude(x => x.KoiMedia)
+                    .Include(x => x.RoundResults),
+                orderBy: q => q.OrderByDescending(x => x.RoundResults.FirstOrDefault().TotalScore),
                 page: page, 
                 size: size);
             var response = registrationRounds.Adapt<Paginate<GetPageRegistrationRoundResponse>>();

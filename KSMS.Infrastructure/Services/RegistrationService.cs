@@ -266,16 +266,14 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
         //throw new NotFoundException("No suitable category was found for this Koi fish");
     }
     
-    // New method to find suitable category
     public async Task<GetPageCompetitionCategoryResponse> FindSuitableCategoryAsync(Guid koiShowId, Guid varietyId, decimal size)
     {
         var show = await _unitOfWork.GetRepository<KoiShow>()
-            .SingleOrDefaultAsync(predicate: s => s.Id == koiShowId);
+        .SingleOrDefaultAsync(predicate: s => s.Id == koiShowId);
         if (show == null)
         {
             throw new NotFoundException("Show is not found");
         }
-        // Get the variety with its category relationships
         var variety = await _unitOfWork.GetRepository<Variety>()
             .SingleOrDefaultAsync(
                 predicate: v => v.Id == varietyId,
@@ -284,24 +282,27 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
 
         if (variety == null)
             throw new NotFoundException("Variety not found");
-
-        // Find eligible categories based on size and koi show
-        var eligibleCategories = variety.CategoryVarieties
+        var categoriesForVariety = variety.CategoryVarieties
             .Select(cv => cv.CompetitionCategory)
-            .Where(cc =>
-                size >= cc.SizeMin &&
-                size <= cc.SizeMax &&
-                cc.KoiShowId == koiShowId)
+            .Where(cc => cc.KoiShowId == koiShowId)
+            .ToList();
+            
+        if (!categoriesForVariety.Any())
+            throw new BadRequestException("No suitable category was found for the variety ofD this Koi fish");
+        var eligibleCategories = categoriesForVariety
+            .Where(cc => size >= cc.SizeMin && size <= cc.SizeMax)
             .ToList();
 
         if (!eligibleCategories.Any())
-            throw new BadRequestException("No suitable category was found for this Koi fish");
-
-        // Find the most suitable category (smallest size range)
+        {
+            if (categoriesForVariety.Any())
+                throw new BadRequestException("No suitable category was found for the size of this Koi fish");
+            throw new BadRequestException("No suitable category was found for the variety and size of this Koi fish");
+        }
         var bestCategory = eligibleCategories.MinBy(c => c.SizeMax - c.SizeMin);
         if (bestCategory == null)
             throw new BadRequestException("No suitable category was found for this Koi fish");
-        // Check if the category has space
+        
         return bestCategory.Adapt<GetPageCompetitionCategoryResponse>();
     }
     

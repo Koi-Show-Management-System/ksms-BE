@@ -215,7 +215,7 @@ public class TicketOrderService : BaseService<TicketOrder>, ITicketOrderService
             .GetPagingListAsync(
                 predicate: predicate,
                 orderBy: q => q.OrderByDescending(x => x.OrderDate),
-                include: q => q
+                include: q => q.AsSplitQuery()
                     .Include(x => x.Account)
                     .Include(x => x.TicketOrderDetails)
                         .ThenInclude(x => x.TicketType)
