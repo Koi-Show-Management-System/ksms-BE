@@ -18,8 +18,7 @@ public interface IRegistrationService
     Task UpdateRegistrationPaymentStatusForPayOs(Guid registrationPaymentId, RegistrationPaymentStatus status);
     Task UpdateStatusForRegistration(Guid registrationId, RegistrationStatus status);
     Task<CheckOutRegistrationResponse> CheckOut(Guid registrationId);
-    Task AssignMultipleFishesToTankAndRound(Guid roundId, List<Guid> registrationIds);
-
+    
     Task<Paginate<GetPageRegistrationHistoryResponse>> GetPageRegistrationHistory(
         RegistrationStatus? registrationStatus, ShowStatus? showStatus, int page, int size);
     Task<Paginate<GetRegistrationResponse>> GetAllRegistrationForCurrentMember(RegistrationFilter filter, int page,
