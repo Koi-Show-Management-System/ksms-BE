@@ -382,7 +382,7 @@ namespace KSMS.Infrastructure.Services
             var pagedShows = await showRepository.GetPagingListAsync(
                 predicate: filterQuery,
                 orderBy: query => query.OrderBy(s => s.Name),
-                include: query => query.Include(s => s.ShowStatuses)
+                include: query => query.AsSplitQuery().Include(s => s.ShowStatuses)
                     .Include(s => s.CompetitionCategories)
                     .ThenInclude(s => s.RefereeAssignments)
                     .Include(s => s.ShowStaffs),
