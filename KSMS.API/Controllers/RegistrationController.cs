@@ -78,10 +78,10 @@ namespace KSMS.API.Controllers
             if (status == "CANCELLED")
             {
                 await _registrationService.UpdateRegistrationPaymentStatusForPayOs(registrationPaymentId, RegistrationPaymentStatus.Cancelled);
-                return Redirect("http://localhost:5173/fail");
+                return Redirect("ksms://app/success?status=" + status);
             }
             await _registrationService.UpdateRegistrationPaymentStatusForPayOs(registrationPaymentId, RegistrationPaymentStatus.Paid); 
-            return Redirect("http://localhost:5173/success");
+            return Redirect("ksms://app/fail?status=" + status);
         }
 
 
