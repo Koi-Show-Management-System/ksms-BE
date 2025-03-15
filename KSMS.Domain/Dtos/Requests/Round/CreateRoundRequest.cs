@@ -19,8 +19,8 @@ namespace KSMS.Domain.Dtos.Requests.Round
         public DateTime? StartTime { get; set; }
         public DateTime? EndTime { get; set; }
 
-        [Range(0, 100, ErrorMessage = "MinScoreToAdvance must be between 0 and 100.")]
-        public decimal? MinScoreToAdvance { get; set; }
+        [Range(1, 100, ErrorMessage = "MinScoreToAdvance must be between 1 and 100.")]
+        public int? NumberOfRegistrationToAdvance { get; set; }
 
         [StringLength(20, ErrorMessage = "Status cannot exceed 20 characters.")]
         public string? Status { get; set; }

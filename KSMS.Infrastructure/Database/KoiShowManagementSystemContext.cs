@@ -420,6 +420,20 @@ public partial class KoiShowManagementSystemContext : DbContext
             entity.ToTable("Notification");
 
             entity.Property(e => e.Id).HasDefaultValueSql("(newid())");
+            
+            entity.Property(e => e.Title)
+                .IsRequired()
+                .HasMaxLength(255);
+            
+            entity.Property(e => e.Type)
+                .IsRequired()
+                .HasMaxLength(50)
+                .IsUnicode(false);
+            
+            entity.Property(e => e.IsRead)
+                .IsRequired()
+                .HasDefaultValue(false);
+            
             entity.Property(e => e.SentDate)
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime");

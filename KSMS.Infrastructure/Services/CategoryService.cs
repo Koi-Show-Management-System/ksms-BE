@@ -233,6 +233,7 @@ namespace KSMS.Infrastructure.Services
                         award.CompetitionCategoriesId = category.Id;
                         return award;
                     }).ToList();
+                    await _unitOfWork.GetRepository<Award>().InsertRangeAsync(awards);
                 }
                 if (request.CreateCriteriaCompetitionCategoryRequests.Any())
                 {
