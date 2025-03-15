@@ -70,7 +70,7 @@ public class KoiProfileService : BaseService<KoiProfileService>, IKoiProfileServ
     {
         var accountId = GetIdFromJwt();
         var listKoi = await _unitOfWork.GetRepository<KoiProfile>().GetPagingListAsync(predicate: ApplyKoiFilter(filter, accountId),
-            page: page, size: size, include: query => query.AsSplitQuery().Include(k => k.Variety)
+            page: page, size: size, include: query => query.Include(k => k.Variety)
                 .Include(k => k.KoiMedia));
         return listKoi.Adapt<Paginate<GetAllKoiProfileResponse>>();
     }
