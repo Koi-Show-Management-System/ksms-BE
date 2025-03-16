@@ -223,6 +223,7 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
             .SingleOrDefaultAsync(predicate: r => r.Id == registrationPaymentId,
                 include: query => query
                     .Include(r => r.Registration));
+        
         registrationPayment.Status = status switch
         {
             RegistrationPaymentStatus.Cancelled => RegistrationPaymentStatus.Cancelled.ToString().ToLower(),
@@ -242,8 +243,23 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
             _unitOfWork.GetRepository<RegistrationPayment>().UpdateAsync(registrationPayment);
             _unitOfWork.GetRepository<Registration>().UpdateAsync(registrationPayment.Registration);
             await _unitOfWork.CommitAsync();
+            var koiShow = await _unitOfWork.GetRepository<KoiShow>().SingleOrDefaultAsync(
+                predicate: x => x.Id == registrationPayment.Registration.KoiShowId);
+            var staffList = await _unitOfWork.GetRepository<ShowStaff>()
+                .GetListAsync(predicate: s => s.KoiShowId == registrationPayment.Registration.KoiShowId,
+                    include: query => query.Include(s => s.Account));
+            await _notificationService.SendNotificationToMany(staffList.Select(s => s.AccountId).ToList(),
+                "Thông báo đăng ký mới",
+                $"Có một đơn đăng ký mới tham gia triển lãm Koi: {koiShow.Name}. Vui lòng kiểm tra chi tiết.",
+                NotificationType.Registration
+            );
+            await _notificationService.SendNotification(GetIdFromJwt(),
+                "Đăng ký thành công",
+                $"Bạn đã đăng ký thành công tham gia triển lãm {koiShow.Name}. Đơn đăng ký của bạn sẽ được nhân viên duyệt và chi tiết sẽ gửi qua mail.",
+                NotificationType.Registration);
             _backgroundJobClient.Enqueue(() => _emailService.SendPaymentConfirmationEmail(registrationPaymentId));
         }
+        
     }
     public async Task UpdateStatusForRegistration(Guid registrationId, RegistrationStatus status)
     {
@@ -253,15 +269,17 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
                 predicate: r => r.Id == registrationId,
                 include:
                 query => query.Include(r => r.RegistrationPayment));
+        var show = await _unitOfWork.GetRepository<KoiShow>().SingleOrDefaultAsync(predicate:
+            s => s.Id == registration.KoiShowId);
         if (registration is null)
         {
             throw new NotFoundException("Registration is not existed");
         }
-
-        if (registration.Status != RegistrationStatus.Pending.ToString().ToLower())
-        {
-            throw new NotFoundException("This Registration is not paid");
-        }
+        //
+        // if (registration.Status != RegistrationStatus.Pending.ToString().ToLower())
+        // {
+        //     throw new NotFoundException("This Registration is not paid");
+        // }
         var accountId = GetIdFromJwt();
         var userRole = GetRoleFromJwt();
 
@@ -279,18 +297,17 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
         {
             RegistrationStatus.Confirmed => RegistrationStatus.Confirmed.ToString().ToLower(),
             RegistrationStatus.Rejected => RegistrationStatus.Rejected.ToString().ToLower(),
-            //RegistrationStatus.NotEnoughQuota => RegistrationStatus.NotEnoughQuota.ToString().ToLower(),
-            //RegistrationStatus.Cancelled => RegistrationStatus.Cancelled.ToString().ToLower(),
+            RegistrationStatus.CheckIn => RegistrationStatus.CheckIn.ToString().ToLower(),
             _ => registration.Status
         };
         if (registration.Status == RegistrationStatus.Rejected.ToString().ToLower())
         {
             _unitOfWork.GetRepository<Registration>().UpdateAsync(registration);
             await _unitOfWork.CommitAsync();
-            // await _notificationService.SendNotification(registration.AccountId,
-            //     "Đăng kí của bạn đã bị từ chối",
-            //     "Đăng kí của bạn cho hạng mục '" + registration.CompetitionCategory.Name + "'" + " của triễn lãm " + registration.KoiShow.Name + " đã bị từ chối",
-            //     NotificationType.RegistrationRejected);
+            await _notificationService.SendNotification(registration.AccountId,
+                "Đơn đăng kí của bạn đã bị từ chối",
+                " Đơn đăng kí tham gia triễn lãm " + registration.KoiShow.Name + "của bạn đã bị từ chối. Vui lòng xem email để biết thêm chi tiết",
+                NotificationType.Registration);
             _backgroundJobClient.Enqueue(() => _emailService.SendRegistrationRejectionEmail(registrationId));
         }
         if (registration.Status == RegistrationStatus.Confirmed.ToString().ToLower())
@@ -308,11 +325,24 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
             _unitOfWork.GetRepository<Registration>().UpdateAsync(registration);
             _unitOfWork.GetRepository<RegistrationPayment>().UpdateAsync(registration.RegistrationPayment);
             await _unitOfWork.CommitAsync();
-            // await _notificationService.SendNotification(registration.AccountId,
-            //     "Đăng kí của bạn đã được chấp nhận",
-            //     "Đăng kí của bạn cho hạng mục '" + registration.CompetitionCategory.Name + "'" + " của triễn lãm " + registration.KoiShow.Name + " đã được chấp nhận",
-            //     NotificationType.RegistrationApproved);
+            await _notificationService.SendNotification(registration.AccountId,
+                "Đăng kí của bạn đã được chấp nhận",
+                " Đơn đăng kí tham gia triễn lãm " + registration.KoiShow.Name + "của bạn đã được chấp nhận",
+                NotificationType.Registration);
             _backgroundJobClient.Enqueue(() => _emailService.SendRegistrationConfirmationEmail(registrationId));
+        }
+        if (registration.Status == RegistrationStatus.CheckIn.ToString().ToLower())
+        {
+            registration.CheckInTime = VietNamTimeUtil.GetVietnamTime();
+            registration.IsCheckedIn = true;
+            registration.CheckInLocation = show.Location;
+            registration.CheckedInBy = accountId;
+            _unitOfWork.GetRepository<Registration>().UpdateAsync(registration);
+            await _unitOfWork.CommitAsync();
+            await _notificationService.SendNotification(registration.AccountId,
+                "Đăng kí của bạn đã được check in",
+                " Đơn đăng kí tham gia triễn lãm " + registration.KoiShow.Name + "của bạn đã được check in thành công",
+                NotificationType.Registration);
         }
 
     }
@@ -324,7 +354,8 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
             .SingleOrDefaultAsync(predicate: r => r.Id == registrationId,
                 include: query => query.Include(r => r.KoiProfile)
                     .Include(r => r.KoiShow)
-                    .Include(r => r.RegistrationPayment));
+                    .Include(r => r.RegistrationPayment)
+                    .Include(r => r.CompetitionCategory));
         if (registration is null)
         {
             throw new NotFoundException("Registration is not found");
@@ -388,18 +419,8 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
         );
 
         var createPayment = await _payOs.createPaymentLink(paymentData);
-        // var staffList = await _unitOfWork.GetRepository<ShowStaff>()
-        //     .GetListAsync(predicate: s => s.KoiShowId == registration.KoiShowId,
-        //         include: query => query.Include(s => s.Account));
-        // await _notificationService.SendNotificationToMany(staffList.Select(s => s.AccountId).ToList(),
-        //     "Có 1 đơn đăng kí mới",
-        //     "Có đơn đăng kí mới trong hạng muc " + registration.CompetitionCategory.Name + " của triễn lãm " + registration.KoiShow.Name,
-        //     NotificationType.NewRegistration
-        // );
-        // await _notificationService.SendNotification(GetIdFromJwt(),
-        //     "Đăng kí thành công",
-        //     "Đăng kí thành công trong hạng mục '" + registration.CompetitionCategory.Name + "'" + " của triễn lãm " + registration.KoiShow.Name,
-        //     NotificationType.RegistrationSuccess); 
+        
+       
         return new CheckOutRegistrationResponse()
         {
             Message = "Create payment Successfully",
