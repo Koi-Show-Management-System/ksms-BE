@@ -67,8 +67,10 @@ public class EmailService : BaseService<EmailService>, IEmailService
             predicate: x => x.Id == orderId,
             include: query => query
                 .Include(x => x.TicketOrderDetails)
-                .ThenInclude(x => x.TicketType)
-                .ThenInclude(x => x.KoiShow)
+                    .ThenInclude(x => x.Tickets)
+                .Include(x => x.TicketOrderDetails)
+                    .ThenInclude(x => x.TicketType)
+                        .ThenInclude(x => x.KoiShow)
         );
         var sendMail = MailUtil.SendEmail(
             order.Email,
