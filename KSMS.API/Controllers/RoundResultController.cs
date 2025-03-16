@@ -30,6 +30,21 @@ namespace KSMS.API.Controllers
         //    return StatusCode(201, ApiResponse<object>.Created(createdRoundResult, "Round result created successfully"));
         //}
 
+        [HttpPost("finalize-round/{roundId:guid}")]
+        public async Task<ActionResult<ApiResponse<object>>> FinalizeRoundScores(Guid roundId)
+        {
+            try
+            {
+                await _roundResultService.ProcessFinalScoresForRound(roundId); // 🔥 THÊM `await` ĐỂ BẮT LỖI
+
+                return StatusCode(201, ApiResponse<object>.Created(null, "Final scores calculated successfully!"));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ApiResponse<object>.Fail($"Failed to process final scores: {ex.Message}"));
+            }
+        }
+
 
         // phân trang danh sách đăng kí theo category và status pass hay k
         [HttpGet("paged-RoundResult-registrations-by-category")]
