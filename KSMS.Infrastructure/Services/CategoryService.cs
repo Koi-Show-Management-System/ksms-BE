@@ -233,6 +233,7 @@ namespace KSMS.Infrastructure.Services
                         award.CompetitionCategoriesId = category.Id;
                         return award;
                     }).ToList();
+                    await _unitOfWork.GetRepository<Award>().InsertRangeAsync(awards);
                 }
                 if (request.CreateCriteriaCompetitionCategoryRequests.Any())
                 {
@@ -314,7 +315,7 @@ namespace KSMS.Infrastructure.Services
             var categories = await _unitOfWork.GetRepository<CompetitionCategory>().GetPagingListAsync(predicate:
                 filterQuery,
                 orderBy: query => query.OrderBy(x => x.Name),
-                include: query => query
+                include: query => query.AsSplitQuery()
                     .Include(x => x.RefereeAssignments)
                     .Include(x => x.CategoryVarieties)
                         .ThenInclude(x => x.Variety),

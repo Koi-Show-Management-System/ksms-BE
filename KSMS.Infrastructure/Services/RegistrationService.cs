@@ -178,12 +178,11 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
     public async Task<GetPageCompetitionCategoryResponse> FindSuitableCategoryAsync(Guid koiShowId, Guid varietyId, decimal size)
     {
         var show = await _unitOfWork.GetRepository<KoiShow>()
-            .SingleOrDefaultAsync(predicate: s => s.Id == koiShowId);
+        .SingleOrDefaultAsync(predicate: s => s.Id == koiShowId);
         if (show == null)
         {
             throw new NotFoundException("Show is not found");
         }
-        // Get the variety with its category relationships
         var variety = await _unitOfWork.GetRepository<Variety>()
             .SingleOrDefaultAsync(
                 predicate: v => v.Id == varietyId,
@@ -192,24 +191,27 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
 
         if (variety == null)
             throw new NotFoundException("Variety not found");
-
-        // Find eligible categories based on size and koi show
-        var eligibleCategories = variety.CategoryVarieties
+        var categoriesForVariety = variety.CategoryVarieties
             .Select(cv => cv.CompetitionCategory)
-            .Where(cc =>
-                size >= cc.SizeMin &&
-                size <= cc.SizeMax &&
-                cc.KoiShowId == koiShowId)
+            .Where(cc => cc.KoiShowId == koiShowId)
+            .ToList();
+            
+        if (!categoriesForVariety.Any())
+            throw new BadRequestException("No suitable category was found for the variety ofD this Koi fish");
+        var eligibleCategories = categoriesForVariety
+            .Where(cc => size >= cc.SizeMin && size <= cc.SizeMax)
             .ToList();
 
         if (!eligibleCategories.Any())
-            throw new BadRequestException("No suitable category was found for this Koi fish");
-
-        // Find the most suitable category (smallest size range)
+        {
+            if (categoriesForVariety.Any())
+                throw new BadRequestException("No suitable category was found for the size of this Koi fish");
+            throw new BadRequestException("No suitable category was found for the variety and size of this Koi fish");
+        }
         var bestCategory = eligibleCategories.MinBy(c => c.SizeMax - c.SizeMin);
         if (bestCategory == null)
             throw new BadRequestException("No suitable category was found for this Koi fish");
-        // Check if the category has space
+        
         return bestCategory.Adapt<GetPageCompetitionCategoryResponse>();
     }
 
@@ -285,6 +287,10 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
         {
             _unitOfWork.GetRepository<Registration>().UpdateAsync(registration);
             await _unitOfWork.CommitAsync();
+            // await _notificationService.SendNotification(registration.AccountId,
+            //     "Đăng kí của bạn đã bị từ chối",
+            //     "Đăng kí của bạn cho hạng mục '" + registration.CompetitionCategory.Name + "'" + " của triễn lãm " + registration.KoiShow.Name + " đã bị từ chối",
+            //     NotificationType.RegistrationRejected);
             _backgroundJobClient.Enqueue(() => _emailService.SendRegistrationRejectionEmail(registrationId));
         }
         if (registration.Status == RegistrationStatus.Confirmed.ToString().ToLower())
@@ -302,7 +308,10 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
             _unitOfWork.GetRepository<Registration>().UpdateAsync(registration);
             _unitOfWork.GetRepository<RegistrationPayment>().UpdateAsync(registration.RegistrationPayment);
             await _unitOfWork.CommitAsync();
-
+            // await _notificationService.SendNotification(registration.AccountId,
+            //     "Đăng kí của bạn đã được chấp nhận",
+            //     "Đăng kí của bạn cho hạng mục '" + registration.CompetitionCategory.Name + "'" + " của triễn lãm " + registration.KoiShow.Name + " đã được chấp nhận",
+            //     NotificationType.RegistrationApproved);
             _backgroundJobClient.Enqueue(() => _emailService.SendRegistrationConfirmationEmail(registrationId));
         }
 
@@ -379,20 +388,18 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
         );
 
         var createPayment = await _payOs.createPaymentLink(paymentData);
-        var staffList = await _unitOfWork.GetRepository<ShowStaff>()
-            .GetListAsync(predicate: s => s.KoiShowId == registration.KoiShowId,
-                include: query => query.Include(s => s.Account));
-
-        // Gửi thông báo cho tất cả staff
-        foreach (var staff in staffList)
-        {
-            await _notificationService.SendNotification(
-                staff.Account.Id,
-                "New Registration",
-                $"New registration from {registration.Account.FullName} for koi {registration.KoiProfile.Name}",
-                NotificationType.NewRegistration
-            );
-        }
+        // var staffList = await _unitOfWork.GetRepository<ShowStaff>()
+        //     .GetListAsync(predicate: s => s.KoiShowId == registration.KoiShowId,
+        //         include: query => query.Include(s => s.Account));
+        // await _notificationService.SendNotificationToMany(staffList.Select(s => s.AccountId).ToList(),
+        //     "Có 1 đơn đăng kí mới",
+        //     "Có đơn đăng kí mới trong hạng muc " + registration.CompetitionCategory.Name + " của triễn lãm " + registration.KoiShow.Name,
+        //     NotificationType.NewRegistration
+        // );
+        // await _notificationService.SendNotification(GetIdFromJwt(),
+        //     "Đăng kí thành công",
+        //     "Đăng kí thành công trong hạng mục '" + registration.CompetitionCategory.Name + "'" + " của triễn lãm " + registration.KoiShow.Name,
+        //     NotificationType.RegistrationSuccess); 
         return new CheckOutRegistrationResponse()
         {
             Message = "Create payment Successfully",
@@ -413,7 +420,7 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
             .GetPagingListAsync(
                 predicate: predicate,
                 orderBy: q => q.OrderByDescending(r => r.CreatedAt),
-                include: q => q
+                include: q => q.AsSplitQuery()
                     .Include(r => r.KoiShow)
                     .Include(r => r.KoiProfile)
                         .ThenInclude(k => k.Variety)

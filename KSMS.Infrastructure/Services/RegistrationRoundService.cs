@@ -205,19 +205,30 @@ namespace KSMS.Infrastructure.Services
             {
                 predicate = predicate.AndAlso(x => x.ScoreDetails.Any(sd => sd.RefereeAccountId == GetIdFromJwt()));
             }
+            if (role.ToUpper() == "MEMBER")
+            {
+                predicate = predicate.AndAlso(x => x.Status == "public");
+            }
             var registrationRounds = await _unitOfWork.GetRepository<RegistrationRound>().GetPagingListAsync(
                 predicate: predicate,
-                include: query => query.Include(x => x.RoundResults)
+                include: query => query.AsSplitQuery()
+                    .Include(x => x.RoundResults)
                     .Include(x => x.ScoreDetails)
                     .Include(x => x.Tank)
                     .Include(x => x.Registration)
                         .ThenInclude(x => x.CompetitionCategory)
                     .Include(x => x.Registration)
                         .ThenInclude(x => x.KoiProfile)
+                            .ThenInclude(x => x.Variety)
                     .Include(x => x.Registration)
                         .ThenInclude(x => x.KoiShow)
                     .Include(x => x.Registration)
-                        .ThenInclude(x => x.KoiMedia),
+                        .ThenInclude(x => x.KoiMedia)
+                    .Include(x => x.RoundResults),
+                orderBy: q => (role.ToUpper() == "MEMBER" || role.ToUpper() == "GUEST") 
+                              && !q.Any(x => x.RoundResults.Any(rr => rr.IsPublic == true)) 
+                    ? q.OrderBy(x => x.CreatedAt)
+                    : q.OrderByDescending(x => x.RoundResults.Any() ? x.RoundResults.FirstOrDefault().TotalScore : 0),
                 page: page, 
                 size: size);
             var response = registrationRounds.Adapt<Paginate<GetPageRegistrationRoundResponse>>();
@@ -225,6 +236,12 @@ namespace KSMS.Infrastructure.Services
             {
                 var registrationRoundEntity = registrationRounds.Items.FirstOrDefault(x => x.Id == registrationRound.Id);
                 registrationRound.TankName = registrationRoundEntity?.Tank?.Name;
+
+                // Nếu vai trò là MEMBER hoặc GUEST và điểm chưa public, ẩn điểm
+                if (registrationRoundEntity != null && (role.ToUpper() == "MEMBER" || role.ToUpper() == "GUEST") && registrationRoundEntity.RoundResults.All(rr => rr.IsPublic != true))
+                {
+                    registrationRound.RoundResults = [];
+                }
             }
             return response;
         }
