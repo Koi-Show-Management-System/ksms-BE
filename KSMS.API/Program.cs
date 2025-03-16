@@ -55,6 +55,8 @@ builder.Services.AddAuthenticationServicesConfigurations(builder.Configuration);
 builder.Services.AddSwaggerConfigurations();
 builder.Services.AddDbContext();
 builder.Services.AddSignalR();
+builder.Services.AddMemoryCache();
+builder.Services.AddSingleton<ICacheService, MemoryCacheService>();
 
 builder.Services.AddMvc()
                 .AddJsonOptions(x => x.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles);
