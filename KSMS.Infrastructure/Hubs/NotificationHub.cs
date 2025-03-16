@@ -2,21 +2,24 @@ using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Logging;
 using System.Security.Claims;
+using Microsoft.AspNetCore.Http;
 
 namespace KSMS.Infrastructure.Hubs;
-
 public class NotificationHub : Hub
 {
     private readonly ILogger<NotificationHub> _logger;
+    private readonly IHttpContextAccessor _httpContextAccessor;
 
-    public NotificationHub(ILogger<NotificationHub> logger)
+    public NotificationHub(ILogger<NotificationHub> logger, IHttpContextAccessor httpContextAccessor)
     {
         _logger = logger;
+        _httpContextAccessor = httpContextAccessor;
     }
 
     public override async Task OnConnectedAsync()
     {
-        var userId = Context.User?.FindFirst("Id")?.Value;
+        var userId = Context.User?.Claims
+            .FirstOrDefault(c => c.Type == "Id")?.Value;
         
         if (!string.IsNullOrEmpty(userId))
         {
@@ -28,7 +31,8 @@ public class NotificationHub : Hub
 
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
-        var userId = Context.User?.FindFirst("Id")?.Value;
+        var userId = _httpContextAccessor?.HttpContext?.User
+            .FindFirst("Id")?.Value;
         
         if (!string.IsNullOrEmpty(userId))
         {
