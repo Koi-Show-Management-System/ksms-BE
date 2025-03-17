@@ -5,6 +5,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
 
 namespace KSMS.Infrastructure.Hubs;
+[Authorize]
 public class NotificationHub : Hub
 {
     private readonly ILogger<NotificationHub> _logger;
@@ -31,8 +32,8 @@ public class NotificationHub : Hub
 
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
-        var userId = _httpContextAccessor?.HttpContext?.User
-            .FindFirst("Id")?.Value;
+        var userId = Context.User?.Claims
+            .FirstOrDefault(c => c.Type == "Id")?.Value;
         
         if (!string.IsNullOrEmpty(userId))
         {
