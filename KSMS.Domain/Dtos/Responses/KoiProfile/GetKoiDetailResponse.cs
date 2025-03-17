@@ -37,6 +37,8 @@ public class KoiAchievementResponse
    public string? ShowName {get;set;}
    public string? Location { get; set; }
    public string? CategoryName { get; set; }
+   public string? AwardType { get; set; }
+   public decimal? PrizeValue { get; set; }
    public string? AwardName { get; set; }
    public DateTime? CompetitionDate { get; set; }
 }
@@ -45,6 +47,7 @@ public class KoiCompetitionHistoryResponse
 {
     public string? Year { get; set; }
     public string? ShowName { get; set; }
+    public string? ShowStatus { get; set; }
     public string? Location { get; set; }
     public string? Result { get; set; }
 }    
