@@ -7,6 +7,7 @@ using KSMS.Application.Services;
 using KSMS.Domain.Dtos.Requests.KoiProfile;
 using KSMS.Domain.Dtos.Responses.KoiProfile;
 using KSMS.Domain.Entities;
+using KSMS.Domain.Enums;
 using KSMS.Domain.Exceptions;
 using KSMS.Domain.Models;
 using KSMS.Domain.Pagination;
@@ -15,6 +16,7 @@ using Mapster;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using ShowStatus = KSMS.Domain.Enums.ShowStatus;
 
 namespace KSMS.Infrastructure.Services;
 
@@ -132,20 +134,106 @@ public class KoiProfileService : BaseService<KoiProfileService>, IKoiProfileServ
         }
     }
 
-    public async Task<GetAllKoiProfileResponse> GetById(Guid id)
+    public async Task<GetKoiDetailResponse> GetById(Guid id)
     {
         var koiProfile = await _unitOfWork.GetRepository<KoiProfile>().SingleOrDefaultAsync(predicate: x => x.Id == id,
             include: query => query
                 .Include(k => k.Variety)
-                .Include(k => k.KoiMedia));
+                .Include(k => k.KoiMedia)
+                .Include(k => k.Registrations)
+                    .ThenInclude(r => r.KoiShow)
+                .Include(k => k.Registrations)
+                    .ThenInclude(r => r.CompetitionCategory)
+                        .ThenInclude(s => s.Awards));
         if (koiProfile is null)
         {
             throw new NotFoundException("Koi is not found");
         }
+        
+        var response = koiProfile.Adapt<GetKoiDetailResponse>();
+        var validRegistrations = koiProfile.Registrations.Where(r =>
+            r.Status != RegistrationStatus.WaitToPaid.ToString().ToLower() &&
+            r.Status != RegistrationStatus.Cancelled.ToString().ToLower() &&
+            r.Status != RegistrationStatus.Pending.ToString().ToLower() &&
+            r.Status != RegistrationStatus.Rejected.ToString().ToLower()
+        ).ToList();
+        foreach (var registration in validRegistrations.Where(
+                     r => r.Rank.HasValue && r.KoiShow.Status == ShowStatus.Finished.ToString().ToLower()))
+        {
+            var award = registration.CompetitionCategory.Awards
+                .FirstOrDefault(a => GetAwardNameByRank(registration.Rank.Value) == a.AwardType);
+            if (award != null)
+            {
+                response.Achievements.Add(new KoiAchievementResponse
+                {
+                    ShowName = registration.KoiShow.Name,
+                    Location = registration.KoiShow.Location,
+                    CategoryName = registration.CompetitionCategory.Name,
+                    AwardType = award.AwardType,
+                    PrizeValue = award.PrizeValue,
+                    AwardName = award.Name,
+                    CompetitionDate = registration.KoiShow.EndDate
+                });
+            }
+        }
 
-        return koiProfile.Adapt<GetAllKoiProfileResponse>();
+        response.CompetitionHistory = validRegistrations
+            .OrderByDescending(r => r.KoiShow.EndDate)
+            .Select(r => new KoiCompetitionHistoryResponse
+            {
+                Year = r.KoiShow.EndDate?.Year.ToString(),
+                ShowName = r.KoiShow.Name,
+                ShowStatus = r.KoiShow.Status,
+                Location = r.KoiShow.Location ?? "",
+                Result = GetCompetitionResult(r)
+            }).ToList();
+        return response;
+
     }
 
+    private string GetAwardNameByRank(int rank)
+    {
+        return rank switch
+        {
+            1 => "Giải nhất",
+            2 => "Giải nhì",
+            3 => "Giải ba",
+            _ => "Participation"
+        };
+    }
+
+    private string GetCompetitionResult(Registration registration)
+    {
+       
+        if (registration.KoiShow.Status == ShowStatus.Finished.ToString().ToLower())
+        {
+            if (!registration.Rank.HasValue)
+                return "Không tham gia thi đấu (không check in)";
+            return registration.Rank.Value switch
+            {
+                1 => "Giải nhất",
+                2 => "Giải nhì",
+                3 => "Giải ba",
+                _ => $"Top {registration.Rank.Value}th"
+            };
+        }
+
+        if (!registration.Rank.HasValue)
+        {
+            if (registration.Status == RegistrationStatus.Confirmed.ToString().ToLower())
+            {
+                return "Đã được duyệt - Chờ check in";
+            }
+            if (registration.Status == RegistrationStatus.CheckIn.ToString().ToLower())
+            {
+                return "Đã check in và đang chờ thi đấu";
+            }
+
+            return "Đang thi đấu";
+        }
+
+        return $"Thứ hạng hiện tại: {registration.Rank.Value}";
+    }
     private Expression<Func<KoiProfile, bool>> ApplyKoiFilter(KoiProfileFilter? filter, Guid accountId)
     {
         if (filter == null) return koi => koi.OwnerId == accountId;
