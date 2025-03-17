@@ -62,6 +62,12 @@ namespace KSMS.API.Controllers
             var newRegistrationRound = await _registrationRoundService.CreateRegistrationRoundAsync(request);
             return StatusCode(201, ApiResponse<object>.Created(newRegistrationRound, "Registration round created successfully"));
         }
+        [HttpPut("publish-registration-round/{roundId:guid}")]
+        public async Task<ActionResult<ApiResponse<object>>> PublishRegistrationRound(Guid roundId)
+        {
+            await _registrationRoundService.PublishRound(roundId);
+            return Ok(ApiResponse<object>.Success(null, "Published registration round successfully"));
+        }
         // quét mã qr cho trọng tài 
         [HttpGet("get-registration-round-for-referee")]
         public async Task<ActionResult<ApiResponse<CheckQrRegistrationRoundResponse>>> GetRegistrationRoundByIdAndRoundAsync(

@@ -15,14 +15,12 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Net.payOS;
 using Net.payOS.Types;
-using System.Security.Claims;
 using System.Linq.Expressions;
 using Hangfire;
 using KSMS.Application.Extensions;
 using KSMS.Domain.Common;
 using KSMS.Domain.Dtos.Responses.CompetitionCategory;
 using KSMS.Domain.Pagination;
-using KSMS.Domain.Dtos.Responses.KoiMedium;
 using ShowStatus = KSMS.Domain.Enums.ShowStatus;
 
 namespace KSMS.Infrastructure.Services;
@@ -337,6 +335,8 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
             registration.IsCheckedIn = true;
             registration.CheckInLocation = show.Location;
             registration.CheckedInBy = accountId;
+            registration.QrcodeData = await _firebaseService.UploadImageAsync(
+                FileUtils.ConvertBase64ToFile(QrcodeUtil.GenerateQrCode(registration.Id)), "qrCode/");
             _unitOfWork.GetRepository<Registration>().UpdateAsync(registration);
             await _unitOfWork.CommitAsync();
             await _notificationService.SendNotification(registration.AccountId,
