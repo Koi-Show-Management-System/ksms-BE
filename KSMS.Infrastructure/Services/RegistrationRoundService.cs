@@ -154,7 +154,7 @@ namespace KSMS.Infrastructure.Services
                 {
                     throw new Exception("All passed registrations must belong to the same category.");
                 }
-
+                
                 // 5️⃣ Lấy danh sách cá đã thi đấu trong vòng trước
                 var existingRegistrations = await regisRoundRepository.GetListAsync(
                     predicate: rr => registrationIds.Contains(rr.RegistrationId));

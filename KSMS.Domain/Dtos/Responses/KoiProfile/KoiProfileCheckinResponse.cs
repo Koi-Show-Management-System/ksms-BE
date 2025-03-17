@@ -9,6 +9,7 @@ namespace KSMS.Domain.Dtos.Responses.KoiProfile
 {
     public class KoiProfileCheckinResponse
     {
+        public Guid? Id { get; set; }
         public string? Name { get; set; }  
         public string? Gender { get; set; }
 
