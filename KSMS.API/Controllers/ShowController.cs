@@ -49,5 +49,7 @@ namespace KSMS.API.Controllers
             var shows = await _showService.GetPagedShowsAsync(page, size);
             return Ok(ApiResponse<Paginate<PaginatedKoiShowResponse>>.Success(shows, "Get paged shows successfully"));
         }
+        
+        
     }
 }

@@ -14,5 +14,5 @@ public interface IKoiProfileService
 
     Task UpdateKoiProfile(Guid id, UpdateKoiProfileRequest updateKoiProfileRequest);
 
-    Task<GetAllKoiProfileResponse> GetById(Guid id);
+    Task<GetKoiDetailResponse> GetById(Guid id);
 }

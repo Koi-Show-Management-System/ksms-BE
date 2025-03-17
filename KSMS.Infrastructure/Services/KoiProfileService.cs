@@ -132,20 +132,75 @@ public class KoiProfileService : BaseService<KoiProfileService>, IKoiProfileServ
         }
     }
 
-    public async Task<GetAllKoiProfileResponse> GetById(Guid id)
+    public async Task<GetKoiDetailResponse> GetById(Guid id)
     {
         var koiProfile = await _unitOfWork.GetRepository<KoiProfile>().SingleOrDefaultAsync(predicate: x => x.Id == id,
             include: query => query
                 .Include(k => k.Variety)
-                .Include(k => k.KoiMedia));
+                .Include(k => k.KoiMedia)
+                .Include(k => k.Registrations)
+                    .ThenInclude(r => r.KoiShow)
+                .Include(k => k.Registrations)
+                    .ThenInclude(r => r.CompetitionCategory)
+                        .ThenInclude(s => s.Awards));
         if (koiProfile is null)
         {
             throw new NotFoundException("Koi is not found");
         }
 
-        return koiProfile.Adapt<GetAllKoiProfileResponse>();
+        var response = koiProfile.Adapt<GetKoiDetailResponse>();
+        foreach (var registration in koiProfile.Registrations.Where(r => r.Rank.HasValue))
+        {
+            var award = registration.CompetitionCategory.Awards
+                .FirstOrDefault(a => GetAwardNameByRank(registration.Rank.Value) == a.AwardType);
+            if (award != null)
+            {
+                response.Achievements.Add(new KoiAchievementResponse
+                {
+                    ShowName = registration.KoiShow.Name,
+                    Location = registration.KoiShow.Location,
+                    CategoryName = registration.CompetitionCategory.Name,
+                    AwardName = award.Name,
+                    CompetitionDate = registration.KoiShow.EndDate
+                });
+            }
+        }
+
+        response.CompetitionHistory = koiProfile.Registrations
+            .OrderByDescending(r => r.KoiShow.EndDate)
+            .Select(r => new KoiCompetitionHistoryResponse
+            {
+                Year = r.KoiShow.EndDate?.Year.ToString(),
+                ShowName = r.KoiShow.Name,
+                Location = r.KoiShow.Location ?? "",
+                Result = GetResultText(r.Rank)
+            }).ToList();
+        return response;
+
     }
 
+    private string GetAwardNameByRank(int rank)
+    {
+        return rank switch
+        {
+            1 => "First Place",
+            2 => "Second Place",
+            3 => "Third Place",
+            _ => "Participation"
+        };
+    }
+
+    private string GetResultText(int? rank)
+    {
+        if (!rank.HasValue) return "Participated";
+        return rank.Value switch
+        {
+            1 => "First Place",
+            2 => "Second Place",
+            3 => "Third Place",
+            _ => $"{rank.Value}th Place"
+        };
+    }
     private Expression<Func<KoiProfile, bool>> ApplyKoiFilter(KoiProfileFilter? filter, Guid accountId)
     {
         if (filter == null) return koi => koi.OwnerId == accountId;
