@@ -20,5 +20,6 @@ namespace KSMS.Application.Services
         Task  ProcessFinalScoresForRound(Guid roundId);
         Task<Paginate<RegistrationGetByCategoryPagedResponse>> GetPagedRegistrationsByCategoryAndStatusAsync(Guid categoryId, RoundResultStatus? status, int page, int size);
         Task UpdateIsPublicByCategoryIdAsync(Guid categoryId, bool isPublic);
+        Task PublishRoundResult(Guid roundId);
     }
 }

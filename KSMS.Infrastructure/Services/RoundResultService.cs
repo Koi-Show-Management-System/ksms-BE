@@ -185,6 +185,98 @@ namespace KSMS.Infrastructure.Services
            
           
         }
+
+        public async Task PublishRoundResult(Guid roundId)
+        {
+            await using var transaction = await _unitOfWork.BeginTransactionAsync();
+            try
+            {
+                var round = await _unitOfWork.GetRepository<Round>().SingleOrDefaultAsync(
+                    predicate: r => r.Id == roundId,
+                    include: query => query
+                        .Include(r => r.RegistrationRounds)
+                            .ThenInclude(rr => rr.Registration)
+                        .Include(r => r.RegistrationRounds)
+                            .ThenInclude(rr => rr.RoundResults));
+                if (round == null)
+                {
+                    throw new NotFoundException("Round not found.");
+                }
+                var registrationRounds = round.RegistrationRounds.ToList();
+                if (!registrationRounds.Any())
+                {
+                    throw new BadRequestException("No registration rounds found for this round.");
+                }
+                
+                var registrationRoundWithoutResult = registrationRounds
+                    .Where(rr => !rr.RoundResults.Any())
+                    .Select(rr => rr.Registration.RegisterName).ToList();
+                if (registrationRoundWithoutResult.Any())
+                {
+                    
+                    throw new BadRequestException($"Registration(s) {string.Join(", ", registrationRoundWithoutResult)} do not have results.");
+                }
+                var registrationsByCategory = registrationRounds
+                    .GroupBy(rr => rr.Registration.CompetitionCategoryId).ToList();
+                foreach (var categoryGroup in registrationsByCategory)
+                {
+                    var registrationsInCategory = categoryGroup.ToList();
+                    if (round.RoundType == RoundEnum.Preliminary.ToString())
+                    {
+                        var totalParticipants = registrationsInCategory.Count;
+                        var passCount = registrationsInCategory
+                            .Count(rr => rr.RoundResults.First().Status == "Pass");
+                        foreach (var regisRound in registrationsInCategory)
+                        {
+                            var roundResult = regisRound.RoundResults.First();
+                            roundResult.IsPublic = true;
+                            _unitOfWork.GetRepository<RoundResult>().UpdateAsync(roundResult);
+                            var registration = regisRound.Registration;
+                            registration.Rank = roundResult.Status == "Pass" ? passCount : totalParticipants;
+                            _unitOfWork.GetRepository<Registration>().UpdateAsync(registration);
+                        }
+                    }
+                    else
+                    {
+                        var sortedResults = registrationsInCategory
+                            .OrderByDescending(rr => rr.RoundResults.First().TotalScore).ToList();
+                        var currentRank = 1;
+                        var skipCount = 0;
+                        decimal? previousScore = null;
+                        for (int i = 0; i < sortedResults.Count; i++)
+                        {
+                            //var currentRank = i + 1;
+                            var regisRound = sortedResults[i];
+                            var currentScore = regisRound.RoundResults.First().TotalScore;
+                            if (previousScore != currentScore)
+                            {
+                                currentRank = i + 1;
+                            }
+                            else
+                            {
+                                skipCount++;
+                            }
+                            var roundResult = regisRound.RoundResults.First();
+                            roundResult.IsPublic = true;
+                            _unitOfWork.GetRepository<RoundResult>().UpdateAsync(roundResult);
+                        
+                            var registration = regisRound.Registration;
+                            registration.Rank = currentRank + skipCount;// test
+                            _unitOfWork.GetRepository<Registration>().UpdateAsync(registration);
+                            previousScore = currentScore;
+                        }
+                    }
+                }
+                await _unitOfWork.CommitAsync();
+                await transaction.CommitAsync();
+            }
+            catch (Exception e)
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+        }
+
         public async Task<Paginate<RegistrationGetByCategoryPagedResponse>> GetPagedRegistrationsByCategoryAndStatusAsync
             (Guid categoryId, RoundResultStatus? status, int page, int size)
         {

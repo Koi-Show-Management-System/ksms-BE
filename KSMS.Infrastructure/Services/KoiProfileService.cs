@@ -181,6 +181,7 @@ public class KoiProfileService : BaseService<KoiProfileService>, IKoiProfileServ
             .OrderByDescending(r => r.KoiShow.EndDate)
             .Select(r => new KoiCompetitionHistoryResponse
             {
+                
                 Year = r.KoiShow.EndDate?.Year.ToString(),
                 ShowName = r.KoiShow.Name,
                 ShowStatus = r.KoiShow.Status,
@@ -212,7 +213,7 @@ public class KoiProfileService : BaseService<KoiProfileService>, IKoiProfileServ
             return registration.Rank.Value switch
             {
                 1 => "Giải nhất",
-                2 => "Giải nhì",
+                2 => "Giải  nhì",
                 3 => "Giải ba",
                 _ => $"Top {registration.Rank.Value}th"
             };
