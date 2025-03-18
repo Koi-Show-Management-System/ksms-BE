@@ -115,6 +115,18 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
         {
             throw new NotFoundException("Category is not existed");
         }
+
+        var existingRegistration = await _unitOfWork.GetRepository<Registration>()
+            .SingleOrDefaultAsync(
+                predicate: r => r.KoiShowId == koiShow.Id &&
+                                r.KoiProfileId == koiProfile.Id &&
+                                r.Status != RegistrationStatus.Rejected.ToString().ToLower() &&
+                                r.Status != RegistrationStatus.Refunded.ToString().ToLower(),
+                include: query => query.Include(r => r.CompetitionCategory));
+        if (existingRegistration != null)
+        {
+            throw new BadRequestException("This koi has already been registered in category " + existingRegistration.CompetitionCategory.Name + " of this show");
+        }
         var registrations = await _unitOfWork.GetRepository<Registration>()
             .GetListAsync(predicate: x => x.KoiShowId == koiShow.Id && x.Status == RegistrationStatus.Confirmed.ToString().ToLower());
         if (registrations.Count > koiShow.MaxParticipants)
@@ -149,27 +161,10 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
             await _mediaService.UploadRegistrationVideo(createRegistrationRequest.RegistrationVideos,
                 registration.Id);
         }
-        // var staffList = await _unitOfWork.GetRepository<ShowStaff>()
-        //     .GetListAsync(predicate: s => s.KoiShowId == koiShow.Id,
-        //         include: query => query.Include(s => s.Account));
-        //
-        // // Gửi thông báo cho tất cả staff
-        // foreach (var staff in staffList)
-        // {
-        //     await _notificationService.SendNotification(
-        //         staff.Account.Id,
-        //         "New Registration",
-        //         $"New registration from {registration.Account.FullName} for koi {koiProfile.Name}",
-        //         NotificationType.NewRegistration
-        //     );
-        // }
-
         return new
         {
             Id = registration.Id
         };
-
-        //throw new NotFoundException("No suitable category was found for this Koi fish");
     }
 
     // New method to find suitable category
@@ -296,6 +291,7 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
             RegistrationStatus.Confirmed => RegistrationStatus.Confirmed.ToString().ToLower(),
             RegistrationStatus.Rejected => RegistrationStatus.Rejected.ToString().ToLower(),
             RegistrationStatus.CheckIn => RegistrationStatus.CheckIn.ToString().ToLower(),
+            RegistrationStatus.Refunded => RegistrationStatus.Refunded.ToString().ToLower(),
             _ => registration.Status
         };
         if (registration.Status == RegistrationStatus.Rejected.ToString().ToLower())
@@ -343,6 +339,17 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
                 "Đăng kí của bạn đã được check in",
                 " Đơn đăng kí tham gia triễn lãm " + registration.KoiShow.Name + "của bạn đã được check in thành công",
                 NotificationType.Registration);
+        }
+
+        if (registration.Status == RegistrationStatus.Refunded.ToString().ToLower())
+        {
+            _unitOfWork.GetRepository<Registration>().UpdateAsync(registration);
+            await _unitOfWork.CommitAsync();
+            await _notificationService.SendNotification(registration.AccountId,
+                "Phí đăng ký của bạn đã được hoàn tiền",
+                "Đơn đăng ký tham gia triển lãm " + registration.KoiShow.Name + " đã được hoàn phí đăng ký. Vui lòng kiểm tra tài khoản của bạn trong vòng 3-5 ngày làm việc. Chi tiết đã được gửi qua email.",
+                NotificationType.Registration);
+            _backgroundJobClient.Enqueue(() => _emailService.SendRefundEmail(registrationId));
         }
 
     }
