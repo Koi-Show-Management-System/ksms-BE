@@ -18,6 +18,8 @@ public class GetRegistrationResponse // for user
     public int KoiAge { get; set; }
 
     public decimal RegistrationFee { get; set; }
+    
+    public string? QrcodeData { get; set; }
 
     public string? Status { get; set; }
 

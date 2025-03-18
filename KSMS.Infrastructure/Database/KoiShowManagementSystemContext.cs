@@ -239,6 +239,9 @@ public partial class KoiShowManagementSystemContext : DbContext
             entity.Property(e => e.EndTime).HasColumnType("datetime");
             entity.Property(e => e.Name).HasMaxLength(100);
             entity.Property(e => e.RegistrationFee).HasColumnType("decimal(18, 2)");
+            entity.Property(e => e.HasTank)
+                .IsRequired()
+                .HasDefaultValue(false);
             entity.Property(e => e.SizeMax).HasColumnType("decimal(5, 2)");
             entity.Property(e => e.SizeMin).HasColumnType("decimal(5, 2)");
             entity.Property(e => e.StartTime).HasColumnType("datetime");
