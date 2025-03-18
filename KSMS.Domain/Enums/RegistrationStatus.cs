@@ -8,5 +8,6 @@ public enum RegistrationStatus
     Confirmed,
     CheckIn,
     Rejected,
+    Refunded
     
 }

@@ -103,4 +103,33 @@ public class EmailService : BaseService<EmailService>, IEmailService
             throw new BadRequestException("Error sending confirmation email.");
         }
     }
+    public async Task SendRefundEmail(Guid registrationId)
+    {
+        var registration = await _unitOfWork.GetRepository<Registration>()
+            .SingleOrDefaultAsync(
+                predicate: r => r.Id == registrationId,
+                include: query => query
+                    .Include(r => r.Account)
+                    .Include(r => r.KoiProfile)
+                    .ThenInclude(r => r.Variety)
+                    .Include(r => r.CompetitionCategory)
+                    .Include(r => r.RegistrationPayment)
+                    .Include(r => r.KoiShow));
+
+        if (registration == null)
+        {
+            throw new NotFoundException("Registration not found");
+        }
+
+        var sendMail = MailUtil.SendEmail(
+            registration.Account.Email,
+            "KOI SHOW - Thông báo hoàn phí đăng ký",
+            MailUtil.ContentMailUtil.RefundRegistrationPayment(registration), 
+            "");
+            
+        if (!sendMail)
+        {
+            throw new BadRequestException("Error sending refund notification email.");
+        }
+    }
 }

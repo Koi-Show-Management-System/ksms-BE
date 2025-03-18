@@ -10,4 +10,5 @@ public interface IEmailService
     Task SendConfirmationTicket(Guid orderId);
     
     Task SendPaymentConfirmationEmail(Guid registrationPaymentId);
+    Task SendRefundEmail(Guid registrationId);
 }
