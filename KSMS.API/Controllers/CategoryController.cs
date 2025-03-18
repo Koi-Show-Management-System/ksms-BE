@@ -32,11 +32,12 @@ namespace KSMS.API.Controllers
         }
         [HttpGet("get-page")]
         public async Task<ActionResult<ApiResponse<object>>> GetPageCategory(
-            [FromQuery] Guid showId,       
+            [FromQuery] Guid showId,
+            [FromQuery] bool? hasTank = null,
             [FromQuery] int page = 1,     
             [FromQuery] int size = 10)    
         {
-            var categories = await _categoryService.GetPagedCompetitionCategory(showId, page, size);
+            var categories = await _categoryService.GetPagedCompetitionCategory(showId,hasTank, page, size);
             return Ok(ApiResponse<object>.Success(categories, "Get list successfully"));
         }
         [HttpGet("{id:guid}")]

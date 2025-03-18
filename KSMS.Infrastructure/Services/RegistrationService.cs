@@ -251,7 +251,7 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
                 $"Có một đơn đăng ký mới tham gia triển lãm Koi: {koiShow.Name}. Vui lòng kiểm tra chi tiết.",
                 NotificationType.Registration
             );
-            await _notificationService.SendNotification(GetIdFromJwt(),
+            await _notificationService.SendNotification(registrationPayment.Registration.AccountId,
                 "Đăng ký thành công",
                 $"Bạn đã đăng ký thành công tham gia triển lãm {koiShow.Name}. Đơn đăng ký của bạn sẽ được nhân viên duyệt và chi tiết sẽ gửi qua mail.",
                 NotificationType.Registration);

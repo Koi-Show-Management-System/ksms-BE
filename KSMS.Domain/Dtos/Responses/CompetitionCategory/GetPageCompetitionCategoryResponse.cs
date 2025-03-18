@@ -13,6 +13,8 @@ public class GetPageCompetitionCategoryResponse
 
     public int? MaxEntries { get; set; }
     
+    public bool? HasTank { get; set; }
+    
     public decimal RegistrationFee { get; set; }
 
     public DateTime? StartTime { get; set; }

@@ -16,6 +16,6 @@ namespace KSMS.Application.Services
         
         Task UpdateCompetitionCategory(Guid id, UpdateCompetitionCategoryRequest request);
         Task<GetCompetitionCategoryDetailResponse> GetCompetitionCategoryDetailById(Guid id);
-        Task<Paginate<GetPageCompetitionCategoryResponse>> GetPagedCompetitionCategory(Guid showId, int page, int size);
+        Task<Paginate<GetPageCompetitionCategoryResponse>> GetPagedCompetitionCategory(Guid showId, bool? hasTank, int page, int size);
     }
 }

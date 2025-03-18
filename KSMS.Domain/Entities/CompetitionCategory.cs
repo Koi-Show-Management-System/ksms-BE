@@ -17,6 +17,8 @@ public partial class CompetitionCategory : BaseEntity
     public string? Description { get; set; }
 
     public int? MaxEntries { get; set; }
+    
+    public bool HasTank { get; set; } 
 
     public decimal RegistrationFee { get; set; }
 

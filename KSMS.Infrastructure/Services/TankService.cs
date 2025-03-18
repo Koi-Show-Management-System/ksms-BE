@@ -33,6 +33,10 @@ namespace KSMS.Infrastructure.Services
             {
                 throw new NotFoundException("Category not found");
             }
+            if (category.HasTank == false)
+            {
+                throw new BadRequestException("This category does not require tanks.");
+            }
             var existingTank = await tankRepository.SingleOrDefaultAsync(
                 predicate: t => t.Name == request.Name);
             
@@ -107,6 +111,17 @@ namespace KSMS.Infrastructure.Services
             {
                 throw new NotFoundException($"Tank with ID {id} not found.");
             }
+            if (request.Name != existingTank.Name)
+            {
+                var duplicateTank = await tankRepository.SingleOrDefaultAsync(
+                    predicate: t => t.Name == request.Name && t.Id != id
+                );
+
+                if (duplicateTank != null)
+                {
+                    throw new BadRequestException($"A tank with the name '{request.Name}' already exists.");
+                }
+            }
             existingTank.Name = request.Name ?? existingTank.Name;
             existingTank.Capacity = request.Capacity;
             existingTank.WaterType = request.WaterType ?? existingTank.WaterType;
@@ -122,12 +137,7 @@ namespace KSMS.Infrastructure.Services
 
         public async Task UpdateTankStatusAsync(Guid id, TankStatus status)
         {
-            // string role = GetRoleFromJwt();
-            // if (role != "Staff")
-            // {
-            //     throw new ForbiddenMethodException("Only Managers can update tank status.");
-            // }
-
+            
             var tankRepository = _unitOfWork.GetRepository<Tank>();
 
             var existingTank = await tankRepository.SingleOrDefaultAsync(

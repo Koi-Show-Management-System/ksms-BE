@@ -34,6 +34,8 @@ namespace KSMS.Domain.Dtos.Requests.Categorie
 
         [Range(1, int.MaxValue, ErrorMessage = "Maximum entries must be greater than 0.")]
         public int? MaxEntries { get; set; }
+        [Required(ErrorMessage = "HasTank is required.")]
+        public bool HasTank { get; set; }
 
         public DateTime? StartTime { get; set; }
 
