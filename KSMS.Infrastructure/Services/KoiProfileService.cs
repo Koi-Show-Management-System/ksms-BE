@@ -177,7 +177,7 @@ public class KoiProfileService : BaseService<KoiProfileService>, IKoiProfileServ
             }
         }
 
-        response.CompetitionHistory = validRegistrations
+        response.CompetitionHistory = koiProfile.Registrations
             .OrderByDescending(r => r.KoiShow.EndDate)
             .Select(r => new KoiCompetitionHistoryResponse
             {
@@ -221,6 +221,22 @@ public class KoiProfileService : BaseService<KoiProfileService>, IKoiProfileServ
 
         if (!registration.Rank.HasValue)
         {
+            if (registration.Status == RegistrationStatus.WaitToPaid.ToString().ToLower())
+            {
+                return "Chờ thanh toán";
+            }
+            if (registration.Status == RegistrationStatus.Pending.ToString().ToLower())
+            {
+                return "Chờ duyệt";
+            }
+            if (registration.Status == RegistrationStatus.Rejected.ToString().ToLower())
+            {
+                return "Bị từ chối";
+            }
+            if (registration.Status == RegistrationStatus.Cancelled.ToString().ToLower())
+            {
+                return "Đã hủy";
+            }
             if (registration.Status == RegistrationStatus.Confirmed.ToString().ToLower())
             {
                 return "Đã được duyệt - Chờ check in";

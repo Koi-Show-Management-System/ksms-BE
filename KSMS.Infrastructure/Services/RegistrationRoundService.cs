@@ -287,6 +287,7 @@ namespace KSMS.Infrastructure.Services
                 var round = await _unitOfWork.GetRepository<Round>().SingleOrDefaultAsync(
                     predicate: r => r.Id == roundId,
                     include: query => query
+                        .Include(r => r.CompetitionCategories)   
                         .Include(r => r.RegistrationRounds)
                         .ThenInclude(rr => rr.Registration)
                         .Include(r => r.RegistrationRounds)
@@ -302,20 +303,24 @@ namespace KSMS.Infrastructure.Services
                     throw new BadRequestException("No registration rounds found for this round.");
                 }
 
-                var registrationsByCategory = registrationRounds
-                    .GroupBy(rr => rr.Registration.CompetitionCategoryId);
-                foreach (var categoryGroup in registrationsByCategory)
+                if (round.CompetitionCategories.HasTank)
                 {
-                    var registrationsInCategory = categoryGroup.ToList();
-                    var totalParticipants = registrationsInCategory.Count;
-                    foreach (var regisRound in registrationsInCategory)
+                    var registrationRoundsWithoutTank = registrationRounds
+                        .Where(rr => !rr.TankId.HasValue).ToList();
+                    if (registrationRoundsWithoutTank.Any())
                     {
-                        regisRound.Status = "public";
-                        _unitOfWork.GetRepository<RegistrationRound>().UpdateAsync(regisRound);
-                        var registration = regisRound.Registration;
-                        registration.Rank = totalParticipants;
-                        _unitOfWork.GetRepository<Registration>().UpdateAsync(registration);
+                        throw new BadRequestException(
+                            "All registrations must be assigned to a tank before the round can be published.");
                     }
+                }
+                var totalParticipants = registrationRounds.Count;
+                foreach (var regisRound in registrationRounds)
+                {
+                    regisRound.Status = "public";
+                    _unitOfWork.GetRepository<RegistrationRound>().UpdateAsync(regisRound);
+                    var registration = regisRound.Registration;
+                    registration.Rank = totalParticipants;
+                    _unitOfWork.GetRepository<Registration>().UpdateAsync(registration);
                 }
 
                 await _unitOfWork.CommitAsync();
