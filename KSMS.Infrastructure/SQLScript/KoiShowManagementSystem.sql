@@ -79,6 +79,7 @@ CREATE TABLE [dbo].[CompetitionCategory](
     [SizeMax] decimal(5,2) NULL,
     [Description] nvarchar(max) NULL,
     [MaxEntries] int NULL,
+    [HasTank] BIT NOT NULL DEFAULT '0',
     [RegistrationFee] decimal(18,2) NOT NULL,
     [StartTime] datetime NULL,
     [EndTime] datetime NULL,
@@ -372,6 +373,9 @@ CREATE TABLE [dbo].[Notification](
     [AccountId] UNIQUEIDENTIFIER NULL,
     [Content] nvarchar(max) NOT NULL,
     [SentDate] datetime NOT NULL DEFAULT GETDATE(),
+    Title nvarchar(255) NOT NULL,
+    Type nvarchar(50) NOT NULL,
+    [IsRead] BIT NOT NULL DEFAULT '0',
     FOREIGN KEY ([AccountId]) REFERENCES [Account]([Id])
 )
 GO
