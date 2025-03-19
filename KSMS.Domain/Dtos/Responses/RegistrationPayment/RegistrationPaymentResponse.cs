@@ -11,10 +11,11 @@ namespace KSMS.Domain.Dtos.Responses.RegistrationPayment
     {
         public Guid Id { get; set; }  
         public decimal PaidAmount { get; set; }
-
+        
         public DateTime PaymentDate { get; set; }
 
         public string PaymentMethod { get; set; } = null!;
+        public string? TransactionCode { get; set; }
 
         public string Status { get; set; } = null!;
 

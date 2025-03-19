@@ -25,6 +25,16 @@ public class GetRegistrationResponse // for user
 
     public string? Notes { get; set; }
     
+    public DateTime? CheckInExpiredDate { get; set; }
+
+    public bool? IsCheckedIn { get; set; }
+
+    public DateTime? CheckInTime { get; set; }
+
+    public string? CheckInLocation { get; set; }
+
+    public Guid? CheckedInBy { get; set; }
+    
     public DateTime? CreatedAt { get; set; }
 
     public DateTime? ApprovedAt { get; set; }
