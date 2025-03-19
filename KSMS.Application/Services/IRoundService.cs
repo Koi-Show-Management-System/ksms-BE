@@ -16,6 +16,8 @@ namespace KSMS.Application.Services
 
         Task<Paginate<GetPageRoundResponse>> GetPageRound(Guid competitionCategoryId, RoundEnum roundType, int page, int size);
 
+        Task<List<string>> GetRoundTypeForReferee(Guid competitionCategoryId);
+
     }
 
 }
