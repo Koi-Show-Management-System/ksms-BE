@@ -295,7 +295,7 @@ namespace KSMS.Infrastructure.Services
             return category.Adapt<GetCompetitionCategoryDetailResponse>();
         }
 
-        public async Task<Paginate<GetPageCompetitionCategoryResponse>> GetPagedCompetitionCategory(Guid showId, int page, int size)
+        public async Task<Paginate<GetPageCompetitionCategoryResponse>> GetPagedCompetitionCategory(Guid showId, bool? hasTank, int page, int size)
         {
             var role = GetRoleFromJwt();
             var show = await _unitOfWork.GetRepository<KoiShow>().SingleOrDefaultAsync(predicate: x => x.Id == showId);
@@ -311,6 +311,10 @@ namespace KSMS.Infrastructure.Services
             if (role is "Referee")
             {
                 filterQuery = filterQuery.AndAlso(category => category.RefereeAssignments.Any(x => x.RefereeAccountId == GetIdFromJwt()));
+            }
+            if (hasTank.HasValue)
+            {
+                filterQuery = filterQuery.AndAlso(category => category.HasTank == hasTank);
             }
             var categories = await _unitOfWork.GetRepository<CompetitionCategory>().GetPagingListAsync(predicate:
                 filterQuery,

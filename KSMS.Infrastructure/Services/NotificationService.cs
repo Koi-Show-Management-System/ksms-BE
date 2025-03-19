@@ -48,7 +48,7 @@ public class NotificationService : BaseService<NotificationService>, INotificati
             Type = type.ToString(),
             Timestamp = notification.SentDate
         };
-        await _hubContext.Clients.User(accountId.ToString())
+        await _hubContext.Clients.Group(accountId.ToString())
             .SendAsync("ReceiveNotification", notificationResponse);
     }
 
@@ -73,8 +73,12 @@ public class NotificationService : BaseService<NotificationService>, INotificati
             Timestamp = VietNamTimeUtil.GetVietnamTime()
         };
         var userIdStrings = accountIds.Select(id => id.ToString());
-        await _hubContext.Clients.Users(userIdStrings)
-            .SendAsync("ReceiveNotification", notificationResponse);
+        foreach (var accountId in accountIds)
+        {
+            await _hubContext.Clients.Group(accountId.ToString())
+                .SendAsync("ReceiveNotification", notificationResponse);
+        }
+        
     }
 
     public async Task MarkNotificationAsRead(Guid notificationId)

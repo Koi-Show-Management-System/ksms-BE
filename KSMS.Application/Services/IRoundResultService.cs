@@ -1,4 +1,5 @@
-﻿using KSMS.Domain.Dtos.Requests.RoundResult;
+﻿using KSMS.Domain.Dtos;
+using KSMS.Domain.Dtos.Requests.RoundResult;
 using KSMS.Domain.Dtos.Responses.Registration;
 using KSMS.Domain.Dtos.Responses.RoundResult;
 using KSMS.Domain.Entities;
@@ -16,7 +17,9 @@ namespace KSMS.Application.Services
     {
         // Task<RoundResultResponse> CreateRoundResultAsync(CreateRoundResult request);
 
+        Task  ProcessFinalScoresForRound(Guid roundId);
         Task<Paginate<RegistrationGetByCategoryPagedResponse>> GetPagedRegistrationsByCategoryAndStatusAsync(Guid categoryId, RoundResultStatus? status, int page, int size);
         Task UpdateIsPublicByCategoryIdAsync(Guid categoryId, bool isPublic);
+        Task PublishRoundResult(Guid roundId);
     }
 }

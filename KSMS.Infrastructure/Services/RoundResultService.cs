@@ -16,18 +16,145 @@ using Microsoft.EntityFrameworkCore;
 using KSMS.Domain.Pagination;
 using KSMS.Domain.Dtos.Responses.Registration;
 using KSMS.Domain.Enums;
+using KSMS.Infrastructure.Hubs;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.SignalR;
 
 namespace KSMS.Infrastructure.Services
 {
-    public class RoundResultService : IRoundResultService
+    public class RoundResultService : BaseService<RoundResultService>, IRoundResultService
     {
-        private readonly IUnitOfWork<KoiShowManagementSystemContext> _unitOfWork;
-        private readonly ILogger<RoundResultService> _logger;
+        private readonly IHubContext<ScoreHub> _scoreHub;
+        private readonly ICacheService _cacheService;
 
-        public RoundResultService(IUnitOfWork<KoiShowManagementSystemContext> unitOfWork, ILogger<RoundResultService> logger)
+        public RoundResultService(
+            IUnitOfWork<KoiShowManagementSystemContext> unitOfWork,
+            ILogger<RoundResultService> logger,
+            IHttpContextAccessor httpContextAccessor,
+            IHubContext<ScoreHub> scoreHub,
+            ICacheService cacheService
+        ) : base(unitOfWork, logger, httpContextAccessor)
         {
-            _unitOfWork = unitOfWork;
-            _logger = logger;
+            _scoreHub = scoreHub;
+            _cacheService = cacheService;
+        }
+        public async Task ProcessFinalScoresForRound(Guid roundId)
+        {
+            try
+            {
+                var scoreRepository = _unitOfWork.GetRepository<ScoreDetail>();
+                var roundResultRepository = _unitOfWork.GetRepository<RoundResult>();
+                var refereeAssignmentRepository = _unitOfWork.GetRepository<RefereeAssignment>();
+                var registrationRoundRepository = _unitOfWork.GetRepository<RegistrationRound>();
+                var roundRepository = _unitOfWork.GetRepository<Round>();
+
+                // 1️⃣ Kiểm tra vòng thi có tồn tại
+                var round = await roundRepository.SingleOrDefaultAsync(predicate: r => r.Id == roundId);
+                if (round == null)
+                {
+                    throw new NotFoundException($"❌ Round with ID '{roundId}' not found.");
+                }
+
+                // 2️⃣ Lấy danh sách `RegistrationRound` của vòng thi này
+                var registrationRounds = await registrationRoundRepository.GetListAsync(
+                    predicate: rr => rr.RoundId == roundId,
+                    include: query => query.Include(rr => rr.Registration)
+                                           .ThenInclude(r => r.CompetitionCategory));
+
+                if (!registrationRounds.Any())
+                {
+                    throw new NotFoundException($"❌ No registration rounds found for round {roundId}.");
+                }
+
+                // 3️⃣ Nhóm cá theo `CompetitionCategoryId`
+                var groupedByCategory = registrationRounds.GroupBy(rr => rr.Registration.CompetitionCategoryId);
+
+                foreach (var categoryGroup in groupedByCategory)
+                {
+                    var competitionCategoryId = categoryGroup.Key;
+                    var registrationsInCategory = categoryGroup.ToList();
+                    int numberOfRegistrationsToAdvance = round.NumberOfRegistrationToAdvance ?? 0;
+
+                    // 4️⃣ Kiểm tra số lượng trọng tài trong vòng này
+                    int assignedReferees = await refereeAssignmentRepository.CountAsync(
+                        predicate: r => r.RoundType == round.RoundType
+                                        && r.CompetitionCategoryId == competitionCategoryId);
+
+                    if (assignedReferees == 0)
+                    {
+                        throw new Exception($"❌ No referees assigned for category {competitionCategoryId} in this round.");
+                    }
+
+                    // 5️⃣ Tính tổng điểm của mỗi cá
+                    var finalScores = new Dictionary<Guid, decimal>();
+
+                    foreach (var registrationRound in registrationsInCategory)
+                    {
+                        // ⚠ Lấy danh sách điểm của cá trong vòng thi
+                        var scores = await scoreRepository.GetListAsync(
+                            predicate: s => s.RegistrationRoundId == registrationRound.Id);
+
+                        int totalReferees = scores.Count;
+
+                        if (totalReferees < assignedReferees)
+                        {
+                            throw new Exception($"⚠ Not all referees have scored RegistrationRound {registrationRound.Id}. ({totalReferees}/{assignedReferees})");
+                        }
+
+                        // Tổng điểm bị trừ
+                        decimal totalPenalty = scores.Sum(s => s.TotalPointMinus);
+                        decimal finalScore = 100 - (totalPenalty / assignedReferees);
+
+                        finalScores.Add(registrationRound.Id, finalScore);
+                    }
+
+                    // 6️⃣ Xếp hạng theo điểm số
+                    var sortedResults = finalScores.OrderByDescending(x => x.Value).ToList();
+                    var roundResults = new List<RoundResult>();
+
+                    for (int i = 0; i < sortedResults.Count; i++)
+                    {
+                        roundResults.Add(new RoundResult
+                        {
+                            RegistrationRoundsId = sortedResults[i].Key,
+                            TotalScore = sortedResults[i].Value,
+                            Status = i < numberOfRegistrationsToAdvance ? "Pass" : "Fail",
+                            IsPublic = false
+                        });
+                    }
+
+                    // 7️⃣ Cập nhật `RoundResult` nếu đã có, hoặc thêm mới nếu chưa có
+                    foreach (var result in roundResults)
+                    {
+                        var existingResult = await roundResultRepository.SingleOrDefaultAsync(
+                            predicate: r => r.RegistrationRoundsId == result.RegistrationRoundsId);
+
+                        if (existingResult != null)
+                        {
+                            existingResult.TotalScore = result.TotalScore;
+                            existingResult.Status = result.Status;
+                            roundResultRepository.UpdateAsync(existingResult);
+                        }
+                        else
+                        {
+                            await roundResultRepository.InsertAsync(result);
+                        }
+                    }
+                }
+
+                // ✅ Commit UoW để đảm bảo dữ liệu được ghi vào DB
+                await _unitOfWork.CommitAsync();
+            }
+            catch (NotFoundException ex)
+            {
+                _logger.LogError($"🚨 Not Found: {ex.Message}");
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"🚨 Failed to process final scores for round {roundId}: {ex.Message}");
+                throw new Exception($"Failed to process final scores for round {roundId}. Check logs for details.");
+            }
         }
 
         public async Task UpdateIsPublicByCategoryIdAsync(Guid categoryId, bool isPublic)
@@ -58,6 +185,98 @@ namespace KSMS.Infrastructure.Services
            
           
         }
+
+        public async Task PublishRoundResult(Guid roundId)
+        {
+            await using var transaction = await _unitOfWork.BeginTransactionAsync();
+            try
+            {
+                var round = await _unitOfWork.GetRepository<Round>().SingleOrDefaultAsync(
+                    predicate: r => r.Id == roundId,
+                    include: query => query
+                        .Include(r => r.RegistrationRounds)
+                            .ThenInclude(rr => rr.Registration)
+                        .Include(r => r.RegistrationRounds)
+                            .ThenInclude(rr => rr.RoundResults));
+                if (round == null)
+                {
+                    throw new NotFoundException("Round not found.");
+                }
+                var registrationRounds = round.RegistrationRounds.ToList();
+                if (!registrationRounds.Any())
+                {
+                    throw new BadRequestException("No registration rounds found for this round.");
+                }
+                
+                var registrationRoundWithoutResult = registrationRounds
+                    .Where(rr => !rr.RoundResults.Any())
+                    .Select(rr => rr.Registration.RegisterName).ToList();
+                if (registrationRoundWithoutResult.Any())
+                {
+                    
+                    throw new BadRequestException($"Registration(s) {string.Join(", ", registrationRoundWithoutResult)} do not have results.");
+                }
+                if (round.RoundType == RoundEnum.Preliminary.ToString())
+                {
+                    var totalParticipants = registrationRounds.Count;
+                    var passCount = registrationRounds.Count(rr => rr.RoundResults.First().Status == "Pass");
+
+                    foreach (var regisRound in registrationRounds)
+                    {
+                        var roundResult = regisRound.RoundResults.First();
+                        roundResult.IsPublic = true;
+                        _unitOfWork.GetRepository<RoundResult>().UpdateAsync(roundResult);
+
+                        var registration = regisRound.Registration;
+                        registration.Rank = roundResult.Status == "Pass" ? passCount : totalParticipants;
+                        _unitOfWork.GetRepository<Registration>().UpdateAsync(registration);
+                    }
+                }
+                else
+                {
+                    var sortedResults = registrationRounds
+                        .OrderByDescending(rr => rr.RoundResults.First().TotalScore)
+                        .ToList();
+
+                    var currentRank = 1;
+                    var skipCount = 0;
+                    decimal? previousScore = null;
+
+                    for (int i = 0; i < sortedResults.Count; i++)
+                    {
+                        var regisRound = sortedResults[i];
+                        var currentScore = regisRound.RoundResults.First().TotalScore;
+
+                        if (previousScore != currentScore)
+                        {
+                            currentRank = i + 1;
+                        }
+                        else
+                        {
+                            skipCount++;
+                        }
+
+                        var roundResult = regisRound.RoundResults.First();
+                        roundResult.IsPublic = true;
+                        _unitOfWork.GetRepository<RoundResult>().UpdateAsync(roundResult);
+
+                        var registration = regisRound.Registration;
+                        registration.Rank = currentRank + skipCount;
+                        _unitOfWork.GetRepository<Registration>().UpdateAsync(registration);
+
+                        previousScore = currentScore;
+                    }
+                }
+                await _unitOfWork.CommitAsync();
+                await transaction.CommitAsync();
+            }
+            catch (Exception e)
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+        }
+
         public async Task<Paginate<RegistrationGetByCategoryPagedResponse>> GetPagedRegistrationsByCategoryAndStatusAsync
             (Guid categoryId, RoundResultStatus? status, int page, int size)
         {

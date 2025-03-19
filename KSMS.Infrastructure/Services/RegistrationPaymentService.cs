@@ -38,7 +38,10 @@ namespace KSMS.Infrastructure.Services
                                 .ThenInclude(r => r.CompetitionCategory)
                                     .ThenInclude(r => r.KoiShow)
             );
-
+            if (payment.Registration.IsCheckedIn == true)
+            {
+                throw new BadRequestException("Registration is already checked in.");
+            }
             if (payment == null)
             {
                 throw new NotFoundException($"Registration Payment with ID {id} not found.");

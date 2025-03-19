@@ -572,7 +572,74 @@ public static string ConfirmTicketOrder(TicketOrder order)
 </body>
 </html>";
 }
+public static string RefundRegistrationPayment(Registration registration)
+{
+    return $@"
+<!DOCTYPE html>
+<html lang='vi'>
+<head>
+    <meta charset='UTF-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <title>KOI SHOW - Thông báo hoàn phí đăng ký</title>
+</head>
+<body style='margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4;'>
+    <table border='0' cellpadding='0' cellspacing='0' width='100%' style='background-color: #f4f4f4;'>
+        <tr>
+            <td align='center' style='padding: 20px 0;'>
+                <table border='0' cellpadding='0' cellspacing='0' width='600' style='background-color: #ffffff; border-radius: 10px; padding: 20px;'>
+                    <tr>
+                        <td align='center' style='font-family: Arial, sans-serif; color: #1a2a6c;'>
+                            <h1 style='font-size: 36px; margin: 20px 0;'>KOI SHOW</h1>
+                            <hr style='border: none; border-top: 3px solid #b21f1f; width: 60px; margin: 10px auto;'>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style='font-family: Arial, sans-serif; font-size: 16px; line-height: 1.8; padding: 20px; color: #333;'>
+                            <p>Thân gửi <span style='font-weight: bold; color: #b21f1f;'>{registration.Account.FullName}</span>,</p>
+                            
+                            <p>Chúng tôi xin thông báo rằng phí đăng ký tham gia sự kiện <span style='font-weight: bold; color: #b21f1f;'>{registration.KoiShow.Name}</span> của bạn đã được hoàn trả.</p>
 
+                            <p><strong>Thông tin hoàn phí:</strong></p>
+                            <ul style='margin: 10px 0; padding-left: 20px;'>
+                                <li><strong>Số tiền hoàn trả:</strong> {registration.RegistrationFee:N0} VNĐ</li>
+                                <li><strong>Ngày hoàn tiền:</strong> {VietNamTimeUtil.GetVietnamTime():dd/MM/yyyy}</li>
+                            </ul>
+
+                            <p><strong>Thông tin đăng ký:</strong></p>
+                            <ul style='margin: 10px 0; padding-left: 20px;'>
+                                <li><strong>Tên cá:</strong> {registration.KoiProfile.Name}</li>
+                                <li><strong>Giống:</strong> {registration.KoiProfile.Variety.Name}</li>
+                                <li><strong>Hạng mục:</strong> {registration.CompetitionCategory.Name}</li>
+                            </ul>
+
+                            <p style='font-weight: bold; color: #b21f1f;'>Lưu ý:</p>
+                            <ul style='margin: 10px 0; padding-left: 20px;'>
+                                <li>Vui lòng kiểm tra tài khoản ngân hàng của bạn</li>
+                                <li>Nếu có bất kỳ thắc mắc nào về việc hoàn phí, vui lòng liên hệ với chúng tôi</li>
+                            </ul>
+
+                            <p>Chúng tôi chân thành xin lỗi vì sự bất tiện này và hy vọng được đón tiếp bạn trong những sự kiện tiếp theo của Koi Show.</p>
+
+                            <p>Nếu bạn cần hỗ trợ thêm, vui lòng liên hệ với chúng tôi qua:</p>
+                            <ul style='margin: 10px 0; padding-left: 20px;'>
+                                <li><strong>Hotline:</strong> 1900 xxxx</li>
+                                <li><strong>Email:</strong> support@koishow.com</li>
+                            </ul>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td align='center' style='padding: 20px;'>
+                            <p style='font-size: 14px; color: #666; border-top: 1px solid #ddd; padding-top: 10px;'>Trân trọng,</p>
+                            <p style='font-family: Arial, sans-serif; font-size: 18px; font-weight: bold; color: #1a2a6c;'>Đội ngũ Koi Show</p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>";
+}
 
     }
 }

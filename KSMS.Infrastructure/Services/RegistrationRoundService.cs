@@ -21,15 +21,19 @@ using System.Linq;
 
 namespace KSMS.Infrastructure.Services
 {
-    public class RegistrationRoundService : BaseService<RegistrationRoundService>,IRegistrationRoundService
+    public class RegistrationRoundService : BaseService<RegistrationRoundService>, IRegistrationRoundService
     {
         private readonly ITankService _tankService;
+
         public RegistrationRoundService(IUnitOfWork<KoiShowManagementSystemContext> unitOfWork,
-            ILogger<RegistrationRoundService> logger, IHttpContextAccessor httpContextAccessor, ITankService tankService) : base(unitOfWork, logger, httpContextAccessor)
+            ILogger<RegistrationRoundService> logger, IHttpContextAccessor httpContextAccessor,
+            ITankService tankService) : base(unitOfWork, logger, httpContextAccessor)
         {
             _tankService = tankService;
         }
-        public async Task<RegistrationRoundResponse> CreateRegistrationRoundAsync(CreateRegistrationRoundRequest request)
+
+        public async Task<RegistrationRoundResponse> CreateRegistrationRoundAsync(
+            CreateRegistrationRoundRequest request)
         {
             var registrationRoundRepository = _unitOfWork.GetRepository<RegistrationRound>();
 
@@ -52,6 +56,7 @@ namespace KSMS.Infrastructure.Services
 
             return createdRegistrationRound.Adapt<RegistrationRoundResponse>();
         }
+
         public async Task UpdateFishesWithTanks(List<UpdateFishTankRequest> updateRequests)
         {
             using var transaction = await _unitOfWork.BeginTransactionAsync();
@@ -91,12 +96,14 @@ namespace KSMS.Infrastructure.Services
                     // 🔥 **Tính số cá mới sẽ vào hồ**
                     int newFishCount = updateRequests
                         .Where(r => r.TankId == tank.Tank.Id)
-                        .Count(r => existingRegistrations.FirstOrDefault(regis => regis.Id == r.RegistrationRoundId)?.TankId != tank.Tank.Id);
+                        .Count(r => existingRegistrations.FirstOrDefault(regis => regis.Id == r.RegistrationRoundId)
+                            ?.TankId != tank.Tank.Id);
 
                     // 🛠 **Nếu cá đã ở trong hồ, không tăng `FishCount`**
                     if (tank.FishCount + newFishCount > tank.Tank.Capacity)
                     {
-                        throw new Exception($"Tank {tank.Tank.Id} does not have enough space. Capacity: {tank.Tank.Capacity}, Assigned: {tank.FishCount}, New: {newFishCount}");
+                        throw new Exception(
+                            $"Tank {tank.Tank.Id} does not have enough space. Capacity: {tank.Tank.Capacity}, Assigned: {tank.FishCount}, New: {newFishCount}");
                     }
                 }
 
@@ -188,7 +195,8 @@ namespace KSMS.Infrastructure.Services
             }
         }
 
-        public async Task<Paginate<GetPageRegistrationRoundResponse>> GetPageRegistrationRound(Guid roundId, int page, int size)
+        public async Task<Paginate<GetPageRegistrationRoundResponse>> GetPageRegistrationRound(Guid roundId, int page,
+            int size)
         {
             var round = await _unitOfWork.GetRepository<Round>()
                 .SingleOrDefaultAsync(predicate: x => x.Id == roundId);
@@ -196,19 +204,22 @@ namespace KSMS.Infrastructure.Services
             {
                 throw new NotFoundException("Round not found");
             }
+
             var role = GetRoleFromJwt();
             // Tạo predicate cơ bản
             Expression<Func<RegistrationRound, bool>> predicate = x => x.RoundId == roundId;
-    
+
             // Nếu vai trò là REFEREE (trọng tài), chỉ lấy những RegistrationRound mà trọng tài đó chấm điểm
             if (role.ToUpper() == "REFEREE")
             {
                 predicate = predicate.AndAlso(x => x.ScoreDetails.Any(sd => sd.RefereeAccountId == GetIdFromJwt()));
             }
-            if (role.ToUpper() == "MEMBER")
+
+            if (role.ToUpper() == "MEMBER" || role.ToUpper() == "GUEST")
             {
                 predicate = predicate.AndAlso(x => x.Status == "public");
             }
+
             var registrationRounds = await _unitOfWork.GetRepository<RegistrationRound>().GetPagingListAsync(
                 predicate: predicate,
                 include: query => query.AsSplitQuery()
@@ -216,46 +227,50 @@ namespace KSMS.Infrastructure.Services
                     .Include(x => x.ScoreDetails)
                     .Include(x => x.Tank)
                     .Include(x => x.Registration)
-                        .ThenInclude(x => x.CompetitionCategory)
+                    .ThenInclude(x => x.CompetitionCategory)
                     .Include(x => x.Registration)
-                        .ThenInclude(x => x.KoiProfile)
-                            .ThenInclude(x => x.Variety)
+                    .ThenInclude(x => x.KoiProfile)
+                    .ThenInclude(x => x.Variety)
                     .Include(x => x.Registration)
-                        .ThenInclude(x => x.KoiShow)
+                    .ThenInclude(x => x.KoiShow)
                     .Include(x => x.Registration)
-                        .ThenInclude(x => x.KoiMedia)
+                    .ThenInclude(x => x.KoiMedia)
                     .Include(x => x.RoundResults),
-                orderBy: q => (role.ToUpper() == "MEMBER" || role.ToUpper() == "GUEST") 
-                              && !q.Any(x => x.RoundResults.Any(rr => rr.IsPublic == true)) 
+                orderBy: q => (role.ToUpper() == "MEMBER" || role.ToUpper() == "GUEST")
+                              && !q.Any(x => x.RoundResults.Any(rr => rr.IsPublic == true))
                     ? q.OrderBy(x => x.CreatedAt)
                     : q.OrderByDescending(x => x.RoundResults.Any() ? x.RoundResults.FirstOrDefault().TotalScore : 0),
-                page: page, 
+                page: page,
                 size: size);
             var response = registrationRounds.Adapt<Paginate<GetPageRegistrationRoundResponse>>();
             foreach (var registrationRound in response.Items)
             {
-                var registrationRoundEntity = registrationRounds.Items.FirstOrDefault(x => x.Id == registrationRound.Id);
+                var registrationRoundEntity =
+                    registrationRounds.Items.FirstOrDefault(x => x.Id == registrationRound.Id);
                 registrationRound.TankName = registrationRoundEntity?.Tank?.Name;
 
                 // Nếu vai trò là MEMBER hoặc GUEST và điểm chưa public, ẩn điểm
-                if (registrationRoundEntity != null && (role.ToUpper() == "MEMBER" || role.ToUpper() == "GUEST") && registrationRoundEntity.RoundResults.All(rr => rr.IsPublic != true))
+                if (registrationRoundEntity != null && (role.ToUpper() == "MEMBER" || role.ToUpper() == "GUEST") &&
+                    registrationRoundEntity.RoundResults.All(rr => rr.IsPublic != true))
                 {
                     registrationRound.RoundResults = [];
                 }
             }
+
             return response;
         }
-        
-        public async Task<CheckQrRegistrationRoundResponse> GetRegistrationRoundByIdAndRoundAsync(Guid registrationId, Guid roundId)
+
+        public async Task<CheckQrRegistrationRoundResponse> GetRegistrationRoundByIdAndRoundAsync(Guid registrationId,
+            Guid roundId)
         {
             var registrationRound = await _unitOfWork.GetRepository<RegistrationRound>().SingleOrDefaultAsync(
                 predicate: r => r.RegistrationId == registrationId && r.RoundId == roundId,
                 include: query => query
                     .Include(r => r.Registration)
-                        .ThenInclude(r => r.KoiProfile)
-                            .ThenInclude(r => r.Variety)
+                    .ThenInclude(r => r.KoiProfile)
+                    .ThenInclude(r => r.Variety)
                     .Include(r => r.Registration)
-                        .ThenInclude(r => r.KoiMedia));
+                    .ThenInclude(r => r.KoiMedia));
             if (registrationRound == null)
             {
                 throw new NotFoundException("Registration round not found.");
@@ -263,6 +278,59 @@ namespace KSMS.Infrastructure.Services
 
             return registrationRound.Adapt<CheckQrRegistrationRoundResponse>();
         }
-        
+
+        public async Task PublishRound(Guid roundId)
+        {
+            await using var transaction = await _unitOfWork.BeginTransactionAsync();
+            try
+            {
+                var round = await _unitOfWork.GetRepository<Round>().SingleOrDefaultAsync(
+                    predicate: r => r.Id == roundId,
+                    include: query => query
+                        .Include(r => r.CompetitionCategories)   
+                        .Include(r => r.RegistrationRounds)
+                        .ThenInclude(rr => rr.Registration)
+                        .Include(r => r.RegistrationRounds)
+                        .ThenInclude(rr => rr.RoundResults));
+                if (round == null)
+                {
+                    throw new NotFoundException("Round not found.");
+                }
+
+                var registrationRounds = round.RegistrationRounds.ToList();
+                if (!registrationRounds.Any())
+                {
+                    throw new BadRequestException("No registration rounds found for this round.");
+                }
+
+                if (round.CompetitionCategories.HasTank)
+                {
+                    var registrationRoundsWithoutTank = registrationRounds
+                        .Where(rr => !rr.TankId.HasValue).ToList();
+                    if (registrationRoundsWithoutTank.Any())
+                    {
+                        throw new BadRequestException(
+                            "All registrations must be assigned to a tank before the round can be published.");
+                    }
+                }
+                var totalParticipants = registrationRounds.Count;
+                foreach (var regisRound in registrationRounds)
+                {
+                    regisRound.Status = "public";
+                    _unitOfWork.GetRepository<RegistrationRound>().UpdateAsync(regisRound);
+                    var registration = regisRound.Registration;
+                    registration.Rank = totalParticipants;
+                    _unitOfWork.GetRepository<Registration>().UpdateAsync(registration);
+                }
+
+                await _unitOfWork.CommitAsync();
+                await transaction.CommitAsync();
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+        }
     }
 }
