@@ -10,6 +10,7 @@ using KSMS.Domain.Entities;
 using KSMS.Domain.Dtos.Responses.Round;
 using KSMS.Domain.Dtos.Responses.Registration;
 using KSMS.Domain.Enums;
+using Microsoft.AspNetCore.Authorization;
 
 namespace KSMS.API.Controllers
 {
@@ -33,6 +34,13 @@ namespace KSMS.API.Controllers
         {
             var registrationRounds = await _roundService.GetPageRound(competitionCategoryId, roundType, page, size);
             return Ok(ApiResponse<object>.Success(registrationRounds, "Get successfully"));
+        }
+        [HttpGet("get-round-type-for-referee/{competitionCategoryId:guid}")]
+        [Authorize(Roles = "Referee")]
+        public async Task<ActionResult<ApiResponse<object>>> GetRoundTypeForReferee(Guid competitionCategoryId)
+        {
+            var roundTypes = await _roundService.GetRoundTypeForReferee(competitionCategoryId);
+            return Ok(ApiResponse<object>.Success(roundTypes, "Get successfully"));
         }
     }
 }

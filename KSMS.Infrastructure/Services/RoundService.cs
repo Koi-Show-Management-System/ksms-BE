@@ -75,6 +75,18 @@ namespace KSMS.Infrastructure.Services
             return rounds.Adapt<Paginate<GetPageRoundResponse>>();
         }
 
+        public async Task<List<string>> GetRoundTypeForReferee(Guid competitionCategoryId)
+        {
+            var refereeAssignment = await _unitOfWork.GetRepository<RefereeAssignment>()
+                .GetListAsync(predicate:
+                    r => r.RefereeAccountId == GetIdFromJwt() && r.CompetitionCategoryId == competitionCategoryId);
+            if (!refereeAssignment.Any())
+            {
+                return [];
+            }
+            var roundTypes = refereeAssignment.Select(r => r.RoundType).Distinct().ToList();
+            return roundTypes;
+        }
 
         
     }

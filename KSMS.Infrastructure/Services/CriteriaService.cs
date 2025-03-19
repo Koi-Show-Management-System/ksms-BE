@@ -11,6 +11,8 @@ using KSMS.Infrastructure.Utils;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using KSMS.Domain.Dtos.Responses.CriteriaCompetitionCategory;
+using KSMS.Domain.Enums;
 using KSMS.Domain.Pagination;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
@@ -74,6 +76,17 @@ namespace KSMS.Infrastructure.Services
         {
             return (await _unitOfWork.GetRepository<Criterion>().GetPagingListAsync(page: page, size: size))
                 .Adapt<Paginate<GetAllCriteriaResponse>>();
+        }
+
+        public async Task<List<GetCriteriaCompetitionCategoryResponse>> GetCriteriaCompetitionCategory(Guid competitionCategoryId, RoundEnum roundType)
+        {
+            var criteriaCompetition = await _unitOfWork.GetRepository<CriteriaCompetitionCategory>()
+                .GetListAsync(
+                    predicate: x => x.CompetitionCategoryId == competitionCategoryId &&
+                                    x.RoundType == roundType.ToString(),
+                    include: query =>
+                        query.Include(x => x.Criteria));
+            return criteriaCompetition.Adapt<List<GetCriteriaCompetitionCategoryResponse>>();
         }
 
 
