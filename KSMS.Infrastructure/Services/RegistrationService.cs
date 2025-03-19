@@ -80,7 +80,8 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
                     .Include(r => r.KoiProfile)
                     .ThenInclude(k => k.Variety)
                     .Include(r => r.CompetitionCategory)
-                    .Include(r => r.KoiMedia),
+                    .Include(r => r.KoiMedia)
+                    .Include(r => r.RegistrationPayment),
                 page: page,
                 size: size
             );
@@ -300,7 +301,7 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
             await _unitOfWork.CommitAsync();
             await _notificationService.SendNotification(registration.AccountId,
                 "Đơn đăng kí của bạn đã bị từ chối",
-                " Đơn đăng kí tham gia triễn lãm " + registration.KoiShow.Name + "của bạn đã bị từ chối. Vui lòng xem email để biết thêm chi tiết",
+                " Đơn đăng kí tham gia triễn lãm " + show.Name + "của bạn đã bị từ chối. Vui lòng xem email để biết thêm chi tiết",
                 NotificationType.Registration);
             _backgroundJobClient.Enqueue(() => _emailService.SendRegistrationRejectionEmail(registrationId));
         }
@@ -321,7 +322,7 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
             await _unitOfWork.CommitAsync();
             await _notificationService.SendNotification(registration.AccountId,
                 "Đăng kí của bạn đã được chấp nhận",
-                " Đơn đăng kí tham gia triễn lãm " + registration.KoiShow.Name + "của bạn đã được chấp nhận",
+                " Đơn đăng kí tham gia triễn lãm " + show.Name + "của bạn đã được chấp nhận",
                 NotificationType.Registration);
             _backgroundJobClient.Enqueue(() => _emailService.SendRegistrationConfirmationEmail(registrationId));
         }
@@ -337,7 +338,7 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
             await _unitOfWork.CommitAsync();
             await _notificationService.SendNotification(registration.AccountId,
                 "Đăng kí của bạn đã được check in",
-                " Đơn đăng kí tham gia triễn lãm " + registration.KoiShow.Name + "của bạn đã được check in thành công",
+                " Đơn đăng kí tham gia triễn lãm " + show.Name + "của bạn đã được check in thành công",
                 NotificationType.Registration);
         }
 
