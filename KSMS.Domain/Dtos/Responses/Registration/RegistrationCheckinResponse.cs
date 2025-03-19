@@ -10,6 +10,7 @@ namespace KSMS.Domain.Dtos.Responses.Registration
 {
     public class RegistrationCheckinResponse
     {
+        public Guid Id { get; set; }
         public string? RegistrationNumber { get; set; }
 
         public string RegisterName { get; set; } = null!;
@@ -21,6 +22,18 @@ namespace KSMS.Domain.Dtos.Responses.Registration
         public string? Status { get; set; }
 
         public string? Notes { get; set; }
+        
+        public DateTime? ApprovedAt { get; set; }
+
+        public DateTime? CheckInExpiredDate { get; set; }
+
+        public bool? IsCheckedIn { get; set; }
+
+        public DateTime? CheckInTime { get; set; }
+
+        public string? CheckInLocation { get; set; }
+
+        public Guid? CheckedInBy { get; set; }
         
         public CompetitionCategoryCheckinResponse? CompetitionCategory { get; set; }
 
