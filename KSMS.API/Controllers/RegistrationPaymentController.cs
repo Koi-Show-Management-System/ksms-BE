@@ -17,7 +17,7 @@ namespace KSMS.API.Controllers
         {
             _registrationPaymentService = registrationPaymentService;
         }
-        [HttpGet("/api/registrations/checkin-info/{id:guid}")]
+        [HttpGet("checkin-info/{id:guid}")]
         public async Task<ActionResult<ApiResponse<RegistrationPaymentResponse>>> CheckinRegistration(Guid id)
         {
             var payment = await _registrationPaymentService.GetRegistrationPaymentByIdAsync(id);
