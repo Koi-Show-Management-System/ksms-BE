@@ -23,7 +23,7 @@ public class ShowRuleService : BaseService<ShowRuleService>, IShowRuleService
         var show = await _unitOfWork.GetRepository<KoiShow>().SingleOrDefaultAsync(predicate: x => x.Id == koiShowId);
         if (show == null)
         {
-            throw new NotFoundException("Show not found");
+            throw new NotFoundException("Không tìm thấy cuộc thi");
         }
         var rule = request.Adapt<ShowRule>();
         rule.KoiShowId = koiShowId;
@@ -36,7 +36,7 @@ public class ShowRuleService : BaseService<ShowRuleService>, IShowRuleService
         var rule = await _unitOfWork.GetRepository<ShowRule>().SingleOrDefaultAsync(predicate: x => x.Id == id);
         if (rule == null)
         {
-            throw new NotFoundException("Show rule not found");
+            throw new NotFoundException("Không tìm thấy quy định cuộc thi");
         }
         request.Adapt(rule); 
         _unitOfWork.GetRepository<ShowRule>().UpdateAsync(rule);
@@ -55,7 +55,7 @@ public class ShowRuleService : BaseService<ShowRuleService>, IShowRuleService
         var rule = await _unitOfWork.GetRepository<ShowRule>().SingleOrDefaultAsync(predicate: x => x.Id == id);
         if (rule == null)
         {
-            throw new NotFoundException("Show rule not found");
+            throw new NotFoundException("Không tìm thấy quy định cuộc thi");
         } 
         _unitOfWork.GetRepository<ShowRule>().DeleteAsync(rule);
         await _unitOfWork.CommitAsync();

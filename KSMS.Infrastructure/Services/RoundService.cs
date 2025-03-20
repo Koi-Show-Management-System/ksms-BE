@@ -26,7 +26,6 @@ namespace KSMS.Infrastructure.Services
         {
             var roundRepository = _unitOfWork.GetRepository<Round>();
 
-           
             var roundToActivate = await roundRepository.SingleOrDefaultAsync(
                 predicate: r => r.Id == roundId,
                 include: query => query.Include(r => r.CompetitionCategories)
@@ -34,38 +33,34 @@ namespace KSMS.Infrastructure.Services
 
             if (roundToActivate == null)
             {
-                throw new NotFoundException("Round not found.");
+                throw new NotFoundException("Không tìm thấy vòng thi.");
             }
 
             var categoryId = roundToActivate.CompetitionCategoriesId;
 
-           
             var activeRound = await roundRepository.SingleOrDefaultAsync(
                 predicate: r => r.CompetitionCategoriesId == categoryId && r.Status == "Active"
             );
 
-            
             if (activeRound != null)
             {
                 activeRound.Status = "Off";
                 roundRepository.UpdateAsync(activeRound);
             }
 
-            
             roundToActivate.Status = "Active";
             roundRepository.UpdateAsync(roundToActivate);
 
             await _unitOfWork.CommitAsync();
-
-            
         }
 
         public async Task<Paginate<GetPageRoundResponse>> GetPageRound(Guid competitionCategoryId, RoundEnum roundType, int page, int size)
         {
             var competitionCategory = await _unitOfWork.GetRepository<CompetitionCategory>().SingleOrDefaultAsync(
                 predicate: x => x.Id == competitionCategoryId);
-            if (competitionCategory == null){
-                throw new NotFoundException("Competition Category not found");
+            if (competitionCategory == null)
+            {
+                throw new NotFoundException("Không tìm thấy hạng mục thi đấu");
             }
             var rounds = await _unitOfWork.GetRepository<Round>().GetPagingListAsync(
                 predicate: x => x.CompetitionCategoriesId == competitionCategoryId && x.RoundType == roundType.ToString(),
@@ -87,7 +82,5 @@ namespace KSMS.Infrastructure.Services
             var roundTypes = refereeAssignment.Select(r => r.RoundType).Distinct().ToList();
             return roundTypes;
         }
-
-        
     }
 }

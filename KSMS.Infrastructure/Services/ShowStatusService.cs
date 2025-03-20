@@ -21,7 +21,7 @@ public class ShowStatusService : BaseService<ShowStatusService>, IShowStatusServ
         var show = await _unitOfWork.GetRepository<KoiShow>().SingleOrDefaultAsync(predicate: x => x.Id == koiShowId);
         if (show == null)
         {
-            throw new NotFoundException("Show not found");
+            throw new NotFoundException("Không tìm thấy cuộc thi");
         }
         var status = request.Adapt<ShowStatus>();
         status.KoiShowId = koiShowId;
@@ -34,7 +34,7 @@ public class ShowStatusService : BaseService<ShowStatusService>, IShowStatusServ
         var status = await _unitOfWork.GetRepository<ShowStatus>().SingleOrDefaultAsync(predicate: x => x.Id == id);
         if (status == null)
         {
-            throw new NotFoundException("Show status not found");
+            throw new NotFoundException("Không tìm thấy trạng thái cuộc thi");
         }
         request.Adapt(status);
         _unitOfWork.GetRepository<ShowStatus>().UpdateAsync(status);
@@ -46,7 +46,7 @@ public class ShowStatusService : BaseService<ShowStatusService>, IShowStatusServ
         var status = await _unitOfWork.GetRepository<ShowStatus>().SingleOrDefaultAsync(predicate: x => x.Id == id);
         if (status == null)
         {
-            throw new NotFoundException("Show status not found");
+            throw new NotFoundException("Không tìm thấy trạng thái cuộc thi");
         }
         _unitOfWork.GetRepository<ShowStatus>().DeleteAsync(status);
         await _unitOfWork.CommitAsync();

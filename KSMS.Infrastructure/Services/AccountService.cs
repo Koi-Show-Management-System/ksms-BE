@@ -55,16 +55,14 @@ public class AccountService : BaseService<AccountService>, IAccountService
 
         if (user == null)
         {
-            throw new NotFoundException("User not found");
+            throw new NotFoundException("Không tìm thấy người dùng");
         }
 
         return user.Adapt<AccountResponse>();
-
     }
 
     public async Task<AccountResponse> CreateUserAsync(CreateAccountRequest createAccountRequest)
     {
-
         var userRepository = _unitOfWork.GetRepository<Account>();
 
         var emailExists = await userRepository.SingleOrDefaultAsync(
@@ -72,14 +70,14 @@ public class AccountService : BaseService<AccountService>, IAccountService
         );
         if (emailExists != null)
         {
-            throw new BadRequestException($"Email '{createAccountRequest.Email}' is already in use");
+            throw new BadRequestException($"Email '{createAccountRequest.Email}' đã được sử dụng");
         }
         var usernameExists = await userRepository.SingleOrDefaultAsync(
             predicate: u => u.Username == createAccountRequest.Username
         );
         if (usernameExists != null)
         {
-            throw new BadRequestException($"Username '{createAccountRequest.Username}' is already in use");
+            throw new BadRequestException($"Tên đăng nhập '{createAccountRequest.Username}' đã được sử dụng");
         }
 
         var user = createAccountRequest.Adapt<Account>();
@@ -94,21 +92,16 @@ public class AccountService : BaseService<AccountService>, IAccountService
         return createdUser.Adapt<AccountResponse>();
     }
 
-
-
-
     public async Task<AccountResponse> UpdateStatus(Guid id, AccountStatus status)
     {
         var userRepository = _unitOfWork.GetRepository<Account>();
-
 
         var user = await userRepository.SingleOrDefaultAsync(
             predicate: u => u.Id == id
         );
 
         if (user == null)
-            throw new NotFoundException("User not found");
-
+            throw new NotFoundException("Không tìm thấy người dùng");
 
         user.Status = status switch
         {
@@ -121,8 +114,6 @@ public class AccountService : BaseService<AccountService>, IAccountService
         await _unitOfWork.CommitAsync();
         return user.Adapt<AccountResponse>();
     }
-
-
 
     public async Task UpdateAccount(Guid id, UpdateAccountRequest updateAccountRequest)
     {
@@ -141,7 +132,4 @@ public class AccountService : BaseService<AccountService>, IAccountService
         _unitOfWork.GetRepository<Account>().UpdateAsync(account);
         await _unitOfWork.CommitAsync();
     }
-
-
-
 }

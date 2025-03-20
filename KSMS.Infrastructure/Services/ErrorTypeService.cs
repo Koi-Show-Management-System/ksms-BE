@@ -22,9 +22,8 @@ public class ErrorTypeService : BaseService<ErrorType>, IErrorTypeService
             .SingleOrDefaultAsync(predicate: c => c.Id == request.CriteriaId);
         if (criteria is null)
         {
-            throw new NotFoundException("Criteria is not existed");
+            throw new NotFoundException("Tiêu chí có tên " + criteria.Name + " không tồn tại");
         }
-
         var errorType = request.Adapt<Criterion>();
         await _unitOfWork.GetRepository<Criterion>().InsertAsync(errorType);
         await _unitOfWork.CommitAsync();
