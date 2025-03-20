@@ -84,12 +84,12 @@ namespace KSMS.Infrastructure.Services
         //        throw new BadRequestException("This referee has already scored this round.");
         //    }
 
-        //    //  Tạo `ScoreDetail`
+        //    //  Tạo ScoreDetail
         //    var score = request.Adapt<ScoreDetail>();
         //    score.Id = Guid.NewGuid();
         //    await scoreRepository.InsertAsync(score);
 
-        //    //  Thêm `ScoreDetailError` nếu có lỗi
+        //    //  Thêm ScoreDetailError nếu có lỗi
         //    if (request.CreateScoreDetailErrors != null && request.CreateScoreDetailErrors.Any())
         //    {
         //        foreach (var error in request.CreateScoreDetailErrors)
@@ -138,13 +138,13 @@ namespace KSMS.Infrastructure.Services
 
         //    }
 
-        //    //  Xác định `Pass` hoặc `Fail`
+        //    //  Xác định Pass hoặc Fail
         //    decimal passThreshold = 50;
         //    //decimal passThreshold = (decimal)registrationRound.Round.MinScoreToAdvance;
         //    string finalStatus = finalScore >= passThreshold ? "Pass" : "Fail"; 
 
 
-        //    // Cập nhật `RoundResult`
+        //    // Cập nhật RoundResult
         //    var existingRoundResult = await roundResultRepository.SingleOrDefaultAsync(
         //        predicate: r => r.RegistrationRoundsId == request.RegistrationRoundId);
 
@@ -195,15 +195,15 @@ namespace KSMS.Infrastructure.Services
 
                 if (registrationRound == null)
                 {
-                    throw new NotFoundException($"Registration round with ID '{request.RegistrationRoundId}' not found.");
+                    throw new NotFoundException($"Không tìm thấy vòng đăng ký có ID '{request.RegistrationRoundId}'");
                 } 
                 var competitionCategoryId = registrationRound.Registration.CompetitionCategoryId;
                 var roundType = registrationRound.Round.RoundType;
 
-                //  Kiểm tra nếu hạng mục thi đấu **không phải** là "Preliminary" thì từ chối chấm điểm
+                //  Kiểm tra nếu hạng mục thi đấu *không phải* là "Preliminary" thì từ chối chấm điểm
                 if (roundType == "Preliminary") // 🔥 Kiểm tra loại vòng đấu
                 {
-                    throw new BadRequestException($"⛔ Scoring is not allowed for 'Preliminary' rounds.");
+                    throw new BadRequestException($"Không được phép chấm điểm cho vòng loại");
                 }
                 // 2️ Kiểm tra trọng tài có quyền chấm điểm vòng này
                 var referee = await refereeAssignmentRepository.SingleOrDefaultAsync(
@@ -212,7 +212,7 @@ namespace KSMS.Infrastructure.Services
 
                 if (referee == null)
                 {
-                    throw new ForbiddenMethodException("Forbidden: Referee is not assigned to this category.");
+                    throw new ForbiddenMethodException("Trọng tài không được phân công cho hạng mục này");
                 }
 
                 // 3️ Kiểm tra nếu trọng tài này đã chấm điểm vòng này
@@ -222,15 +222,15 @@ namespace KSMS.Infrastructure.Services
 
                 if (existingScore != null)
                 {
-                    throw new BadRequestException("This referee has already scored this round.");
+                    throw new BadRequestException("Trọng tài này đã chấm điểm cho vòng thi này");
                 }
 
-                // 4️⃣ Tạo `ScoreDetail`
+                // 4️⃣ Tạo ScoreDetail
                 var score = request.Adapt<ScoreDetail>();
                 score.Id = Guid.NewGuid();
                 await scoreRepository.InsertAsync(score);
               
-                // 🔥 5️⃣ Thêm `ScoreDetailError` nếu có lỗi
+                // 🔥 5️⃣ Thêm ScoreDetailError nếu có lỗi
                 if (request.CreateScoreDetailErrors?.Any() == true)
                 {
                     var scoreDetailErrors = request.CreateScoreDetailErrors.Select(error => new ScoreDetailError
@@ -273,16 +273,16 @@ namespace KSMS.Infrastructure.Services
 
             if (registrationRound == null)
             {
-                throw new NotFoundException($"❌ Registration round with ID '{request.RegistrationRoundId}' not found.");
+                throw new NotFoundException($"Không tìm thấy vòng đăng ký có ID '{request.RegistrationRoundId}'");
             }
 
             var competitionCategoryId = registrationRound.Registration.CompetitionCategoryId;
             var roundType = registrationRound.Round.RoundType;
 
-            // 2️⃣ Kiểm tra nếu hạng mục thi đấu **không phải** là "Preliminary" thì từ chối chấm điểm
+            // 2️⃣ Kiểm tra nếu hạng mục thi đấu *không phải* là "Preliminary" thì từ chối chấm điểm
             if (roundType != "Preliminary") // 🔥 Kiểm tra loại vòng đấu
             {
-                throw new BadRequestException($"⛔ Scoring is only allowed for 'Preliminary' rounds. Current round type: '{roundType}'");
+                throw new BadRequestException($"Chỉ được phép chấm điểm cho vòng loại. Vòng hiện tại: '{roundType}'");
             }
             // 2️⃣ Kiểm tra trọng tài có quyền chấm điểm vòng này
             var referee = await refereeAssignmentRepository.SingleOrDefaultAsync(
@@ -292,7 +292,7 @@ namespace KSMS.Infrastructure.Services
 
             if (referee == null)
             {
-                throw new ForbiddenMethodException($"⛔ Referee '{request.RefereeAccountId}' is NOT assigned to category '{competitionCategoryId}' in this round.");
+                throw new ForbiddenMethodException($"Trọng tài '{request.RefereeAccountId}' không được phân công cho hạng mục '{competitionCategoryId}' trong vòng này");
             }
 
             // 3️⃣ Kiểm tra trọng tài đã chấm điểm chưa
@@ -302,10 +302,10 @@ namespace KSMS.Infrastructure.Services
 
             if (existingScore != null)
             {
-                throw new BadRequestException($"⚠ Referee '{request.RefereeAccountId}' has ALREADY scored this round.");
+                throw new BadRequestException($"Trọng tài '{request.RefereeAccountId}' đã chấm điểm cho vòng này");
             }
 
-            // 4️⃣ Tạo mới `ScoreDetail` cho trọng tài hiện tại
+            // 4️⃣ Tạo mới ScoreDetail cho trọng tài hiện tại
             var newScore = new ScoreDetail
             {
                 RefereeAccountId = request.RefereeAccountId,
@@ -323,7 +323,7 @@ namespace KSMS.Infrastructure.Services
                 predicate: s => s.RegistrationRoundId == request.RegistrationRoundId);
 
             int totalVotes = allVotes.Count;
-            int totalPass = allVotes.Count(s => s.TotalPointMinus == 0); // Đếm số trọng tài chọn `Pass`
+            int totalPass = allVotes.Count(s => s.TotalPointMinus == 0); // Đếm số trọng tài chọn Pass
 
             // 6️⃣ Kiểm tra số lượng trọng tài đã chấm điểm
             int totalReferees = await refereeAssignmentRepository.CountAsync(
@@ -333,12 +333,12 @@ namespace KSMS.Infrastructure.Services
             //  Kiểm tra nếu không có trọng tài nào (tránh lỗi chia cho 0)
             if (totalReferees == 0)
             {
-                throw new Exception($"❌ No referees assigned for category {competitionCategoryId} in this round.");
+                throw new Exception($"Không có trọng tài nào được phân công cho hạng mục {competitionCategoryId} trong vòng này");
             }
 
             bool isLastJudge = totalVotes >= totalReferees; // Nếu số phiếu chấm bằng số trọng tài → Trọng tài cuối cùng
 
-            // 7️⃣ Chỉ tạo `RoundResult` nếu là trọng tài cuối cùng
+            // 7️⃣ Chỉ tạo RoundResult nếu là trọng tài cuối cùng
             if (isLastJudge)
             {
                 // 8️⃣ Tính tỷ lệ pass
@@ -393,7 +393,7 @@ namespace KSMS.Infrastructure.Services
         //            throw new Exception("Another process is already finalizing this round. Please wait.");
         //        }
 
-        //        // 3️⃣ Tạo mới `ScoreDetail` cho trọng tài hiện tại
+        //        // 3️⃣ Tạo mới ScoreDetail cho trọng tài hiện tại
         //        var newScore = new ScoreDetail
         //        {
         //            RefereeAccountId = request.RefereeAccountId,
@@ -411,7 +411,7 @@ namespace KSMS.Infrastructure.Services
         //            predicate: s => s.RegistrationRoundId == request.RegistrationRoundId);
 
         //        int totalVotes = allVotes.Count;
-        //        int totalPass = allVotes.Count(s => s.TotalPointMinus == 0); // Đếm số trọng tài chọn `Pass`
+        //        int totalPass = allVotes.Count(s => s.TotalPointMinus == 0); // Đếm số trọng tài chọn Pass
 
         //        // 5️⃣ Kiểm tra số lượng trọng tài đã chấm điểm
         //        int totalReferees = await refereeAssignmentRepository.CountAsync(
@@ -425,15 +425,15 @@ namespace KSMS.Infrastructure.Services
 
         //        bool isLastJudge = totalVotes >= totalReferees; // Nếu số phiếu chấm bằng số trọng tài → Trọng tài cuối cùng
 
-        //        // 🔥 6️⃣ Chỉ xử lý `RoundResult` nếu là trọng tài cuối cùng
+        //        // 🔥 6️⃣ Chỉ xử lý RoundResult nếu là trọng tài cuối cùng
         //        if (isLastJudge)
         //        {
-        //            // 7️⃣ Lấy danh sách `RoundResult` của vòng hiện tại
+        //            // 7️⃣ Lấy danh sách RoundResult của vòng hiện tại
         //            var roundResults = await roundResultRepository.GetListAsync(
         //                predicate: r => r.RegistrationRounds.RoundId == registrationRound.RoundId,
         //                orderBy: query => query.OrderByDescending(r => r.TotalScore));
 
-        //            // 8️⃣ Lấy `NumberOfRegistrationToAdvance` từ vòng hiện tại
+        //            // 8️⃣ Lấy NumberOfRegistrationToAdvance từ vòng hiện tại
         //            var roundInfo = await roundRepository.SingleOrDefaultAsync(
         //                predicate: r => r.Id == registrationRound.RoundId);
 
@@ -444,7 +444,7 @@ namespace KSMS.Infrastructure.Services
 
         //            int numberOfRegistrationsToAdvance = roundInfo.NumberOfRegistrationToAdvance ?? 0;
 
-        //            // 9️⃣ Cập nhật `Pass/Fail` dựa trên số lượng cá cao điểm nhất
+        //            // 9️⃣ Cập nhật Pass/Fail dựa trên số lượng cá cao điểm nhất
         //            var roundResultsList = roundResults.ToList();
 
         //            for (int i = 0; i < roundResultsList.Count; i++)
@@ -456,7 +456,7 @@ namespace KSMS.Infrastructure.Services
         //            await _unitOfWork.CommitAsync();
         //        }
 
-        //        // 🔥 10️⃣ Giải phóng `LOCK`
+        //        // 🔥 10️⃣ Giải phóng LOCK
         //        await _cacheService.UnlockAsync($"lock_round_{registrationRound.RoundId}");
 
         //        // 🔥 11️⃣ Gửi cập nhật điểm số qua SignalR

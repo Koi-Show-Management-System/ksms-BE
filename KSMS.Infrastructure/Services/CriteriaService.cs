@@ -34,7 +34,7 @@ namespace KSMS.Infrastructure.Services
             var existingCriterion = await criterionRepository.SingleOrDefaultAsync(c => c.Name == createCriteriaRequest.Name, null, null);
             if (existingCriterion != null)
             {
-                throw new BadRequestException($"Criterion with name '{createCriteriaRequest.Name}' already exists.");
+                throw new BadRequestException($"Tiêu chí có tên '{createCriteriaRequest.Name}' đã tồn tại.");
             }
             await criterionRepository.InsertAsync(createCriteriaRequest.Adapt<Criterion>());
             await _unitOfWork.CommitAsync();
@@ -51,7 +51,7 @@ namespace KSMS.Infrastructure.Services
 
             if (criterion == null)
             {
-                throw new NotFoundException("Criterion not found");
+                throw new NotFoundException("Không tìm thấy tiêu chí");
             }
 
             return criterion.Adapt<CriteriaResponse>();
@@ -64,7 +64,7 @@ namespace KSMS.Infrastructure.Services
             var criterion = await criterionRepository.SingleOrDefaultAsync(c => c.Id == id, null, null);
             if (criterion == null)
             {
-                throw new NotFoundException("Criterion not found");
+                throw new NotFoundException("Không tìm thấy tiêu chí");
             }
             updateCriteriaRequest.Adapt(criterion);
 
@@ -97,7 +97,7 @@ namespace KSMS.Infrastructure.Services
 
             if (criterion == null)
             {
-                throw new NotFoundException("Criterion not found");
+                throw new NotFoundException("Không tìm thấy tiêu chí");
             }
             criterionRepository.DeleteAsync(criterion);
             await _unitOfWork.CommitAsync();

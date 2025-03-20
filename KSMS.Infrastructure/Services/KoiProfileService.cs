@@ -37,13 +37,13 @@ public class KoiProfileService : BaseService<KoiProfileService>, IKoiProfileServ
             .SingleOrDefaultAsync(predicate: v => v.Id == createKoiProfileRequest.VarietyId);
         if (variety is null)
         {
-            throw new NotFoundException("Variety is not found");
+            throw new NotFoundException("Không tìm thấy giống cá");
         }
         var koi = await _unitOfWork.GetRepository<KoiProfile>().SingleOrDefaultAsync(predicate: k =>
             k.Name.ToLower() == createKoiProfileRequest.Name.ToLower() && k.OwnerId == accountId);
         if (koi is not null)
         {
-            throw new BadRequestException("Koi is already add to your list");
+            throw new BadRequestException("Cá Koi này đã có trong danh sách của bạn");
         }
 
         var koiProfile = createKoiProfileRequest.Adapt<KoiProfile>();
@@ -84,12 +84,12 @@ public class KoiProfileService : BaseService<KoiProfileService>, IKoiProfileServ
             include: query => query.Include(r => r.KoiMedia));
         if (koi is null)
         {
-            throw new NotFoundException("Koi is not existed");
+            throw new NotFoundException("Không tìm thấy cá Koi");
         }
 
         if (koi.OwnerId != accountId)
         {
-            throw new ForbiddenMethodException("This koi is not yours!!!!!");
+            throw new ForbiddenMethodException("Đây không phải cá Koi của bạn!");
         }
         
         if (updateKoiProfileRequest.Name is not null)
@@ -99,7 +99,7 @@ public class KoiProfileService : BaseService<KoiProfileService>, IKoiProfileServ
 
             if (existingKoi is not null && existingKoi.Id != koi.Id)
             {
-                throw new BadRequestException("Name is already existed. Please choose another name");
+                throw new BadRequestException("Tên này đã tồn tại. Vui lòng chọn tên khác");
             }
         }
         if (updateKoiProfileRequest.VarietyId is not null)
@@ -108,7 +108,7 @@ public class KoiProfileService : BaseService<KoiProfileService>, IKoiProfileServ
                 .SingleOrDefaultAsync(predicate: v => v.Id == updateKoiProfileRequest.VarietyId);
             if (variety is null)
             {
-                throw new NotFoundException("Variety is not found");
+                throw new NotFoundException("Không tìm thấy giống cá");
             }
         }
         updateKoiProfileRequest.Adapt(koi);
@@ -147,7 +147,7 @@ public class KoiProfileService : BaseService<KoiProfileService>, IKoiProfileServ
                         .ThenInclude(s => s.Awards));
         if (koiProfile is null)
         {
-            throw new NotFoundException("Koi is not found");
+            throw new NotFoundException("Không tìm thấy cá Koi");
         }
         
         var response = koiProfile.Adapt<GetKoiDetailResponse>();
@@ -213,9 +213,9 @@ public class KoiProfileService : BaseService<KoiProfileService>, IKoiProfileServ
             return registration.Rank.Value switch
             {
                 1 => "Giải nhất",
-                2 => "Giải  nhì",
+                2 => "Giải nhì",
                 3 => "Giải ba",
-                _ => $"Top {registration.Rank.Value}th"
+                _ => $"Top {registration.Rank.Value}"
             };
         }
 

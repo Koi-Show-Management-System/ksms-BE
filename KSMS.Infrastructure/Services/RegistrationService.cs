@@ -104,17 +104,17 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
             predicate: x => x.Id == createRegistrationRequest.CompetitionCategoryId);
         if (koiShow is null)
         {
-            throw new NotFoundException("Show is not existed");
+            throw new NotFoundException("Không tìm thấy cuộc thi");
         }
 
         if (koiProfile is null)
         {
-            throw new NotFoundException("Koi is not existed");
+            throw new NotFoundException("Không tìm thấy cá Koi");
         }
 
         if (category is null)
         {
-            throw new NotFoundException("Category is not existed");
+            throw new NotFoundException("Không tìm thấy hạng mục");
         }
 
         var existingRegistration = await _unitOfWork.GetRepository<Registration>()
@@ -126,13 +126,13 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
                 include: query => query.Include(r => r.CompetitionCategory));
         if (existingRegistration != null)
         {
-            throw new BadRequestException("This koi has already been registered in category " + existingRegistration.CompetitionCategory.Name + " of this show");
+            throw new BadRequestException($"Cá Koi này đã được đăng ký trong hạng mục {existingRegistration.CompetitionCategory.Name} của cuộc thi này");
         }
         var registrations = await _unitOfWork.GetRepository<Registration>()
             .GetListAsync(predicate: x => x.KoiShowId == koiShow.Id && x.Status == RegistrationStatus.Confirmed.ToString().ToLower());
         if (registrations.Count > koiShow.MaxParticipants)
         {
-            throw new NotFoundException("The number of participants in this show exceeds the limit");
+            throw new NotFoundException("Số lượng người tham gia cuộc thi đã vượt quá giới hạn");
         }
         var registrationCount = await _unitOfWork.GetRepository<Registration>()
             .GetListAsync(predicate: x =>
@@ -140,7 +140,7 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
                 x.Status == RegistrationStatus.Confirmed.ToString().ToLower());
 
         if (registrationCount.Count >= category.MaxEntries)
-            throw new BadRequestException("The selected category has reached maximum entries");
+            throw new BadRequestException("Hạng mục đã đạt số lượng đăng ký tối đa");
 
         var registration = createRegistrationRequest.Adapt<Registration>();
         registration.KoiAge = koiProfile.Age;
@@ -175,7 +175,7 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
         .SingleOrDefaultAsync(predicate: s => s.Id == koiShowId);
         if (show == null)
         {
-            throw new NotFoundException("Show is not found");
+            throw new NotFoundException("Không tìm thấy cuộc thi");
         }
         var variety = await _unitOfWork.GetRepository<Variety>()
             .SingleOrDefaultAsync(
@@ -184,14 +184,14 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
                     .ThenInclude(cv => cv.CompetitionCategory));
 
         if (variety == null)
-            throw new NotFoundException("Variety not found");
+            throw new NotFoundException("Không tìm thấy giống cá");
         var categoriesForVariety = variety.CategoryVarieties
             .Select(cv => cv.CompetitionCategory)
             .Where(cc => cc.KoiShowId == koiShowId)
             .ToList();
             
         if (!categoriesForVariety.Any())
-            throw new BadRequestException("No suitable category was found for the variety ofD this Koi fish");
+            throw new BadRequestException("Không tìm thấy hạng mục phù hợp cho giống cá này");
         var eligibleCategories = categoriesForVariety
             .Where(cc => size >= cc.SizeMin && size <= cc.SizeMax)
             .ToList();
@@ -199,12 +199,12 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
         if (!eligibleCategories.Any())
         {
             if (categoriesForVariety.Any())
-                throw new BadRequestException("No suitable category was found for the size of this Koi fish");
-            throw new BadRequestException("No suitable category was found for the variety and size of this Koi fish");
+                throw new BadRequestException("Không tìm thấy hạng mục phù hợp với kích thước của cá");
+            throw new BadRequestException("Không tìm thấy hạng mục phù hợp với giống và kích thước của cá");
         }
         var bestCategory = eligibleCategories.MinBy(c => c.SizeMax - c.SizeMin);
         if (bestCategory == null)
-            throw new BadRequestException("No suitable category was found for this Koi fish");
+            throw new BadRequestException("Không tìm thấy hạng mục phù hợp cho cá này");
         
         return bestCategory.Adapt<GetPageCompetitionCategoryResponse>();
     }
@@ -366,16 +366,16 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
                     .Include(r => r.CompetitionCategory));
         if (registration is null)
         {
-            throw new NotFoundException("Registration is not found");
+            throw new NotFoundException("Không tìm thấy đăng ký");
         }
 
         if (registration.AccountId != accountId)
         {
-            throw new ForbiddenMethodException("This registration is not yours!!!!");
+            throw new ForbiddenMethodException("Đây không phải đăng ký của bạn!");
         }
         if (registration.Status == RegistrationStatus.Pending.ToString().ToLower())
         {
-            throw new BadRequestException("This registration is already paid and pending to staff!!!");
+            throw new BadRequestException("Đăng ký này đã được thanh toán và đang chờ duyệt!");
         }
         var timestamp = DateTimeOffset.Now.ToString("yyMMddHHmmss");
         var random = new Random().Next(1000, 9999).ToString(); //

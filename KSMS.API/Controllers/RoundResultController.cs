@@ -3,6 +3,7 @@ using KSMS.Application.Services;
 using KSMS.Domain.Dtos.Requests.RoundResult;
 using KSMS.Domain.Dtos;
 using System.Threading.Tasks;
+using KSMS.Domain.Dtos.Responses.FinalResult;
 using KSMS.Domain.Enums;
 using KSMS.Domain.Dtos.Responses.Registration;
 using KSMS.Domain.Pagination;
@@ -59,7 +60,13 @@ namespace KSMS.API.Controllers
             var pagedRegistrations = await _roundResultService.GetPagedRegistrationsByCategoryAndStatusAsync(categoryId, status, page, size);
             return Ok(ApiResponse<Paginate<RegistrationGetByCategoryPagedResponse>>.Success(pagedRegistrations, "Fetched paged registrations successfully"));
         }
-
+        
+        [HttpGet("final-result/{categoryId:guid}")]
+        public async Task<ActionResult<ApiResponse<List<FinalResultResponse>>> > GetFinalResultByCategoryId(Guid categoryId)
+        {
+            var finalResults = await _roundResultService.GetFinalResultByCategoryId(categoryId);
+            return Ok(ApiResponse<List<FinalResultResponse>>.Success(finalResults, "Get final results successfully"));
+        }
 
         // public điểm của từng cá theo category
         [HttpPatch("update-isPublic-status-roundresultByCategoryid")]
@@ -71,5 +78,6 @@ namespace KSMS.API.Controllers
 
             return Ok(ApiResponse<object>.Success(null, "Updated IsPublic status successfully"));
         }
+        
     }
 }

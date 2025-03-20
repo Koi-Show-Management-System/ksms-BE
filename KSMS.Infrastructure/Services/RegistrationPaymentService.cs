@@ -29,22 +29,22 @@ namespace KSMS.Infrastructure.Services
 
             var payment = await paymentRepository.SingleOrDefaultAsync(
                 predicate: p => p.Id == id , include: p =>
-                        p.Include(r => r.Registration)
-                                .ThenInclude(r => r.KoiProfile)
-                                .ThenInclude(r => r.Variety)
-                         .Include(r => r.Registration)
-                                .ThenInclude(r => r.KoiMedia)
+                    p.Include(r => r.Registration)
+                        .ThenInclude(r => r.KoiProfile)
+                        .ThenInclude(r => r.Variety)
                         .Include(r => r.Registration)
-                                .ThenInclude(r => r.CompetitionCategory)
-                                    .ThenInclude(r => r.KoiShow)
+                        .ThenInclude(r => r.KoiMedia)
+                        .Include(r => r.Registration)
+                        .ThenInclude(r => r.CompetitionCategory)
+                        .ThenInclude(r => r.KoiShow)
             );
             if (payment.Registration.IsCheckedIn == true)
             {
-                throw new BadRequestException("Registration is already checked in.");
+                throw new BadRequestException("Mã QR đã được check-in.");
             }
             if (payment == null)
             {
-                throw new NotFoundException($"Registration Payment with ID {id} not found.");
+                throw new NotFoundException("Mã QR không hợp lệ");
             }
 
             return payment.Adapt<RegistrationPaymentResponse>();

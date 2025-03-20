@@ -29,12 +29,12 @@ public class AuthenticationService : BaseService<AuthenticationService>, IAuthen
             .SingleOrDefaultAsync(predicate: x => x.Email == registerRequest.Email);
         if (accountDb is not null)
         {
-            throw new BadRequestException("Email is already existed");
+            throw new BadRequestException("Email này đã tồn tại");
         }
         var accountDb1 = await _unitOfWork.GetRepository<Account>().SingleOrDefaultAsync(predicate:x => x.Username == registerRequest.Username);
         if (accountDb1 is not null)
         {
-            throw new BadRequestException("Username is already existed");
+            throw new BadRequestException("Tên đăng nhập này đã tồn tại");
         }
         var account = registerRequest.Adapt<Account>();
         account.Role =RoleName.Member.ToString();
@@ -47,7 +47,7 @@ public class AuthenticationService : BaseService<AuthenticationService>, IAuthen
         if (!MailUtil.SendEmail(registerRequest.Email, MailUtil.ContentMailUtil.Title_ThankingForRegisAccount,
                 MailUtil.ContentMailUtil.ThankingForRegistration(registerRequest.FullName, confirmationLink), ""))
         {
-            throw new BadRequestException("Error sending confirmation email.");
+            throw new BadRequestException("Lỗi khi gửi email xác nhận.");
         }
         
     }
@@ -58,21 +58,21 @@ public class AuthenticationService : BaseService<AuthenticationService>, IAuthen
                 a.Email == loginRequest.Email && a.HashedPassword == PasswordUtil.HashPassword(loginRequest.Password));
         if (account is null)
         {
-            throw new NotFoundException("Wrong email or password!!!");
+            throw new NotFoundException("Sai email hoặc mật khẩu!");
         }
     
         if (account.Status == AccountStatus.Deleted.ToString().ToLower())
         {
-            throw new BadRequestException("Account is not existed");
+            throw new BadRequestException("Tài khoản không tồn tại");
         }
         if (account.Status == AccountStatus.Blocked.ToString().ToLower())
         {
-            throw new BadRequestException("Account is blocked");
+            throw new BadRequestException("Tài khoản đã bị khóa");
         }
 
         if (account.IsConfirmed == false)
         {
-            throw new BadRequestException("Please confirm via link in your email box. If you don't see please check the folder Spam in Mail");
+            throw new BadRequestException("Vui lòng xác nhận qua đường dẫn trong email của bạn. Nếu không thấy, hãy kiểm tra thư mục Spam");
         }
         return new LoginResponse()
         {
@@ -91,11 +91,11 @@ public class AuthenticationService : BaseService<AuthenticationService>, IAuthen
             .SingleOrDefaultAsync(predicate: a => a.Email == email);
             
         if (account == null)
-            throw new NotFoundException("Email is not existed.");
+            throw new NotFoundException("Email không tồn tại.");
         if (account.ResetPasswordOtp != null && account.ResetPasswordOtpexpiry > VietNamTimeUtil.GetVietnamTime())
         {
             var remainingTime = (account.ResetPasswordOtpexpiry.Value - VietNamTimeUtil.GetVietnamTime()).TotalSeconds;
-            throw new BadRequestException($"Please wait {(int)remainingTime} seconds before requesting a new OTP code.");
+            throw new BadRequestException($"Vui lòng đợi {(int)remainingTime} giây trước khi yêu cầu mã OTP mới.");
         }
         var otp = Random.Shared.Next(100000, 999999).ToString();
         account.ResetPasswordOtp = otp;
@@ -111,7 +111,7 @@ public class AuthenticationService : BaseService<AuthenticationService>, IAuthen
         );
 
         if (!sendMail)
-            throw new BadRequestException("Unable to send OTP email.");
+            throw new BadRequestException("Không thể gửi email OTP.");
     }
 
     public async Task ResetPassword(string email, string otp, string newPassword)
@@ -120,13 +120,13 @@ public class AuthenticationService : BaseService<AuthenticationService>, IAuthen
             .SingleOrDefaultAsync(predicate: a => a.Email == email);
             
         if (account == null)
-            throw new NotFoundException("Email is not existed.");
+            throw new NotFoundException("Email không tồn tại.");
         
         if (account.ResetPasswordOtp != otp)
-            throw new BadRequestException("OTP code is incorrect.");
+            throw new BadRequestException("Mã OTP không chính xác.");
         
         if (account.ResetPasswordOtpexpiry < VietNamTimeUtil.GetVietnamTime())
-            throw new BadRequestException("OTP code has expired.");
+            throw new BadRequestException("Mã OTP đã hết hạn.");
 
         // Cập nhật mật khẩu mới
         account.HashedPassword = PasswordUtil.HashPassword(newPassword);
