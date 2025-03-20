@@ -202,6 +202,17 @@ namespace KSMS.Infrastructure.Services
                 {
                     throw new NotFoundException("Round not found.");
                 }
+                var isFinalRound = false;
+                if (round.RoundType == RoundEnum.Final.ToString())
+                {
+                    var highestOrderInCategory = await _unitOfWork.GetRepository<Round>()
+                        .GetListAsync(
+                            predicate: r => r.CompetitionCategoriesId == round.CompetitionCategoriesId,
+                            orderBy: q => q.OrderByDescending(r => r.RoundOrder)
+                        );
+            
+                    isFinalRound = highestOrderInCategory.First().Id == round.Id;
+                }
                 var registrationRounds = round.RegistrationRounds.ToList();
                 if (!registrationRounds.Any())
                 {
@@ -229,6 +240,10 @@ namespace KSMS.Infrastructure.Services
 
                         var registration = regisRound.Registration;
                         registration.Rank = roundResult.Status == "Pass" ? passCount : totalParticipants;
+                        if (roundResult.Status == "Fail")
+                        {
+                            registration.Status = "eliminated";
+                        }
                         _unitOfWork.GetRepository<Registration>().UpdateAsync(registration);
                     }
                 }
@@ -262,6 +277,14 @@ namespace KSMS.Infrastructure.Services
 
                         var registration = regisRound.Registration;
                         registration.Rank = currentRank + skipCount;
+                        if (roundResult.Status == "Fail")
+                        {
+                            registration.Status = "eliminated";
+                        }else if (isFinalRound)
+                        {
+                            registration.Status = "completed";
+                        }
+                        
                         _unitOfWork.GetRepository<Registration>().UpdateAsync(registration);
 
                         previousScore = currentScore;
