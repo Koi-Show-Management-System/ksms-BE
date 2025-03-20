@@ -12,6 +12,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using KSMS.Domain.Dtos.Responses.FinalResult;
+using KSMS.Domain.Dtos.Responses.KoiMedium;
 using Microsoft.EntityFrameworkCore;
 using KSMS.Domain.Pagination;
 using KSMS.Domain.Dtos.Responses.Registration;
@@ -202,6 +204,17 @@ namespace KSMS.Infrastructure.Services
                 {
                     throw new NotFoundException("Round not found.");
                 }
+                var isFinalRound = false;
+                if (round.RoundType == RoundEnum.Final.ToString())
+                {
+                    var highestOrderInCategory = await _unitOfWork.GetRepository<Round>()
+                        .GetListAsync(
+                            predicate: r => r.CompetitionCategoriesId == round.CompetitionCategoriesId,
+                            orderBy: q => q.OrderByDescending(r => r.RoundOrder)
+                        );
+            
+                    isFinalRound = highestOrderInCategory.First().Id == round.Id;
+                }
                 var registrationRounds = round.RegistrationRounds.ToList();
                 if (!registrationRounds.Any())
                 {
@@ -229,6 +242,10 @@ namespace KSMS.Infrastructure.Services
 
                         var registration = regisRound.Registration;
                         registration.Rank = roundResult.Status == "Pass" ? passCount : totalParticipants;
+                        if (roundResult.Status == "Fail")
+                        {
+                            registration.Status = "eliminated";
+                        }
                         _unitOfWork.GetRepository<Registration>().UpdateAsync(registration);
                     }
                 }
@@ -262,6 +279,14 @@ namespace KSMS.Infrastructure.Services
 
                         var registration = regisRound.Registration;
                         registration.Rank = currentRank + skipCount;
+                        if (roundResult.Status == "Fail")
+                        {
+                            registration.Status = "eliminated";
+                        }else if (isFinalRound)
+                        {
+                            registration.Status = "completed";
+                        }
+                        
                         _unitOfWork.GetRepository<Registration>().UpdateAsync(registration);
 
                         previousScore = currentScore;
@@ -275,6 +300,76 @@ namespace KSMS.Infrastructure.Services
                 await transaction.RollbackAsync();
                 throw;
             }
+        }
+
+        public async Task<List<FinalResultResponse>> GetFinalResultByCategoryId(Guid categoryId)
+        {
+            var category = await _unitOfWork.GetRepository<CompetitionCategory>().SingleOrDefaultAsync(predicate:
+                x => x.Id == categoryId);
+            if (category == null)
+            {
+                throw new NotFoundException("Category not found.");
+            }
+            var finalRound = await _unitOfWork.GetRepository<Round>().SingleOrDefaultAsync(
+                predicate: r => r.CompetitionCategoriesId == categoryId
+                                && r.RoundType == RoundEnum.Final.ToString(),
+                include: query => query
+                    .Include(r => r.RegistrationRounds)
+                        .ThenInclude(rr => rr.Registration)
+                            .ThenInclude(r => r.KoiProfile)
+                                .ThenInclude(rr => rr.Variety)
+                    .Include(r => r.RegistrationRounds)
+                        .ThenInclude(rr => rr.Registration)
+                            .ThenInclude(r => r.KoiMedia)
+                    .Include(r => r.RegistrationRounds)
+                        .ThenInclude(r => r.RoundResults),
+                orderBy: q => q.OrderByDescending(r => r.RoundOrder));
+            if (finalRound == null)
+            {
+                throw new NotFoundException("Final Round not found");
+            }
+
+            var awards = await _unitOfWork.GetRepository<Award>().GetListAsync(predicate:
+                a => a.CompetitionCategoriesId == categoryId);
+            var results = finalRound.RegistrationRounds
+                .Where(rr => rr.RoundResults.Any() && rr.RoundResults.First().IsPublic.Value)
+                .Select(rr => new FinalResultResponse
+                {
+                    RegistrationId = rr.RegistrationId,
+                    RegistrationNumber = rr.Registration.RegistrationNumber,
+                    RegisterName = rr.Registration.RegisterName,
+                    KoiSize = rr.Registration.KoiSize,
+                    Rank = rr.Registration.Rank ?? 0,
+                    FinalScore = rr.RoundResults.First().TotalScore,
+                    Status = rr.Registration.Status,
+                    KoiName = rr.Registration.KoiProfile.Name,
+                    Gender = rr.Registration.KoiProfile.Gender,
+                    Bloodline = rr.Registration.KoiProfile.Bloodline,
+                    Variety = rr.Registration.KoiProfile.Variety?.Name,
+
+                    Media = rr.Registration.KoiMedia.Select(km => new GetKoiMediaResponse
+                    {
+                        Id = km.Id,
+                        MediaUrl = km.MediaUrl,
+                        MediaType = km.MediaType
+                    }).ToList()
+                }).OrderByDescending(r => r.FinalScore).ToList();
+            foreach (var result in results)
+            {
+                var award = result.Rank switch
+                {
+                    1 => awards.FirstOrDefault(a => a.AwardType == "Giải nhất"),
+                    2 => awards.FirstOrDefault(a => a.AwardType == "Giải nhì"),
+                    3 => awards.FirstOrDefault(a => a.AwardType == "Giải ba"),
+                    _ => null
+                };
+                if (award == null) continue;
+                result.AwardType = award.AwardType;
+                result.AwardName = award.Name;
+                result.PrizeValue = award.PrizeValue;
+            }
+            return results;
+
         }
 
         public async Task<Paginate<RegistrationGetByCategoryPagedResponse>> GetPagedRegistrationsByCategoryAndStatusAsync

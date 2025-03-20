@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using KSMS.Domain.Dtos.Responses.FinalResult;
 
 namespace KSMS.Application.Services
 {
@@ -21,5 +22,7 @@ namespace KSMS.Application.Services
         Task<Paginate<RegistrationGetByCategoryPagedResponse>> GetPagedRegistrationsByCategoryAndStatusAsync(Guid categoryId, RoundResultStatus? status, int page, int size);
         Task UpdateIsPublicByCategoryIdAsync(Guid categoryId, bool isPublic);
         Task PublishRoundResult(Guid roundId);
+        
+        Task<List<FinalResultResponse>> GetFinalResultByCategoryId(Guid categoryId);
     }
 }

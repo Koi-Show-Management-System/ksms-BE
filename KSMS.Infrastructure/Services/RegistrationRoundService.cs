@@ -150,7 +150,14 @@ namespace KSMS.Infrastructure.Services
                 {
                     throw new Exception($"Round {roundId} does not exist. Please create the round first.");
                 }
-
+                var existingInRound = await regisRoundRepository.GetListAsync(
+                    predicate: rr => rr.RoundId == roundId && registrationIds.Contains(rr.RegistrationId));
+        
+                if (existingInRound.Any())
+                {
+                    var duplicateIds = existingInRound.Select(r => r.RegistrationId).ToList();
+                    throw new BadRequestException($"Some registrations are already assigned to this round. Ids: {string.Join(", ", duplicateIds)}");
+                }
                 // 3️⃣ Lấy danh sách đơn đăng ký của cá
                 var registrations = await registrationRepository.GetListAsync(
                     predicate: r => registrationIds.Contains(r.Id));
@@ -180,6 +187,9 @@ namespace KSMS.Infrastructure.Services
                         Status = "unpublic",
                         CreatedAt = VietNamTimeUtil.GetVietnamTime()
                     });
+                    
+                    registration.Status = "competition";
+                    registrationRepository.UpdateAsync(registration);
                 }
 
                 // 🔥 7️⃣ Chèn bản ghi mới vào bảng
