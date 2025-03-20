@@ -23,7 +23,7 @@ public class SponsorService : BaseService<SponsorService>, ISponsorService
         var show = await _unitOfWork.GetRepository<KoiShow>().SingleOrDefaultAsync(predicate: x => x.Id == koiShowId);
         if (show == null)
         {
-            throw new NotFoundException("Show not found");
+            throw new NotFoundException("Không tìm thấy cuộc thi");
         }
         var sponsor = request.Adapt<Sponsor>();
         sponsor.KoiShowId = koiShowId;
@@ -36,7 +36,7 @@ public class SponsorService : BaseService<SponsorService>, ISponsorService
         var sponsor = await _unitOfWork.GetRepository<Sponsor>().SingleOrDefaultAsync(predicate: x => x.Id == id);
         if (sponsor == null)
         {
-            throw new NotFoundException("Sponsor not found");
+            throw new NotFoundException("Không tìm thấy nhà tài trợ");
         }
         request.Adapt(sponsor);
         _unitOfWork.GetRepository<Sponsor>().UpdateAsync(sponsor);
@@ -48,7 +48,7 @@ public class SponsorService : BaseService<SponsorService>, ISponsorService
         var sponsor = await _unitOfWork.GetRepository<Sponsor>().SingleOrDefaultAsync(predicate: x => x.Id == id);
         if (sponsor == null)
         {
-            throw new NotFoundException("Sponsor not found");
+            throw new NotFoundException("Không tìm thấy nhà tài trợ");
         }
         _unitOfWork.GetRepository<Sponsor>().DeleteAsync(sponsor);
         await _unitOfWork.CommitAsync();

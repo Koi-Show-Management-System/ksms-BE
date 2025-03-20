@@ -21,7 +21,7 @@ public class TicketTypeService : BaseService<TicketTypeService>, ITicketTypeServ
         var show = await _unitOfWork.GetRepository<KoiShow>().SingleOrDefaultAsync(predicate: x => x.Id == koiShowId);
         if (show == null)
         {
-            throw new NotFoundException("Show not found");
+            throw new NotFoundException("Không tìm thấy cuộc thi");
         }
         var ticketType = request.Adapt<TicketType>();
         ticketType.KoiShowId = koiShowId;
@@ -34,7 +34,7 @@ public class TicketTypeService : BaseService<TicketTypeService>, ITicketTypeServ
         var rule = await _unitOfWork.GetRepository<TicketType>().SingleOrDefaultAsync(predicate: x => x.Id == id);
         if (rule == null)
         {
-            throw new NotFoundException("Ticket type not found");
+            throw new NotFoundException("Không tìm thấy loại vé");
         }
         request.Adapt(rule);
         _unitOfWork.GetRepository<TicketType>().UpdateAsync(rule);
@@ -46,7 +46,7 @@ public class TicketTypeService : BaseService<TicketTypeService>, ITicketTypeServ
         var rule = await _unitOfWork.GetRepository<TicketType>().SingleOrDefaultAsync(predicate: x => x.Id == id);
         if (rule == null)
         {
-            throw new NotFoundException("Ticket type not found");
+            throw new NotFoundException("Không tìm thấy loại vé");
         }
         _unitOfWork.GetRepository<TicketType>().DeleteAsync(rule);
         await _unitOfWork.CommitAsync();

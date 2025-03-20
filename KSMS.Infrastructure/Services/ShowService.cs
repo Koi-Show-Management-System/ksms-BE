@@ -42,7 +42,7 @@ namespace KSMS.Infrastructure.Services
                     .Include(x => x.ShowStatuses));
             if (show is null)
             {
-                throw new NotFoundException("Show is not existed");
+                throw new NotFoundException("Không tìm thấy cuộc thi");
             }
             request.Adapt(show);
             _unitOfWork.GetRepository<KoiShow>().UpdateAsync(show);
@@ -62,7 +62,7 @@ namespace KSMS.Infrastructure.Services
                     .ThenInclude(cc => cc.Criteria));
             if (show is null)
             {
-                throw new NotFoundException("Show is not existed");
+                throw new NotFoundException("Không tìm thấy cuộc thi");
             }
             var response = show.Adapt<GetKoiShowDetailResponse>();
             var criteria = show.CompetitionCategories
@@ -75,10 +75,10 @@ namespace KSMS.Infrastructure.Services
         public async Task CreateShowAsync(CreateShowRequest createShowRequest)
         {
             if (string.IsNullOrWhiteSpace(createShowRequest.Name))
-                throw new BadRequestException("Show name cannot be empty.");
+                throw new BadRequestException("Tên cuộc thi không được để trống");
 
             if (createShowRequest.StartDate >= createShowRequest.EndDate)
-                throw new BadRequestException("Start date must be earlier than end date.");
+                throw new BadRequestException("Ngày bắt đầu phải sớm hơn ngày kết thúc");
             var showRepository = _unitOfWork.GetRepository<KoiShow>();
             var categoryRepository = _unitOfWork.GetRepository<CompetitionCategory>();
             var sponsorRepository = _unitOfWork.GetRepository<Sponsor>();
@@ -221,7 +221,7 @@ namespace KSMS.Infrastructure.Services
                                 var missingIds = categoryRequest.CreateCompetionCategoryVarieties
                                     .Where(id => !foundIds.Contains(id))
                                     .ToList();
-                                throw new NotFoundException($"Varieties with IDs: {string.Join(", ", missingIds)} not found");
+                                throw new NotFoundException($"Không tìm thấy giống cá có ID: {string.Join(", ", missingIds)}");
                             }
                             
                             var categoryVarieties = varieties.Select(v => new CategoryVariety {
@@ -249,7 +249,7 @@ namespace KSMS.Infrastructure.Services
                                 var missingIds = criteriaIds
                                     .Where(id => !foundIds.Contains(id))
                                     .ToList();
-                                throw new BadRequestException($"Criteria with IDs: {string.Join(", ", missingIds)} not found");
+                                throw new BadRequestException($"Không tìm thấy tiêu chí có ID: {string.Join(", ", missingIds)}");
                             }
                             
                             var criteriaGroups = categoryRequest.CreateCriteriaCompetitionCategoryRequests
@@ -291,7 +291,7 @@ namespace KSMS.Infrastructure.Services
                             {
                                 if (!refereeRequest.RoundTypes.Any())
                                 {
-                                    throw new BadRequestException("You need choose round type for referee");
+                                    throw new BadRequestException("Bạn cần chọn loại vòng thi cho trọng tài");
                                 }
                                 foreach (var roundType in refereeRequest.RoundTypes)
                                 {
@@ -352,7 +352,7 @@ namespace KSMS.Infrastructure.Services
             catch (Exception ex)
             {
                 await transaction.RollbackAsync();
-                var detailedMessage = $"Failed to create show and related data.\nError details: {ex.Message}";
+                var detailedMessage = $"Không thể tạo cuộc thi và dữ liệu liên quan.\nChi tiết lỗi: {ex.Message}";
                 throw new Exception(detailedMessage);
             }
         }

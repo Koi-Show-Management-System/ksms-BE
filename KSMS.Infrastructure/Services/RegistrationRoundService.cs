@@ -44,7 +44,7 @@ namespace KSMS.Infrastructure.Services
 
             if (existingRegistrationRound != null)
             {
-                throw new BadRequestException("Registration round already exists for this registration and round.");
+                throw new BadRequestException("Vòng đăng ký này đã tồn tại cho cá này.");
             }
 
             // Chuyển đổi từ DTO sang Entity
@@ -66,17 +66,17 @@ namespace KSMS.Infrastructure.Services
                 var regisRoundRepository = _unitOfWork.GetRepository<RegistrationRound>();
                 var tankRepository = _unitOfWork.GetRepository<Tank>();
 
-                // 1️⃣ Lấy danh sách `RegistrationRoundId` từ yêu cầu cập nhật
+                // 1️⃣ Lấy danh sách RegistrationRoundId từ yêu cầu cập nhật
                 var registrationRoundIds = updateRequests.Select(r => r.RegistrationRoundId).ToList();
                 var existingRegistrations = await regisRoundRepository.GetListAsync(
                     predicate: rr => registrationRoundIds.Contains(rr.Id));
 
                 if (!existingRegistrations.Any())
                 {
-                    throw new Exception("No valid registrations found for the provided RegistrationRoundIds.");
+                    throw new Exception("Không tìm thấy đăng ký hợp lệ cho các ID đã cung cấp.");
                 }
 
-                // 2️⃣ Lấy danh sách `TankId` từ yêu cầu cập nhật
+                // 2️⃣ Lấy danh sách TankId từ yêu cầu cập nhật
                 var tankIds = updateRequests.Select(r => r.TankId).Distinct().ToList();
                 var availableTanks = await tankRepository.GetListAsync(
                     predicate: t => tankIds.Contains(t.Id) && t.Status == TankStatus.Available.ToString().ToLower()
@@ -84,7 +84,7 @@ namespace KSMS.Infrastructure.Services
 
                 if (availableTanks.Count != tankIds.Count)
                 {
-                    throw new Exception("One or more provided tanks are not available or do not exist.");
+                    throw new Exception("Một hoặc nhiều hồ được chọn không khả dụng hoặc không tồn tại.");
                 }
 
                 // 3️⃣ Kiểm tra sức chứa của hồ trước khi cập nhật
@@ -93,21 +93,21 @@ namespace KSMS.Infrastructure.Services
 
                 foreach (var tank in tankFishCounts)
                 {
-                    // 🔥 **Tính số cá mới sẽ vào hồ**
+                    // 🔥 *Tính số cá mới sẽ vào hồ*
                     int newFishCount = updateRequests
                         .Where(r => r.TankId == tank.Tank.Id)
                         .Count(r => existingRegistrations.FirstOrDefault(regis => regis.Id == r.RegistrationRoundId)
                             ?.TankId != tank.Tank.Id);
 
-                    // 🛠 **Nếu cá đã ở trong hồ, không tăng `FishCount`**
+                    // 🛠 **Nếu cá đã ở trong hồ, không tăng FishCount**
                     if (tank.FishCount + newFishCount > tank.Tank.Capacity)
                     {
                         throw new Exception(
-                            $"Tank {tank.Tank.Id} does not have enough space. Capacity: {tank.Tank.Capacity}, Assigned: {tank.FishCount}, New: {newFishCount}");
+                            $"Hồ {tank.Tank.Id} không đủ chỗ trống. Sức chứa: {tank.Tank.Capacity}, Đã có: {tank.FishCount}, Thêm mới: {newFishCount}");
                     }
                 }
 
-                // 4️⃣ Cập nhật `TankId` cho `RegistrationRound`
+                // 4️⃣ Cập nhật TankId cho RegistrationRound
                 foreach (var update in updateRequests)
                 {
                     var regis = existingRegistrations.FirstOrDefault(r => r.Id == update.RegistrationRoundId);
@@ -141,14 +141,14 @@ namespace KSMS.Infrastructure.Services
                 // 1️⃣ Kiểm tra danh sách cá hợp lệ
                 if (registrationIds == null || !registrationIds.Any())
                 {
-                    throw new ArgumentException("The list of passed fishes cannot be empty.");
+                    throw new ArgumentException("Danh sách cá không được để trống.");
                 }
 
-                // 2️⃣ Kiểm tra `RoundId` có tồn tại không
+                // 2️⃣ Kiểm tra RoundId có tồn tại không
                 var roundExists = (await roundRepository.GetListAsync(predicate: r => r.Id == roundId)).Any();
                 if (!roundExists)
                 {
-                    throw new Exception($"Round {roundId} does not exist. Please create the round first.");
+                    throw new Exception($"Không tìm thấy vòng thi {roundId}. Vui lòng tạo vòng thi trước.");
                 }
                 var existingInRound = await regisRoundRepository.GetListAsync(
                     predicate: rr => rr.RoundId == roundId && registrationIds.Contains(rr.RegistrationId));
@@ -156,7 +156,7 @@ namespace KSMS.Infrastructure.Services
                 if (existingInRound.Any())
                 {
                     var duplicateIds = existingInRound.Select(r => r.RegistrationId).ToList();
-                    throw new BadRequestException($"Some registrations are already assigned to this round. Ids: {string.Join(", ", duplicateIds)}");
+                    throw new BadRequestException($"Một số cá đã được phân vào vòng này. ID: {string.Join(", ", duplicateIds)}");
                 }
                 // 3️⃣ Lấy danh sách đơn đăng ký của cá
                 var registrations = await registrationRepository.GetListAsync(
@@ -166,7 +166,7 @@ namespace KSMS.Infrastructure.Services
                 var categoryId = registrations.First().CompetitionCategoryId;
                 if (registrations.Any(r => r.CompetitionCategoryId != categoryId))
                 {
-                    throw new Exception("All passed registrations must belong to the same category.");
+                    throw new Exception("Tất cả các cá phải thuộc cùng một hạng mục.");
                 }
 
                 // 5️⃣ Lấy danh sách cá đã thi đấu trong vòng trước
@@ -201,7 +201,7 @@ namespace KSMS.Infrastructure.Services
             catch (Exception ex)
             {
                 await transaction.RollbackAsync();
-                throw new Exception("Failed to assign fishes to next round: " + ex.Message);
+                throw new Exception("Không thể phân cá vào vòng tiếp theo: " + ex.Message);
             }
         }
 
@@ -212,7 +212,7 @@ namespace KSMS.Infrastructure.Services
                 .SingleOrDefaultAsync(predicate: x => x.Id == roundId);
             if (round == null)
             {
-                throw new NotFoundException("Round not found");
+                throw new NotFoundException("Không tìm thấy vòng thi");
             }
 
             var role = GetRoleFromJwt();
@@ -283,7 +283,7 @@ namespace KSMS.Infrastructure.Services
                     .ThenInclude(r => r.KoiMedia));
             if (registrationRound == null)
             {
-                throw new NotFoundException("Registration round not found.");
+                throw new NotFoundException("Không tìm thấy thông tin đăng ký vòng thi.");
             }
 
             return registrationRound.Adapt<CheckQrRegistrationRoundResponse>();
@@ -304,13 +304,13 @@ namespace KSMS.Infrastructure.Services
                         .ThenInclude(rr => rr.RoundResults));
                 if (round == null)
                 {
-                    throw new NotFoundException("Round not found.");
+                    throw new NotFoundException("Không tìm thấy vòng thi.");
                 }
 
                 var registrationRounds = round.RegistrationRounds.ToList();
                 if (!registrationRounds.Any())
                 {
-                    throw new BadRequestException("No registration rounds found for this round.");
+                    throw new BadRequestException("Không tìm thấy đăng ký nào trong vòng này.");
                 }
 
                 if (round.CompetitionCategories.HasTank)
@@ -320,7 +320,7 @@ namespace KSMS.Infrastructure.Services
                     if (registrationRoundsWithoutTank.Any())
                     {
                         throw new BadRequestException(
-                            "All registrations must be assigned to a tank before the round can be published.");
+                            "Tất cả các cá phải được phân vào hồ trước khi công bố vòng thi.");
                     }
                 }
                 var totalParticipants = registrationRounds.Count;
