@@ -5,6 +5,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using KSMS.Domain.Dtos.Responses.CriteriaCompetitionCategory;
+using KSMS.Domain.Enums;
 using KSMS.Domain.Pagination;
 
 namespace KSMS.Application.Services
@@ -20,6 +22,8 @@ namespace KSMS.Application.Services
                 Task UpdateCriteriaAsync(Guid id, UpdateCriteriaRequest updateCriteriaRequest);
 
                 Task<Paginate<GetAllCriteriaResponse>> GetPagingCriteria(int page, int size);
+                
+                Task<List<GetCriteriaCompetitionCategoryResponse>> GetCriteriaCompetitionCategory(Guid competitionCategoryId, RoundEnum roundType);
 
                 Task DeleteCriteriaAsync(Guid id);
         }
