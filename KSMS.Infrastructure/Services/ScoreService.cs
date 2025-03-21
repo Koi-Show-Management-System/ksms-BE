@@ -361,6 +361,80 @@ namespace KSMS.Infrastructure.Services
             }
         }
 
+        public async Task<List<GetScoreDetailByRegistrationRoundResponse>> GetScoresByRegistrationRoundId(
+            Guid registrationRoundId)
+        {
+            var accountId = GetIdFromJwt();
+            var role = GetRoleFromJwt();
+            var registrationRound = await _unitOfWork.GetRepository<RegistrationRound>().SingleOrDefaultAsync(
+                predicate: r => r.Id == registrationRoundId,
+                include: query => query
+                    .Include(r => r.Registration)
+                        .ThenInclude(r => r.CompetitionCategory)
+                    .Include(r => r.Round)
+                    .Include(r => r.ScoreDetails)
+                        .ThenInclude(r => r.RefereeAccount)
+                    .Include(r => r.ScoreDetails)
+                        .ThenInclude(r => r.ScoreDetailErrors)
+                            .ThenInclude(r => r.ErrorType)
+                                .ThenInclude(r => r.Criteria));
+            if (registrationRound is null)
+            {
+                throw new NotFoundException("Không tìm thấy vòng thi");
+            }
+            var criteriaCompetitionCategories = await _unitOfWork.GetRepository<CriteriaCompetitionCategory>()
+                .GetListAsync(predicate: x => x.CompetitionCategoryId == registrationRound.Registration.CompetitionCategoryId
+                && x.RoundType == registrationRound.Round.RoundType);
+            var scores = registrationRound.ScoreDetails;
+            if (role == RoleName.Referee.ToString())
+            {
+                scores = scores.Where(s => s.RefereeAccountId == accountId).ToList();
+            }
+
+            var response = scores.Select(score =>
+            {
+                var scoreResponse = score.Adapt<GetScoreDetailByRegistrationRoundResponse>();
+                if (registrationRound.Round.RoundType == RoundEnum.Preliminary.ToString())
+                {
+                    scoreResponse.Status = score.TotalPointMinus == 0 ? "Pass" : "Fail";
+                    scoreResponse.TotalPointMinus = null;
+
+                }
+                var criteriaGroups = score.ScoreDetailErrors
+                    .GroupBy(error => new
+                    {
+                        error.ErrorType.Criteria.Id, error.ErrorType.Criteria.Name,
+                        error.ErrorType.Criteria.Description, error.ErrorType.Criteria.Order
+                    })
+                    .Select(group =>
+                    {
+                        var criteriaCompetitionCategory = criteriaCompetitionCategories
+                            .FirstOrDefault(c => c.CriteriaId == group.Key.Id);
+                        return new CriteriaWithErrorResponse
+                        {
+                            Id = group.Key.Id,
+                            Name = group.Key.Name,
+                            Description = group.Key.Description,
+                            Order = criteriaCompetitionCategory?.Order,
+                            Weight = criteriaCompetitionCategory?.Weight,
+                            Errors = group.SelectMany(error => new[]
+                            {
+                                new ScoreDetailErrorWithTypeResponse
+                                {
+                                    Id = error.Id,
+                                    ErrorTypeName = error.ErrorType.Name,
+                                    Severity = error.Severity,
+                                    PointMinus = error.PointMinus
+                                }
+                            }).ToList()
+                        };
+                    }).OrderBy(c => c.Order).ToList();
+                scoreResponse.CriteriaWithErrors = criteriaGroups;
+                return scoreResponse;
+            }).OrderByDescending(s => s.CreatedAt).ToList();
+            return response;
+        }
+
         //public async Task CreateEliminationScoreAsync(CreateEliminationScoreRequest request)
         //{
         //    using var transaction = await _unitOfWork.BeginTransactionAsync();
