@@ -51,5 +51,13 @@ namespace KSMS.API.Controllers
             return Ok(ApiResponse<ScoreDetailResponse>.Success(null, "Elimination score submitted successfully"));
             
         }
+        [HttpGet("get-score-detail/{registrationRoundId}")]
+        [Authorize(Roles = "Referee, Staff, Manager, Admin")] 
+        public async Task<ActionResult<ApiResponse<object>>>
+            GetScoresByRegistrationRoundId(Guid registrationRoundId)
+        {
+            var scores = await _scoreService.GetScoresByRegistrationRoundId(registrationRoundId);
+            return Ok(ApiResponse<object>.Success(scores, "Get the list of score successfully"));
+        }
     }
 }
