@@ -27,36 +27,35 @@ public class ShowStaffService : BaseService<ShowStaffService>, IShowStaffService
         var show = await _unitOfWork.GetRepository<KoiShow>().SingleOrDefaultAsync(predicate: x => x.Id == showId);
         if (show == null)
         {
-            throw new NotFoundException("Show not found");
+            throw new NotFoundException("Không tìm thấy cuộc thi");
         }
 
-        
         var account = await _unitOfWork.GetRepository<Account>()
             .SingleOrDefaultAsync(predicate: x => x.Id == accountId);
         if (account == null)
         {
-            throw new NotFoundException("Account not found");
+            throw new NotFoundException("Không tìm thấy tài khoản");
         }
 
         var showStaff = await _unitOfWork.GetRepository<ShowStaff>()
             .SingleOrDefaultAsync(predicate: x => x.KoiShowId == showId && x.AccountId == accountId);
         if (showStaff != null)
         {
-            throw new BadRequestException("Account is already assigned to this show");
+            throw new BadRequestException("Tài khoản này đã được phân công cho cuộc thi");
         }
         if (account.Role != RoleName.Staff.ToString())
         {
-            throw new BadRequestException("Account is not staff");
+            throw new BadRequestException("Tài khoản không phải là nhân viên");
         }
         if (account.Role != RoleName.Manager.ToString())
         {
-            throw new BadRequestException("Account is not manager");
+            throw new BadRequestException("Tài khoản không phải là quản lý");
         }
         if (GetRoleFromJwt() == RoleName.Manager.ToString())
         {
             if (account.Role == RoleName.Manager.ToString())
             {
-                throw new BadRequestException("Manager can not assign manager");
+                throw new BadRequestException("Quản lý không thể phân công quản lý khác");
             }
         }
         await _unitOfWork.GetRepository<ShowStaff>().InsertAsync(new ShowStaff
@@ -75,13 +74,13 @@ public class ShowStaffService : BaseService<ShowStaffService>, IShowStaffService
             include: x => x.Include(y => y.Account));
         if (showStaff == null)
         {
-            throw new NotFoundException("Manager or staff not found");
+            throw new NotFoundException("Không tìm thấy quản lý hoặc nhân viên");
         }
         if (GetRoleFromJwt() == RoleName.Manager.ToString())
         {
             if (showStaff.Account.Role == RoleName.Manager.ToString())
             {
-                throw new BadRequestException("Manager can not remove manager");
+                throw new BadRequestException("Quản lý không thể xóa quản lý khác");
             }
         }
         _unitOfWork.GetRepository<ShowStaff>().DeleteAsync(showStaff);
@@ -93,7 +92,7 @@ public class ShowStaffService : BaseService<ShowStaffService>, IShowStaffService
         var show = await _unitOfWork.GetRepository<KoiShow>().SingleOrDefaultAsync(predicate: x => x.Id == showId);
         if (show == null)
         {
-            throw new NotFoundException("Show not found");
+            throw new NotFoundException("Không tìm thấy cuộc thi");
         }
         Expression<Func<ShowStaff, bool>> filterQuery = account => account.KoiShowId == showId;
         if (role.HasValue)

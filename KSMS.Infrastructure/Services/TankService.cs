@@ -31,18 +31,18 @@ namespace KSMS.Infrastructure.Services
             var category = await _unitOfWork.GetRepository<CompetitionCategory>().SingleOrDefaultAsync(predicate: x=> x.Id == request.CompetitionCategoryId);
             if (category == null)
             {
-                throw new NotFoundException("Category not found");
+                throw new NotFoundException("Không tìm thấy hạng mục");
             }
             if (category.HasTank == false)
             {
-                throw new BadRequestException("This category does not require tanks.");
+                throw new BadRequestException("Hạng mục này không yêu cầu hồ chứa.");
             }
             var existingTank = await tankRepository.SingleOrDefaultAsync(
                 predicate: t => t.Name == request.Name);
             
             if (existingTank != null)
             {
-                throw new BadRequestException($"A tank with the name '{request.Name}' already exists in this KoiShow.");
+                throw new BadRequestException($"Hồ có tên '{request.Name}' đã tồn tại trong cuộc thi này.");
             }
             var tank = request.Adapt<Tank>();
             tank.CreatedBy = GetIdFromJwt();
@@ -70,7 +70,7 @@ namespace KSMS.Infrastructure.Services
 
             if (tank == null)
             {
-                throw new NotFoundException($"Tank with ID {tankId} not found.");
+                throw new NotFoundException($"Không tìm thấy hồ có ID {tankId}");
             }
 
             // Đếm số lượng cá hiện có trong hồ
@@ -109,7 +109,7 @@ namespace KSMS.Infrastructure.Services
 
             if (existingTank == null)
             {
-                throw new NotFoundException($"Tank with ID {id} not found.");
+                throw new NotFoundException($"Không tìm thấy hồ có ID {id}");
             }
             if (request.Name != existingTank.Name)
             {
@@ -119,7 +119,7 @@ namespace KSMS.Infrastructure.Services
 
                 if (duplicateTank != null)
                 {
-                    throw new BadRequestException($"A tank with the name '{request.Name}' already exists.");
+                    throw new BadRequestException($"Hồ có tên '{request.Name}' đã tồn tại.");
                 }
             }
             existingTank.Name = request.Name ?? existingTank.Name;
@@ -146,7 +146,7 @@ namespace KSMS.Infrastructure.Services
 
             if (existingTank == null)
             {
-                throw new NotFoundException($"Tank with ID {id} not found.");
+                throw new NotFoundException($"Không tìm thấy hồ có ID {id}");
             }
 
             existingTank.Status = status.ToString().ToLower();

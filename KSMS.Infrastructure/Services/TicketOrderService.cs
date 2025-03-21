@@ -50,12 +50,12 @@ public class TicketOrderService : BaseService<TicketOrder>, ITicketOrderService
                 .SingleOrDefaultAsync(predicate: p => p.Id == ticketType.TicketTypeId);
             if (ticketTypeDb == null)
             {
-                throw new NotFoundException("Ticket Type Id " + $"{ticketType.TicketTypeId} is not found!!");
+                throw new NotFoundException($"Không tìm thấy loại vé có ID {ticketType.TicketTypeId}");
             }
 
             if (ticketType.Quantity > ticketTypeDb.AvailableQuantity)
             {
-                throw new BadRequestException("Ticket Type: " + $"{ticketTypeDb.Name} is not enough");
+                throw new BadRequestException($"Loại vé '{ticketTypeDb.Name}' không đủ số lượng");
             }
             totalAmount += ticketTypeDb.Price * ticketType.Quantity;
         }
@@ -105,7 +105,7 @@ public class TicketOrderService : BaseService<TicketOrder>, ITicketOrderService
         var createPayment = await _payOs.createPaymentLink(paymentData);
         return new CheckOutTicketResponse
         {
-            Message = "Checkout Successfully",
+            Message = "Thanh toán thành công",
             Url = createPayment.checkoutUrl
         };
     }
@@ -121,7 +121,7 @@ public class TicketOrderService : BaseService<TicketOrder>, ITicketOrderService
 
         if (order == null)
         {
-            throw new NotFoundException("Order not found");
+            throw new NotFoundException("Không tìm thấy đơn hàng");
         }
 
         order.Status = orderStatus switch

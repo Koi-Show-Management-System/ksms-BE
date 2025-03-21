@@ -30,7 +30,7 @@ namespace KSMS.Infrastructure.Services
                 .SingleOrDefaultAsync(predicate: x => x.Id == request.KoiShowId);
             if (show == null)
             {
-                throw new NotFoundException("Show not found");
+                throw new NotFoundException("Không tìm thấy cuộc thi");
             }
 
             if (request.CreateCompetionCategoryVarieties.Any())
@@ -41,7 +41,7 @@ namespace KSMS.Infrastructure.Services
                         .SingleOrDefaultAsync(predicate: x => x.Id == varietyId);
                     if (variety == null)
                     {
-                        throw new NotFoundException("Variety with Id:"  + varietyId + " not found");
+                        throw new NotFoundException("Không tìm thấy giống cá có Id: " + varietyId);
                     }
                 }
             }
@@ -53,7 +53,7 @@ namespace KSMS.Infrastructure.Services
                     var criteria = await _unitOfWork.GetRepository<Criterion>().SingleOrDefaultAsync(predicate: x => x.Id == criteriaCategory.CriteriaId);
                     if (criteria == null)
                     {
-                        throw new NotFoundException("Criteria with Id:" + criteriaCategory.CriteriaId + " not found");
+                        throw new NotFoundException("Không tìm thấy tiêu chí có Id: " + criteriaCategory.CriteriaId);
                     }
                 }
             }
@@ -138,13 +138,13 @@ namespace KSMS.Infrastructure.Services
                     .Include(x => x.Rounds));
             if (category == null)
             {
-                throw new NotFoundException("Category not found");
+                throw new NotFoundException("Không tìm thấy hạng mục");
             }
             var show = await _unitOfWork.GetRepository<KoiShow>()
                 .SingleOrDefaultAsync(predicate: x => x.Id == request.KoiShowId);
             if (show == null)
             {
-                throw new NotFoundException("Show not found");
+                throw new NotFoundException("Không tìm thấy cuộc thi");
             }
             if (request.CreateCompetionCategoryVarieties.Any())
             {
@@ -154,7 +154,7 @@ namespace KSMS.Infrastructure.Services
                         .SingleOrDefaultAsync(predicate: x => x.Id == varietyId);
                     if (variety == null)
                     {
-                        throw new NotFoundException("Variety with Id:" + varietyId + " not found");
+                        throw new NotFoundException("Không tìm thấy giống cá có Id: " + varietyId);
                     }
                 }
             }
@@ -166,7 +166,7 @@ namespace KSMS.Infrastructure.Services
                     var criteria = await _unitOfWork.GetRepository<Criterion>().SingleOrDefaultAsync(predicate: x => x.Id == criteriaCategory.CriteriaId);
                     if (criteria == null)
                     {
-                        throw new NotFoundException("Criteria with Id:" + criteriaCategory.CriteriaId + " not found");
+                        throw new NotFoundException("Không tìm thấy tiêu chí có Id: " + criteriaCategory.CriteriaId);
                     }
                 }
             }
@@ -175,7 +175,7 @@ namespace KSMS.Infrastructure.Services
                 .GetListAsync(predicate: x => roundIds.Contains(x.RoundId));
             if (registrationRounds.Any())
             {
-                throw new BadRequestException("Cannot delete rounds that have registrations");
+                throw new BadRequestException("Không thể xóa vòng thi đã có đăng ký");
             }
             await using var transaction = await _unitOfWork.BeginTransactionAsync();
 
@@ -290,7 +290,7 @@ namespace KSMS.Infrastructure.Services
                 
             if (category == null)
             {
-                throw new NotFoundException("Category not found");
+                throw new NotFoundException("Không tìm thấy hạng mục");
             }
             return category.Adapt<GetCompetitionCategoryDetailResponse>();
         }
@@ -301,7 +301,7 @@ namespace KSMS.Infrastructure.Services
             var show = await _unitOfWork.GetRepository<KoiShow>().SingleOrDefaultAsync(predicate: x => x.Id == showId);
             if (show == null)
             {
-                throw new NotFoundException("Show not found");
+                throw new NotFoundException("Không tìm thấy cuộc thi");
             }
             Expression<Func<CompetitionCategory, bool>> filterQuery = category => category.KoiShowId == showId;
             // if (role is "Guest" or "Member")

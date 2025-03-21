@@ -54,10 +54,10 @@ namespace KSMS.Infrastructure.Services
                 var round = await roundRepository.SingleOrDefaultAsync(predicate: r => r.Id == roundId);
                 if (round == null)
                 {
-                    throw new NotFoundException($"❌ Round with ID '{roundId}' not found.");
+                    throw new NotFoundException($"Không tìm thấy vòng thi có ID '{roundId}'.");
                 }
 
-                // 2️⃣ Lấy danh sách `RegistrationRound` của vòng thi này
+                // 2️⃣ Lấy danh sách RegistrationRound của vòng thi này
                 var registrationRounds = await registrationRoundRepository.GetListAsync(
                     predicate: rr => rr.RoundId == roundId,
                     include: query => query.Include(rr => rr.Registration)
@@ -65,10 +65,10 @@ namespace KSMS.Infrastructure.Services
 
                 if (!registrationRounds.Any())
                 {
-                    throw new NotFoundException($"❌ No registration rounds found for round {roundId}.");
+                    throw new NotFoundException($"Không tìm thấy đăng ký nào trong vòng thi {roundId}.");
                 }
 
-                // 3️⃣ Nhóm cá theo `CompetitionCategoryId`
+                // 3️⃣ Nhóm cá theo CompetitionCategoryId
                 var groupedByCategory = registrationRounds.GroupBy(rr => rr.Registration.CompetitionCategoryId);
 
                 foreach (var categoryGroup in groupedByCategory)
@@ -84,7 +84,7 @@ namespace KSMS.Infrastructure.Services
 
                     if (assignedReferees == 0)
                     {
-                        throw new Exception($"❌ No referees assigned for category {competitionCategoryId} in this round.");
+                        throw new Exception($"Không có trọng tài nào được phân công cho hạng mục {competitionCategoryId} trong vòng này.");
                     }
 
                     // 5️⃣ Tính tổng điểm của mỗi cá
@@ -100,7 +100,7 @@ namespace KSMS.Infrastructure.Services
 
                         if (totalReferees < assignedReferees)
                         {
-                            throw new Exception($"⚠ Not all referees have scored RegistrationRound {registrationRound.Id}. ({totalReferees}/{assignedReferees})");
+                            throw new Exception($"Chưa đủ trọng tài chấm điểm cho đăng ký {registrationRound.Id}. ({totalReferees}/{assignedReferees})");
                         }
 
                         // Tổng điểm bị trừ
@@ -125,7 +125,7 @@ namespace KSMS.Infrastructure.Services
                         });
                     }
 
-                    // 7️⃣ Cập nhật `RoundResult` nếu đã có, hoặc thêm mới nếu chưa có
+                    // 7️⃣ Cập nhật RoundResult nếu đã có, hoặc thêm mới nếu chưa có
                     foreach (var result in roundResults)
                     {
                         var existingResult = await roundResultRepository.SingleOrDefaultAsync(
@@ -149,13 +149,13 @@ namespace KSMS.Infrastructure.Services
             }
             catch (NotFoundException ex)
             {
-                _logger.LogError($"🚨 Not Found: {ex.Message}");
+                _logger.LogError($"🚨 Không tìm thấy: {ex.Message}");
                 throw;
             }
             catch (Exception ex)
             {
-                _logger.LogError($"🚨 Failed to process final scores for round {roundId}: {ex.Message}");
-                throw new Exception($"Failed to process final scores for round {roundId}. Check logs for details.");
+                _logger.LogError($"🚨 Không thể xử lý điểm số cuối cùng cho vòng {roundId}: {ex.Message}");
+                throw new Exception($"Không thể xử lý điểm số cuối cùng cho vòng {roundId}. Kiểm tra logs để biết thêm chi tiết.");
             }
         }
 
@@ -171,7 +171,7 @@ namespace KSMS.Infrastructure.Services
 
             if (roundResults == null || !roundResults.Any())
             {
-                throw new NotFoundException("No RoundResults found for the provided CategoryId");
+                throw new NotFoundException("Không tìm thấy kết quả vòng thi cho hạng mục này");
             }
 
            
@@ -202,7 +202,7 @@ namespace KSMS.Infrastructure.Services
                             .ThenInclude(rr => rr.RoundResults));
                 if (round == null)
                 {
-                    throw new NotFoundException("Round not found.");
+                    throw new NotFoundException("Không tìm thấy vòng thi.");
                 }
                 var isFinalRound = false;
                 if (round.RoundType == RoundEnum.Final.ToString())
@@ -218,7 +218,7 @@ namespace KSMS.Infrastructure.Services
                 var registrationRounds = round.RegistrationRounds.ToList();
                 if (!registrationRounds.Any())
                 {
-                    throw new BadRequestException("No registration rounds found for this round.");
+                    throw new BadRequestException("Không tìm thấy đăng ký nào trong vòng này.");
                 }
                 
                 var registrationRoundWithoutResult = registrationRounds
@@ -226,8 +226,7 @@ namespace KSMS.Infrastructure.Services
                     .Select(rr => rr.Registration.RegisterName).ToList();
                 if (registrationRoundWithoutResult.Any())
                 {
-                    
-                    throw new BadRequestException($"Registration(s) {string.Join(", ", registrationRoundWithoutResult)} do not have results.");
+                    throw new BadRequestException($"Các đăng ký sau chưa có kết quả: {string.Join(", ", registrationRoundWithoutResult)}");
                 }
                 if (round.RoundType == RoundEnum.Preliminary.ToString())
                 {
@@ -282,7 +281,8 @@ namespace KSMS.Infrastructure.Services
                         if (roundResult.Status == "Fail")
                         {
                             registration.Status = "eliminated";
-                        }else if (isFinalRound)
+                        }
+                        else if (isFinalRound)
                         {
                             registration.Status = "completed";
                         }
@@ -308,7 +308,7 @@ namespace KSMS.Infrastructure.Services
                 x => x.Id == categoryId);
             if (category == null)
             {
-                throw new NotFoundException("Category not found.");
+                throw new NotFoundException("Không tìm thấy hạng mục.");
             }
             var finalRound = await _unitOfWork.GetRepository<Round>().SingleOrDefaultAsync(
                 predicate: r => r.CompetitionCategoriesId == categoryId
@@ -326,7 +326,7 @@ namespace KSMS.Infrastructure.Services
                 orderBy: q => q.OrderByDescending(r => r.RoundOrder));
             if (finalRound == null)
             {
-                throw new NotFoundException("Final Round not found");
+                throw new NotFoundException("Không tìm thấy vòng chung kết");
             }
 
             var awards = await _unitOfWork.GetRepository<Award>().GetListAsync(predicate:
