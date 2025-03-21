@@ -24,8 +24,8 @@ public class ErrorTypeService : BaseService<ErrorType>, IErrorTypeService
         {
             throw new NotFoundException("Tiêu chí có tên " + criteria.Name + " không tồn tại");
         }
-        var errorType = request.Adapt<Criterion>();
-        await _unitOfWork.GetRepository<Criterion>().InsertAsync(errorType);
+        var errorType = request.Adapt<ErrorType>();
+        await _unitOfWork.GetRepository<ErrorType>().InsertAsync(errorType);
         await _unitOfWork.CommitAsync();
         return new
         {

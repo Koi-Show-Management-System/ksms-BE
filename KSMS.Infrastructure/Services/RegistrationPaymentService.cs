@@ -38,14 +38,15 @@ namespace KSMS.Infrastructure.Services
                         .ThenInclude(r => r.CompetitionCategory)
                         .ThenInclude(r => r.KoiShow)
             );
-            if (payment.Registration.IsCheckedIn == true)
-            {
-                throw new BadRequestException("Mã QR đã được check-in.");
-            }
             if (payment == null)
             {
                 throw new NotFoundException("Mã QR không hợp lệ");
             }
+            if (payment.Registration.IsCheckedIn == true)
+            {
+                throw new BadRequestException("Mã QR đã được check-in.");
+            }
+            
 
             return payment.Adapt<RegistrationPaymentResponse>();
         }

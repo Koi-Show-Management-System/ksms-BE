@@ -10,7 +10,6 @@ namespace KSMS.Domain.Dtos.Responses.RoundResult
     {
         public Guid Id { get; set; }
         public decimal TotalScore { get; set; }
-
         public bool? IsPublic { get; set; }
 
         public string? Comments { get; set; }
