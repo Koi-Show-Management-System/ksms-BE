@@ -78,12 +78,13 @@ namespace KSMS.Infrastructure.Services
                 .Adapt<Paginate<GetAllCriteriaResponse>>();
         }
 
-        public async Task<List<GetCriteriaCompetitionCategoryResponse>> GetCriteriaCompetitionCategory(Guid competitionCategoryId, RoundEnum roundType)
+        public async Task<List<GetCriteriaCompetitionCategoryResponse>> GetCriteriaCompetitionCategory(Guid competitionCategoryId, Guid roundId)
         {
+            var round = await _unitOfWork.GetRepository<Round>().SingleOrDefaultAsync(predicate: x => x.Id == roundId);
             var criteriaCompetition = await _unitOfWork.GetRepository<CriteriaCompetitionCategory>()
                 .GetListAsync(
                     predicate: x => x.CompetitionCategoryId == competitionCategoryId &&
-                                    x.RoundType == roundType.ToString(),
+                                    x.RoundType == round.RoundType,
                     include: query =>
                         query.Include(x => x.Criteria));
             return criteriaCompetition.Adapt<List<GetCriteriaCompetitionCategoryResponse>>();
