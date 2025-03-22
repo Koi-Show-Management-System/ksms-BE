@@ -368,7 +368,7 @@ namespace KSMS.Infrastructure.Services
             var role = GetRoleFromJwt();
             var registrationRound = await _unitOfWork.GetRepository<RegistrationRound>().SingleOrDefaultAsync(
                 predicate: r => r.Id == registrationRoundId,
-                include: query => query
+                include: query => query.AsSplitQuery()
                     .Include(r => r.Registration)
                         .ThenInclude(r => r.CompetitionCategory)
                     .Include(r => r.Round)
