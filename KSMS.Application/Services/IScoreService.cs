@@ -15,5 +15,8 @@ namespace KSMS.Application.Services
         Task CreateEliminationScoreAsync(CreateEliminationScoreRequest request);
 
         Task<Paginate<ScoreDetailResponse>> GetPagedScoresAsync(int page, int size);
+
+        Task<List<GetScoreDetailByRegistrationRoundResponse>> GetScoresByRegistrationRoundId(
+            Guid registrationRoundId);
     }
 }
