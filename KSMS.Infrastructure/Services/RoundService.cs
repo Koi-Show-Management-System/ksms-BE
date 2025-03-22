@@ -82,5 +82,35 @@ namespace KSMS.Infrastructure.Services
             var roundTypes = refereeAssignment.Select(r => r.RoundType).Distinct().ToList();
             return roundTypes;
         }
+
+        public async Task<object> GetNextRound(Guid roundId)
+        {
+            var round = await _unitOfWork.GetRepository<Round>().SingleOrDefaultAsync(
+                predicate: x => x.Id == roundId);
+            if (round == null)
+            {
+                throw new NotFoundException("Không tìm thấy vòng thi");
+            }
+            var nextRound = await _unitOfWork.GetRepository<Round>()
+                .SingleOrDefaultAsync(
+                    predicate: r => r.CompetitionCategoriesId == round.CompetitionCategoriesId 
+                                    && ((r.RoundType == round.RoundType && r.RoundOrder > round.RoundOrder)
+                                        || (round.RoundType == RoundEnum.Preliminary.ToString()
+                                            && r.RoundType == RoundEnum.Evaluation.ToString() && r.RoundOrder == 1)
+                                        || (round.RoundType == RoundEnum.Evaluation.ToString() 
+                                            && r.RoundType == RoundEnum.Final.ToString() && r.RoundOrder == 1)),
+                    orderBy: q => q.OrderBy(r => r.RoundType != round.RoundType)
+                        .ThenBy(r => r.RoundOrder)
+                );
+            if (nextRound == null)
+            {
+                throw new BadRequestException("Không tìm thấy vòng thi tiếp theo");
+            }
+
+            return new
+            {
+                NextRoundId = nextRound.Id,
+            };
+        }
     }
 }

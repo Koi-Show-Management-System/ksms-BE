@@ -18,6 +18,8 @@ namespace KSMS.Application.Services
 
         Task<List<string>> GetRoundTypeForReferee(Guid competitionCategoryId);
 
+        Task<object> GetNextRound(Guid roundId);
+
     }
 
 }
