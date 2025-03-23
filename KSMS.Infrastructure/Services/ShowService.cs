@@ -357,6 +357,40 @@ namespace KSMS.Infrastructure.Services
             }
         }
 
+        public async Task<Paginate<GetMemberRegisterShowResponse>> GetMemberRegisterShowAsync(Domain.Enums.ShowStatus? showStatus, int page, int size)
+        {
+            var currentAccount = GetIdFromJwt();
+            Expression<Func<Registration, bool>> predicate = r => r.AccountId == currentAccount;
+            if (showStatus.HasValue)
+            {
+                var status = showStatus.Value.ToString().ToLower();
+                predicate = predicate.AndAlso(r => r.KoiShow.Status == status);
+            }
+
+            var registeredShows = await _unitOfWork.GetRepository<Registration>()
+                .GetListAsync(
+                    predicate: predicate,
+                    include: query => query.AsSplitQuery()
+                        .Include(r => r.KoiShow)
+                        .Include(r => r.CompetitionCategory),
+                    orderBy: q => q.OrderByDescending(r => r.CreatedAt));
+            var groupedByShow = registeredShows
+                .GroupBy(r => r.KoiShowId)
+                .Select(group => new GetMemberRegisterShowResponse
+                {
+                    Id = group.Key,
+                    ShowName = group.First().KoiShow.Name,
+                    ImageUrl = group.First().KoiShow.ImgUrl,
+                    Location = group.First().KoiShow.Location,
+                    StartDate = group.First().KoiShow.StartDate,
+                    EndDate = group.First().KoiShow.EndDate,
+                    Status = group.First().KoiShow.Status,
+                    
+                }).ToList();
+                var result = new Paginate<GetMemberRegisterShowResponse>(groupedByShow, page, size, 1);
+                return result;
+        }
+
         public async Task<Paginate<PaginatedKoiShowResponse>> GetPagedShowsAsync(int page, int size)
         {
             var showRepository = _unitOfWork.GetRepository<KoiShow>();

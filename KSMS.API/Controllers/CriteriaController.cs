@@ -51,10 +51,10 @@ namespace KSMS.API.Controllers
             var criteria = await _criterionService.GetPagingCriteria(page, size);
             return Ok(ApiResponse<object>.Success(criteria, "Get list  successfully"));
         }
-        [HttpGet("get-list-criteria-competition-category/{competitionCategoryId:guid}/{roundType}")]
-        public async Task<ActionResult<ApiResponse<object>>> GetCriteriaCompetitionCategory(Guid competitionCategoryId, RoundEnum roundType)
+        [HttpGet("get-list-criteria-competition-category/{competitionCategoryId:guid}/{roundId:guid}")]
+        public async Task<ActionResult<ApiResponse<object>>> GetCriteriaCompetitionCategory(Guid competitionCategoryId, Guid roundId)
         {
-            var criteria = await _criterionService.GetCriteriaCompetitionCategory(competitionCategoryId, roundType);
+            var criteria = await _criterionService.GetCriteriaCompetitionCategory(competitionCategoryId, roundId);
             return Ok(ApiResponse<object>.Success(criteria, "Get list  successfully"));
         }
         //[HttpDelete("{id:guid}")]
