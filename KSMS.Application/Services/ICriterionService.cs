@@ -23,7 +23,7 @@ namespace KSMS.Application.Services
 
                 Task<Paginate<GetAllCriteriaResponse>> GetPagingCriteria(int page, int size);
                 
-                Task<List<GetCriteriaCompetitionCategoryResponse>> GetCriteriaCompetitionCategory(Guid competitionCategoryId, RoundEnum roundType);
+                Task<List<GetCriteriaCompetitionCategoryResponse>> GetCriteriaCompetitionCategory(Guid competitionCategoryId, Guid roundIde);
 
                 Task DeleteCriteriaAsync(Guid id);
         }

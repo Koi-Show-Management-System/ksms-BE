@@ -3,9 +3,11 @@ using KSMS.Domain.Dtos;
 using KSMS.Domain.Dtos.Requests.Show;
 using KSMS.Domain.Dtos.Responses.KoiShow;
 using KSMS.Domain.Dtos.Responses.Variety;
+using KSMS.Domain.Enums;
 using KSMS.Domain.Exceptions;
 using KSMS.Domain.Pagination;
 using KSMS.Infrastructure.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace KSMS.API.Controllers
@@ -50,6 +52,15 @@ namespace KSMS.API.Controllers
             return Ok(ApiResponse<Paginate<PaginatedKoiShowResponse>>.Success(shows, "Get paged shows successfully"));
         }
         
-        
+        [HttpGet("get-history-register-show")]
+        [Authorize(Roles = "Member")]
+        public async Task<ActionResult<ApiResponse<object>>> GetHistoryRegisterShow(
+            [FromQuery]ShowStatus? showStatus,
+            [FromQuery] int page = 1,
+            [FromQuery] int size = 10)
+        {
+            var shows = await _showService.GetMemberRegisterShowAsync(showStatus, page, size);
+            return Ok(ApiResponse<object>.Success(shows, "Get paged shows successfully"));
+        }
     }
 }

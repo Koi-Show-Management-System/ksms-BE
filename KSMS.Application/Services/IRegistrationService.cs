@@ -1,6 +1,7 @@
 ﻿using System.Security.Claims;
 using KSMS.Domain.Dtos.Requests.Registration;
 using KSMS.Domain.Dtos.Responses.CompetitionCategory;
+using KSMS.Domain.Dtos.Responses.KoiShow;
 using KSMS.Domain.Dtos.Responses.Registration;
 using KSMS.Domain.Entities;
 using KSMS.Domain.Enums;
@@ -21,6 +22,7 @@ public interface IRegistrationService
     
     Task<Paginate<GetPageRegistrationHistoryResponse>> GetPageRegistrationHistory(
         RegistrationStatus? registrationStatus, ShowStatus? showStatus, int page, int size);
+    Task<GetShowMemberDetailResponse> GetMemberRegisterShowDetail(Guid showId);
     Task<Paginate<GetRegistrationResponse>> GetAllRegistrationForCurrentMember(RegistrationFilter filter, int page,
          int size);
 }
