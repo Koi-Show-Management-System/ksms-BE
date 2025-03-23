@@ -20,6 +20,9 @@ using Hangfire;
 using KSMS.Application.Extensions;
 using KSMS.Domain.Common;
 using KSMS.Domain.Dtos.Responses.CompetitionCategory;
+using KSMS.Domain.Dtos.Responses.KoiMedium;
+using KSMS.Domain.Dtos.Responses.KoiShow;
+using KSMS.Domain.Dtos.Responses.RegistrationPayment;
 using KSMS.Domain.Pagination;
 using ShowStatus = KSMS.Domain.Enums.ShowStatus;
 
@@ -88,9 +91,117 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
         return registrations.Adapt<Paginate<GetPageRegistrationHistoryResponse>>();
     }
 
+    public async Task<GetShowMemberDetailResponse> GetMemberRegisterShowDetail(Guid showId)
+    {
+        var currentAccount = GetIdFromJwt();
+        var show = await _unitOfWork.GetRepository<KoiShow>()
+            .SingleOrDefaultAsync(
+                predicate: s => s.Id == showId,
+                include: query => query.AsSplitQuery()
+                    .Include(s => s.CompetitionCategories)
+                    .ThenInclude(c => c.Awards));
+        if (show is null)
+        {
+            throw new NotFoundException("Không tìm thấy cuộc thi");
+        }
 
+        var memberRegistrations = await _unitOfWork.GetRepository<Registration>()
+            .GetListAsync(
+                predicate: r => r.AccountId == currentAccount && r.KoiShowId == showId,
+                include: query => query.AsSplitQuery()
+                    .Include(r => r.KoiProfile)
+                        .ThenInclude(kp => kp.Variety)
+                    .Include(r => r.KoiMedia)
+                    .Include(r => r.CompetitionCategory)
+                        .ThenInclude(c => c.Awards)
+                    .Include(r => r.RegistrationRounds)
+                        .ThenInclude(rr => rr.Round)
+                    .Include(r => r.RegistrationRounds)
+                        .ThenInclude(rr => rr.RoundResults)
+                    .Include(r => r.RegistrationPayment));
+        if (!memberRegistrations.Any())
+        {
+            throw new NotFoundException("Ban chưa đăng ký tham gia cuộc thi này");
+        }
 
+        var response = new GetShowMemberDetailResponse()
+        {
+            ShowId = show.Id,
+            ShowName = show.Name,
+            ShowImageUrl = show.ImgUrl,
+            Location = show.Location,
+            Duration = $"{show.StartDate:dd/MM/yyyy} - {show.EndDate:dd/MM/yyyy}",
+            Description = show.Description,
+            Status = show.Status,
+            TotalRegisteredKoi = memberRegistrations.Count,
+        };
+        foreach (var registration in memberRegistrations)
+        {
+            string[] roundTypeOrder = {RoundEnum.Final.ToString(), RoundEnum.Evaluation.ToString(), RoundEnum.Preliminary.ToString()};
+            string currentRound = null;
+            foreach (var roundType in roundTypeOrder)
+            {
+                var latestRound = registration.RegistrationRounds
+                    .Where(rr => rr.Round.RoundType == roundType)
+                    .OrderByDescending(rr => rr.Round.RoundOrder)
+                    .FirstOrDefault();
+                if (latestRound != null)
+                {
+                    currentRound = latestRound.Round.RoundType;
+                    break;
+                }
+            }
+            var finalRound = registration.RegistrationRounds
+                .Where(rr => rr.Round.RoundType == RoundEnum.Final.ToString())
+                .OrderByDescending(rr => rr.Round.RoundOrder)
+                .FirstOrDefault();
+            var hasCompleteFinalRound = false;
+            if (finalRound != null)
+            {
+                hasCompleteFinalRound = finalRound.RoundResults.Any(rr => rr.IsPublic == true);
+            }
 
+            var regDetail = new RegistrationDetailItems
+            {
+                RegistrationId = registration.Id,
+                RegistrationNumber = registration.RegistrationNumber,
+                Status = registration.Status,
+                KoiProfileId = registration.KoiProfileId,
+                KoiName = registration.KoiProfile.Name,
+                Variety = registration.KoiProfile.Variety.Name,
+                Size = registration.KoiSize,
+                Age = registration.KoiAge,
+                Gender = registration.KoiProfile.Gender,
+                BloodLine = registration.KoiProfile.Bloodline,
+                CategoryId = registration.CompetitionCategoryId,
+                CategoryName = registration.CompetitionCategory.Name,
+                RegistrationFee = registration.RegistrationFee,
+                Rank = registration.Rank,
+                CurrentRound = currentRound,
+                Payment = registration.RegistrationPayment.Adapt<RegistrationPaymentGetRegistrationResponse>(),
+                Media = registration.KoiMedia.Adapt<List<GetKoiMediaResponse>>()
+            };
+            if (hasCompleteFinalRound && registration.Rank.HasValue && registration.Rank.Value <= 3)
+            {
+                var awardType = registration.Rank.Value switch
+                {
+                    1 => "Giải nhất",
+                    2 => "Giải nhì",
+                    3 => "Giải ba",
+                    _ => null
+                };
+                var award = registration.CompetitionCategory.Awards
+                    .FirstOrDefault(a => a.AwardType == awardType);
+                if (award != null)
+                {
+                    regDetail.Award = award.Name;
+                }
+            }
+            response.Registrations.Add(regDetail);
+        }
+
+        return response;
+    }
 
 
     public async Task<object> CreateRegistration(CreateRegistrationRequest createRegistrationRequest)
