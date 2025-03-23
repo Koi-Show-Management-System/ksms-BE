@@ -117,5 +117,13 @@ namespace KSMS.API.Controllers
             return Ok(ApiResponse<object>.Success(result, "Get list successfully"));
             
         }
+        [HttpGet("get-show-member-detail/{showId:guid}")]
+        [Authorize(Roles = "Member")]
+        public async Task<ActionResult<ApiResponse<GetShowMemberDetailResponse>>>
+            GetShowMemberDetail(Guid showId)
+        {
+            var result = await _registrationService.GetMemberRegisterShowDetail(showId);
+            return Ok(ApiResponse<GetShowMemberDetailResponse>.Success(result, "Get show member detail successfully"));
+        }
     }
 }
