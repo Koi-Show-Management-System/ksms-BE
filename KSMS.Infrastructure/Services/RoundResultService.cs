@@ -49,14 +49,25 @@ namespace KSMS.Infrastructure.Services
                 var refereeAssignmentRepository = _unitOfWork.GetRepository<RefereeAssignment>();
                 var registrationRoundRepository = _unitOfWork.GetRepository<RegistrationRound>();
                 var roundRepository = _unitOfWork.GetRepository<Round>();
+                var awardRepository = _unitOfWork.GetRepository<Award>();
 
                 // 1️⃣ Kiểm tra vòng thi có tồn tại
-                var round = await roundRepository.SingleOrDefaultAsync(predicate: r => r.Id == roundId);
+                var round = await roundRepository.SingleOrDefaultAsync(predicate: r => r.Id == roundId,
+                    include: query => query.Include(r => r.CompetitionCategories));
                 if (round == null)
                 {
                     throw new NotFoundException($"Không tìm thấy vòng thi có ID '{roundId}'.");
                 }
-
+                var isFinalRound = false;
+                if (round.RoundType == RoundEnum.Final.ToString())
+                {
+                    var highestOrderInCategory = await roundRepository.GetListAsync(
+                        predicate: r => r.CompetitionCategoriesId == round.CompetitionCategoriesId &&
+                                        r.RoundType == RoundEnum.Final.ToString(),
+                        orderBy: q => q.OrderByDescending(r => r.RoundOrder)
+                    );
+                    isFinalRound = highestOrderInCategory.First().Id == round.Id;
+                }
                 // 2️⃣ Lấy danh sách RegistrationRound của vòng thi này
                 var registrationRounds = await registrationRoundRepository.GetListAsync(
                     predicate: rr => rr.RoundId == roundId,
@@ -77,6 +88,15 @@ namespace KSMS.Infrastructure.Services
                     var registrationsInCategory = categoryGroup.ToList();
                     int numberOfRegistrationsToAdvance = round.NumberOfRegistrationToAdvance ?? 0;
 
+                    int totalAwards = 0;
+                    if (isFinalRound)
+                    {
+                        var awards = await awardRepository.GetListAsync(
+                            predicate: a => a.CompetitionCategoriesId == competitionCategoryId);
+                        totalAwards = awards.Count;
+                        numberOfRegistrationsToAdvance = totalAwards;
+                    }
+
                     // 4️⃣ Kiểm tra số lượng trọng tài trong vòng này
                     int assignedReferees = await refereeAssignmentRepository.CountAsync(
                         predicate: r => r.RoundType == round.RoundType
@@ -86,15 +106,19 @@ namespace KSMS.Infrastructure.Services
                     {
                         throw new Exception($"Không có trọng tài nào được phân công cho hạng mục {competitionCategoryId} trong vòng này.");
                     }
-
+                    
                     // 5️⃣ Tính tổng điểm của mỗi cá
-                    var finalScores = new Dictionary<Guid, decimal>();
+                    var scoreDataByRegistration = new Dictionary<Guid, (decimal FinalScore, List<ScoreDetail> ScoreDetails)>();
+                    //var finalScores = new Dictionary<Guid, decimal>();
 
                     foreach (var registrationRound in registrationsInCategory)
                     {
                         // ⚠ Lấy danh sách điểm của cá trong vòng thi
                         var scores = await scoreRepository.GetListAsync(
-                            predicate: s => s.RegistrationRoundId == registrationRound.Id);
+                            predicate: s => s.RegistrationRoundId == registrationRound.Id,
+                            include: query => query
+                                .Include(s => s.ScoreDetailErrors)
+                                    .ThenInclude(e => e.ErrorType));
 
                         int totalReferees = scores.Count;
 
@@ -107,20 +131,36 @@ namespace KSMS.Infrastructure.Services
                         decimal totalPenalty = scores.Sum(s => s.TotalPointMinus);
                         decimal finalScore = 100 - (totalPenalty / assignedReferees);
 
-                        finalScores.Add(registrationRound.Id, finalScore);
+                        scoreDataByRegistration.Add(registrationRound.Id, (finalScore, scores.ToList()));
                     }
-
+                    var criteriaCompetitionCategories = await _unitOfWork.GetRepository<CriteriaCompetitionCategory>()
+                        .GetListAsync(predicate: c => c.CompetitionCategoryId == competitionCategoryId &&
+                                                      c.RoundType == round.RoundType);
                     // 6️⃣ Xếp hạng theo điểm số
-                    var sortedResults = finalScores.OrderByDescending(x => x.Value).ToList();
+                    var sortedResults = scoreDataByRegistration
+                        .OrderByDescending(x => x.Value.FinalScore)
+                        .ThenBy(x => GetHighestWeightCriteriaDeduction(x.Value.ScoreDetails, criteriaCompetitionCategories.ToList()))
+                        .Select(x => new {RegistrationRoundId = x.Key, Score = x.Value.FinalScore})
+                        .ToList();
                     var roundResults = new List<RoundResult>();
 
                     for (int i = 0; i < sortedResults.Count; i++)
                     {
+                        int rank = i + 1;
+                        string status;
+                        if (isFinalRound)
+                        {
+                            status = rank <= totalAwards ? "Pass" : "Fail";
+                        }
+                        else
+                        {
+                            status = rank <= numberOfRegistrationsToAdvance ? "Pass" : "Fail";
+                        }
                         roundResults.Add(new RoundResult
                         {
-                            RegistrationRoundsId = sortedResults[i].Key,
-                            TotalScore = sortedResults[i].Value,
-                            Status = i < numberOfRegistrationsToAdvance ? "Pass" : "Fail",
+                            RegistrationRoundsId = sortedResults[i].RegistrationRoundId,
+                            TotalScore = sortedResults[i].Score,
+                            Status = status,//i < numberOfRegistrationsToAdvance ? "Pass" : "Fail",
                             IsPublic = false
                         });
                     }
@@ -196,10 +236,15 @@ namespace KSMS.Infrastructure.Services
                 var round = await _unitOfWork.GetRepository<Round>().SingleOrDefaultAsync(
                     predicate: r => r.Id == roundId,
                     include: query => query
+                        .Include(r => r.CompetitionCategories)
                         .Include(r => r.RegistrationRounds)
                             .ThenInclude(rr => rr.Registration)
                         .Include(r => r.RegistrationRounds)
-                            .ThenInclude(rr => rr.RoundResults));
+                            .ThenInclude(rr => rr.RoundResults)
+                        .Include(r => r.RegistrationRounds)
+                            .ThenInclude(rr => rr.ScoreDetails)
+                                .ThenInclude(sd => sd.ScoreDetailErrors)
+                                    .ThenInclude(sde => sde.ErrorType));
                 if (round == null)
                 {
                     throw new NotFoundException("Không tìm thấy vòng thi.");
@@ -209,7 +254,8 @@ namespace KSMS.Infrastructure.Services
                 {
                     var highestOrderInCategory = await _unitOfWork.GetRepository<Round>()
                         .GetListAsync(
-                            predicate: r => r.CompetitionCategoriesId == round.CompetitionCategoriesId,
+                            predicate: r => r.CompetitionCategoriesId == round.CompetitionCategoriesId &&
+                                            r.RoundType == RoundEnum.Final.ToString(),
                             orderBy: q => q.OrderByDescending(r => r.RoundOrder)
                         );
             
@@ -250,46 +296,62 @@ namespace KSMS.Infrastructure.Services
                 }
                 else
                 {
+                    List<Award> awards = new List<Award>();
+                    int totalAwards = 0;
+                    if (isFinalRound)
+                    {
+                        awards = (await _unitOfWork.GetRepository<Award>().GetListAsync(
+                            predicate: a => a.CompetitionCategoriesId == round.CompetitionCategoriesId)).ToList();
+                        totalAwards = awards.Count;
+                        
+                    }
+                    var criteriaCompetitionCategories = await _unitOfWork.GetRepository<CriteriaCompetitionCategory>()
+                        .GetListAsync(predicate: c => c.CompetitionCategoryId == round.CompetitionCategoriesId &&
+                                                      c.RoundType == round.RoundType);
                     var sortedResults = registrationRounds
-                        .OrderByDescending(rr => rr.RoundResults.First().TotalScore)
+                        //.OrderByDescending(rr => rr.RoundResults.First().TotalScore)
+                        .Select(rr => new
+                        {
+                            RegistrationRound = rr,
+                            TotalScore = rr.RoundResults.First().TotalScore,
+                            ScoreDetails = rr.ScoreDetails.ToList()
+                        })
+                        .OrderByDescending(x => x.TotalScore)
+                        .ThenBy(x => GetHighestWeightCriteriaDeduction(x.ScoreDetails, criteriaCompetitionCategories.ToList()))
+                        .Select(x => x.RegistrationRound)
                         .ToList();
 
-                    var currentRank = 1;
-                    var skipCount = 0;
-                    decimal? previousScore = null;
+                    var currentRank = 0;
 
                     for (int i = 0; i < sortedResults.Count; i++)
                     {
                         var regisRound = sortedResults[i];
-                        var currentScore = regisRound.RoundResults.First().TotalScore;
-
-                        if (previousScore != currentScore)
-                        {
-                            currentRank = i + 1;
-                        }
-                        else
-                        {
-                            skipCount++;
-                        }
+                        currentRank = i + 1;
 
                         var roundResult = regisRound.RoundResults.First();
                         roundResult.IsPublic = true;
                         _unitOfWork.GetRepository<RoundResult>().UpdateAsync(roundResult);
 
                         var registration = regisRound.Registration;
-                        registration.Rank = currentRank + skipCount;
+                        registration.Rank = currentRank;
                         if (roundResult.Status == "Fail")
                         {
                             registration.Status = "eliminated";
                         }
                         else if (isFinalRound)
                         {
-                            registration.Status = "completed";
+                            if (currentRank <= totalAwards)
+                            {
+                                registration.Status = "prizewinner";
+                            }
+                            else
+                            {
+                                registration.Status = "eliminated";
+                            }
+                            
                         }
                         
                         _unitOfWork.GetRepository<Registration>().UpdateAsync(registration);
-
-                        previousScore = currentScore;
                     }
                 }
                 await _unitOfWork.CommitAsync();
@@ -403,6 +465,27 @@ namespace KSMS.Infrastructure.Services
             return pagedRegistrations.Adapt<Paginate<RegistrationGetByCategoryPagedResponse>>();
         }
 
+        private decimal GetHighestWeightCriteriaDeduction(List<ScoreDetail> scoreDetails,
+            List<CriteriaCompetitionCategory> criteriaCompetitionCategories)
+        {
+            var highestWeightCriteria = criteriaCompetitionCategories
+                .OrderByDescending(c => c.Weight)
+                .FirstOrDefault();
+            if (highestWeightCriteria == null)
+            {
+                return 0;
+            }
+            decimal totalDeduction = 0;
+            foreach (var scoreDetail in scoreDetails)
+            {
+                var errorsForCriteria = scoreDetail.ScoreDetailErrors
+                    .Where(err => err.ErrorType.CriteriaId == highestWeightCriteria.CriteriaId)
+                    .Sum(err => err.PointMinus);
+                totalDeduction += errorsForCriteria;
+            }
+
+            return totalDeduction;
+        }
 
 
 
