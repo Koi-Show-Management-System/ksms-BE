@@ -12,7 +12,7 @@ namespace KSMS.Application.Services
 {
     public interface ITankService
     {
-        Task<int> GetCurrentFishCount(Guid tankId);
+        Task<int> GetCurrentFishCount(Guid tankId, Guid roundId);
 
         Task<bool> IsTankFull(Guid tankId);
         Task<Paginate<TankResponse>> GetPagedTanksByCategoryIdAsync(Guid competitionCategoryId, int page, int size);
