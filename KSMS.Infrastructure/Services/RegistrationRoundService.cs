@@ -70,7 +70,7 @@ namespace KSMS.Infrastructure.Services
                 var registrationRoundIds = updateRequests.Select(r => r.RegistrationRoundId).ToList();
                 var existingRegistrations = await regisRoundRepository.GetListAsync(
                     predicate: rr => registrationRoundIds.Contains(rr.Id));
-
+                var round = await _unitOfWork.GetRepository<Round>().SingleOrDefaultAsync(predicate: x => x.Id == existingRegistrations.First().RoundId);
                 if (!existingRegistrations.Any())
                 {
                     throw new Exception("Không tìm thấy đăng ký hợp lệ cho các ID đã cung cấp.");
@@ -89,7 +89,7 @@ namespace KSMS.Infrastructure.Services
 
                 // 3️⃣ Kiểm tra sức chứa của hồ trước khi cập nhật
                 var tankFishCounts = await Task.WhenAll(availableTanks.Select(async tank =>
-                    new { Tank = tank, FishCount = await _tankService.GetCurrentFishCount(tank.Id) }));
+                    new { Tank = tank, FishCount = await _tankService.GetCurrentFishCount(tank.Id, round.Id) }));
 
                 foreach (var tank in tankFishCounts)
                 {
@@ -229,12 +229,16 @@ namespace KSMS.Infrastructure.Services
             {
                 predicate = predicate.AndAlso(x => x.Status == "public");
             }
-
+            var criteriaCompetitionCategories = await _unitOfWork.GetRepository<CriteriaCompetitionCategory>()
+                .GetListAsync(predicate: c => c.CompetitionCategoryId == round.CompetitionCategoriesId &&
+                                              c.RoundType == round.RoundType);
             var registrationRounds = await _unitOfWork.GetRepository<RegistrationRound>().GetPagingListAsync(
                 predicate: predicate,
                 include: query => query.AsSplitQuery()
                     .Include(x => x.RoundResults)
                     .Include(x => x.ScoreDetails)
+                    .ThenInclude(sd => sd.ScoreDetailErrors)
+                    .ThenInclude(err => err.ErrorType)
                     .Include(x => x.Tank)
                     .Include(x => x.Registration)
                     .ThenInclude(x => x.CompetitionCategory)
@@ -246,20 +250,50 @@ namespace KSMS.Infrastructure.Services
                     .Include(x => x.Registration)
                     .ThenInclude(x => x.KoiMedia)
                     .Include(x => x.RoundResults),
-                orderBy: q => (role.ToUpper() == "MEMBER" || role.ToUpper() == "GUEST")
-                              && !q.Any(x => x.RoundResults.Any(rr => rr.IsPublic == true))
-                    ? q.OrderBy(x => x.CreatedAt)
-                    : q.OrderByDescending(x => x.RoundResults.Any() ? x.RoundResults.FirstOrDefault().TotalScore : 0),
+                orderBy: q =>
+                {
+                    if ((role.ToUpper() == "MEMBER" || role.ToUpper() == "GUEST") 
+                        && !q.Any(x => x.RoundResults.Any(rr => rr.IsPublic == true)))
+                    {
+                        return q.OrderBy(x => x.CreatedAt);
+                    }
+
+                    if (q.All(x => x.RoundResults.Any()))
+                    {
+                        return q.OrderByDescending(x => x.RoundResults.First().TotalScore);
+                    }
+                    return q.OrderBy(x => x.CreatedAt);
+                },
                 page: page,
                 size: size);
-            var response = registrationRounds.Adapt<Paginate<GetPageRegistrationRoundResponse>>();
+            //var response = registrationRounds.Adapt<Paginate<GetPageRegistrationRoundResponse>>();
+            var items = registrationRounds.Items.ToList();
+            if (items.All(x => x.RoundResults.Any()) && 
+                ((role.ToUpper() != "MEMBER" && role.ToUpper() != "GUEST") || 
+                 items.Any(x => x.RoundResults.Any(rr => rr.IsPublic == true))))
+            {
+                items = items
+                    .OrderByDescending(x => x.RoundResults.First().TotalScore)
+                    .ThenBy(x => GetHighestWeightCriteriaDeduction(
+                        x.ScoreDetails.ToList(), 
+                        criteriaCompetitionCategories.ToList()))
+                    .ToList();
+            }
+            
+            var response = new Paginate<GetPageRegistrationRoundResponse>
+            {
+                Items = items.Adapt<List<GetPageRegistrationRoundResponse>>(),
+                Total = registrationRounds.Total,
+                Page = registrationRounds.Page,
+                Size = registrationRounds.Size,
+                TotalPages = registrationRounds.TotalPages
+            };
             foreach (var registrationRound in response.Items)
             {
                 var registrationRoundEntity =
                     registrationRounds.Items.FirstOrDefault(x => x.Id == registrationRound.Id);
                 registrationRound.TankName = registrationRoundEntity?.Tank?.Name;
-
-                // Nếu vai trò là MEMBER hoặc GUEST và điểm chưa public, ẩn điểm
+                
                 if (registrationRoundEntity != null && (role.ToUpper() == "MEMBER" || role.ToUpper() == "GUEST") &&
                     registrationRoundEntity.RoundResults.All(rr => rr.IsPublic != true))
                 {
@@ -341,6 +375,27 @@ namespace KSMS.Infrastructure.Services
                 await transaction.RollbackAsync();
                 throw;
             }
+        }
+        private decimal GetHighestWeightCriteriaDeduction(List<ScoreDetail> scoreDetails,
+            List<CriteriaCompetitionCategory> criteriaCompetitionCategories)
+        {
+            var highestWeightCriteria = criteriaCompetitionCategories
+                .OrderByDescending(c => c.Weight)
+                .FirstOrDefault();
+            if (highestWeightCriteria == null)
+            {
+                return 0;
+            }
+            decimal totalDeduction = 0;
+            foreach (var scoreDetail in scoreDetails)
+            {
+                var errorsForCriteria = scoreDetail.ScoreDetailErrors
+                    .Where(err => err.ErrorType.CriteriaId == highestWeightCriteria.CriteriaId)
+                    .Sum(err => err.PointMinus);
+                totalDeduction += errorsForCriteria;
+            }
+
+            return totalDeduction;
         }
     }
 }
