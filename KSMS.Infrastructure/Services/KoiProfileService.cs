@@ -157,14 +157,15 @@ public class KoiProfileService : BaseService<KoiProfileService>, IKoiProfileServ
         }
         
         var response = koiProfile.Adapt<GetKoiDetailResponse>();
-        var validRegistrations = koiProfile.Registrations.Where(r =>
-            r.Status != RegistrationStatus.WaitToPaid.ToString().ToLower() &&
-            r.Status != RegistrationStatus.Cancelled.ToString().ToLower() &&
-            r.Status != RegistrationStatus.Pending.ToString().ToLower() &&
-            r.Status != RegistrationStatus.Rejected.ToString().ToLower()
-        ).ToList();
-        foreach (var registration in validRegistrations.Where(
-                     r => r.Rank.HasValue && r.KoiShow.Status == ShowStatus.Finished.ToString().ToLower()))
+        // var validRegistrations = koiProfile.Registrations.Where(r =>
+        //     r.Status != RegistrationStatus.WaitToPaid.ToString().ToLower() &&
+        //     r.Status != RegistrationStatus.Cancelled.ToString().ToLower() &&
+        //     r.Status != RegistrationStatus.Pending.ToString().ToLower() &&
+        //     r.Status != RegistrationStatus.Rejected.ToString().ToLower()
+        // ).ToList();
+        var prizeWinnerRegistrations = koiProfile.Registrations.Where(r =>
+            r.Status == "prizewinner").ToList();
+        foreach (var registration in prizeWinnerRegistrations)
         {
             var award = registration.CompetitionCategory.Awards
                 .FirstOrDefault(a => GetAwardNameByRank(registration.Rank.Value) == a.AwardType);
