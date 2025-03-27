@@ -394,7 +394,9 @@ namespace KSMS.Infrastructure.Services
             var awards = await _unitOfWork.GetRepository<Award>().GetListAsync(predicate:
                 a => a.CompetitionCategoriesId == categoryId);
             var results = finalRound.RegistrationRounds
-                .Where(rr => rr.RoundResults.Any() && rr.RoundResults.First().IsPublic.Value)
+                .Where(rr => rr.RoundResults.Any()
+                             && rr.RoundResults.First().IsPublic.Value
+                             && rr.Registration.Status == "prizewinner")
                 .Select(rr => new FinalResultResponse
                 {
                     RegistrationId = rr.RegistrationId,
@@ -420,9 +422,10 @@ namespace KSMS.Infrastructure.Services
             {
                 var award = result.Rank switch
                 {
-                    1 => awards.FirstOrDefault(a => a.AwardType == "Giải nhất"),
-                    2 => awards.FirstOrDefault(a => a.AwardType == "Giải nhì"),
-                    3 => awards.FirstOrDefault(a => a.AwardType == "Giải ba"),
+                    1 => awards.FirstOrDefault(a => a.AwardType == "first"),
+                    2 => awards.FirstOrDefault(a => a.AwardType == "second"),
+                    3 => awards.FirstOrDefault(a => a.AwardType == "third"),
+                    4 => awards.FirstOrDefault(a => a.AwardType == "honorable"),
                     _ => null
                 };
                 if (award == null) continue;

@@ -39,6 +39,8 @@ public class RegistrationDetailItems
     public int? Rank { get; set; }
     public string? Award { get; set; }
     public string? CurrentRound { get; set; }
+    
+    public string? EliminatedAtRound { get; set; }
     public RegistrationPaymentGetRegistrationResponse? Payment { get; set; }
     public List<GetKoiMediaResponse> Media { get; set; } = [];
 }

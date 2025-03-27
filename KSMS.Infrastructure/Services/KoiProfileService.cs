@@ -137,28 +137,35 @@ public class KoiProfileService : BaseService<KoiProfileService>, IKoiProfileServ
     public async Task<GetKoiDetailResponse> GetById(Guid id)
     {
         var koiProfile = await _unitOfWork.GetRepository<KoiProfile>().SingleOrDefaultAsync(predicate: x => x.Id == id,
-            include: query => query
+            include: query => query.AsSplitQuery()
                 .Include(k => k.Variety)
                 .Include(k => k.KoiMedia)
                 .Include(k => k.Registrations)
                     .ThenInclude(r => r.KoiShow)
                 .Include(k => k.Registrations)
                     .ThenInclude(r => r.CompetitionCategory)
-                        .ThenInclude(s => s.Awards));
+                        .ThenInclude(s => s.Awards)
+                .Include(k => k.Registrations)
+                    .ThenInclude(r => r.RegistrationRounds)
+                        .ThenInclude(rr => rr.Round)
+                .Include(k => k.Registrations)
+                    .ThenInclude(r => r.RegistrationRounds)
+                        .ThenInclude(rr => rr.RoundResults));
         if (koiProfile is null)
         {
             throw new NotFoundException("Không tìm thấy cá Koi");
         }
         
         var response = koiProfile.Adapt<GetKoiDetailResponse>();
-        var validRegistrations = koiProfile.Registrations.Where(r =>
-            r.Status != RegistrationStatus.WaitToPaid.ToString().ToLower() &&
-            r.Status != RegistrationStatus.Cancelled.ToString().ToLower() &&
-            r.Status != RegistrationStatus.Pending.ToString().ToLower() &&
-            r.Status != RegistrationStatus.Rejected.ToString().ToLower()
-        ).ToList();
-        foreach (var registration in validRegistrations.Where(
-                     r => r.Rank.HasValue && r.KoiShow.Status == ShowStatus.Finished.ToString().ToLower()))
+        // var validRegistrations = koiProfile.Registrations.Where(r =>
+        //     r.Status != RegistrationStatus.WaitToPaid.ToString().ToLower() &&
+        //     r.Status != RegistrationStatus.Cancelled.ToString().ToLower() &&
+        //     r.Status != RegistrationStatus.Pending.ToString().ToLower() &&
+        //     r.Status != RegistrationStatus.Rejected.ToString().ToLower()
+        // ).ToList();
+        var prizeWinnerRegistrations = koiProfile.Registrations.Where(r =>
+            r.Status == "prizewinner").ToList();
+        foreach (var registration in prizeWinnerRegistrations)
         {
             var award = registration.CompetitionCategory.Awards
                 .FirstOrDefault(a => GetAwardNameByRank(registration.Rank.Value) == a.AwardType);
@@ -186,20 +193,23 @@ public class KoiProfileService : BaseService<KoiProfileService>, IKoiProfileServ
                 ShowName = r.KoiShow.Name,
                 ShowStatus = r.KoiShow.Status,
                 Location = r.KoiShow.Location ?? "",
-                Result = GetCompetitionResult(r)
+                Result = GetCompetitionResult(r),
+                EliminationRound = GetEliminationRoundInfo(r)
+                
             }).ToList();
         return response;
 
     }
 
-    private string GetAwardNameByRank(int rank)
+    private string? GetAwardNameByRank(int rank)
     {
         return rank switch
         {
-            1 => "Giải nhất",
-            2 => "Giải nhì",
-            3 => "Giải ba",
-            _ => "Participation"
+            1 => "first",
+            2 => "second",
+            3 => "third",
+            4 => "honorable",
+            _ => null
         };
     }
 
@@ -215,41 +225,71 @@ public class KoiProfileService : BaseService<KoiProfileService>, IKoiProfileServ
                 1 => "Giải nhất",
                 2 => "Giải nhì",
                 3 => "Giải ba",
-                _ => $"Top {registration.Rank.Value}"
+                _ => registration.Status == "prizewinner"
+                    ? $"Giải thưởng (Top {registration.Rank.Value}"
+                    : $"Top {registration.Rank.Value}"
             };
         }
 
         if (!registration.Rank.HasValue)
         {
-            if (registration.Status == RegistrationStatus.WaitToPaid.ToString().ToLower())
+            return registration.Status switch
             {
-                return "Chờ thanh toán";
-            }
-            if (registration.Status == RegistrationStatus.Pending.ToString().ToLower())
-            {
-                return "Chờ duyệt";
-            }
-            if (registration.Status == RegistrationStatus.Rejected.ToString().ToLower())
-            {
-                return "Bị từ chối";
-            }
-            if (registration.Status == RegistrationStatus.Cancelled.ToString().ToLower())
-            {
-                return "Đã hủy";
-            }
-            if (registration.Status == RegistrationStatus.Confirmed.ToString().ToLower())
-            {
-                return "Đã được duyệt - Chờ check in";
-            }
-            if (registration.Status == RegistrationStatus.CheckIn.ToString().ToLower())
-            {
-                return "Đã check in và đang chờ thi đấu";
-            }
-
-            return "Đang thi đấu";
+                var s when s == RegistrationStatus.WaitToPaid.ToString().ToLower() => "Chờ thanh toán",
+                var s when s == RegistrationStatus.Pending.ToString().ToLower() => "Chờ duyệt",
+                var s when s == RegistrationStatus.Rejected.ToString().ToLower() => "Bị từ chối",
+                var s when s == RegistrationStatus.Cancelled.ToString().ToLower() => "Đã hủy",
+                var s when s == RegistrationStatus.Confirmed.ToString().ToLower() => "Đã được duyệt - Chờ check in",
+                var s when s == RegistrationStatus.CheckIn.ToString().ToLower() => "Đã check in và đang chờ thi đấu",
+                var s when s == "eliminated" => "Đã bị loại",
+                _ => "Đang thi đấu"
+            };
+        }
+        if (registration.Status == "eliminated")
+        {
+            return $"Thứ hạng sau cùng: {registration.Rank.Value} - Đã bị loại";
         }
 
         return $"Thứ hạng hiện tại: {registration.Rank.Value}";
+    }
+
+    private string? GetEliminationRoundInfo(Registration registration)
+    {
+        if (registration.Status == "eliminated" && registration.RegistrationRounds.Any())
+        {
+            var failedRound = registration.RegistrationRounds
+                .Where(rr => rr.RoundResults.Any(result => result.Status == "Fail"))
+                .OrderBy(rr => GetRoundTypeOrder(rr.Round.RoundType))
+                .ThenBy(rr => rr.Round.RoundOrder)
+                .FirstOrDefault();
+            if (failedRound?.Round != null)
+            {
+                string roundType = failedRound.Round.RoundType;
+                string roundName = !string.IsNullOrEmpty(failedRound.Round.Name) 
+                    ? failedRound.Round.Name 
+                    : (failedRound.Round.RoundOrder.HasValue ? $"Vòng {failedRound.Round.RoundOrder}" : "");
+                
+                return roundType switch
+                {
+                    var type when type.Equals(RoundEnum.Preliminary.ToString(), StringComparison.OrdinalIgnoreCase) => $"Vòng sơ khảo {roundName}",
+                    var type when type.Equals(RoundEnum.Evaluation.ToString(), StringComparison.OrdinalIgnoreCase) => $"Vòng đánh giá {roundName}",
+                    var type when type.Equals(RoundEnum.Final.ToString(), StringComparison.OrdinalIgnoreCase) => $"Vòng chung kết {roundName}",
+                    _ => $"Vòng {roundType} {roundName}"
+                };
+            }
+        }
+
+        return null;
+    }
+    private int GetRoundTypeOrder(string roundType)
+    {
+        return roundType?.ToLower() switch
+        {
+            var type when type == RoundEnum.Preliminary.ToString().ToLower() => 1,
+            var type when type == RoundEnum.Evaluation.ToString().ToLower() => 2, // Semifinal = Evaluation
+            var type when type == RoundEnum.Final.ToString().ToLower() => 3,
+            _ => 99 // Các loại vòng thi khác (nếu có)
+        };
     }
     private Expression<Func<KoiProfile, bool>> ApplyKoiFilter(KoiProfileFilter? filter, Guid accountId)
     {
