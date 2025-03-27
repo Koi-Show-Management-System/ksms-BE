@@ -181,13 +181,32 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
                 Payment = registration.RegistrationPayment.Adapt<RegistrationPaymentGetRegistrationResponse>(),
                 Media = registration.KoiMedia.Adapt<List<GetKoiMediaResponse>>()
             };
-            if (hasCompleteFinalRound && registration.Rank.HasValue && registration.Rank.Value <= 3)
+            if (registration.Status == "eliminated" && registration.RegistrationRounds.Any())
+            {
+                var failedRound = registration.RegistrationRounds
+                    .Where(rr => rr.RoundResults.Any(result => result.Status == "Fail"))
+                    .OrderBy(rr => GetRoundTypeOrder(rr.Round.RoundType))
+                    .ThenBy(rr => rr.Round.RoundOrder)
+                    .FirstOrDefault();
+
+                if (failedRound?.Round != null)
+                {
+                    string roundType = GetRoundTypeDisplayName(failedRound.Round.RoundType);
+                    string roundName = !string.IsNullOrEmpty(failedRound.Round.Name) 
+                        ? failedRound.Round.Name 
+                        : (failedRound.Round.RoundOrder.HasValue ? $"Vòng {failedRound.Round.RoundOrder}" : "");
+                    
+                    regDetail.EliminatedAtRound = $"{roundType}-{roundName}";
+                }
+            }
+            if (hasCompleteFinalRound && registration.Rank.HasValue)
             {
                 var awardType = registration.Rank.Value switch
                 {
-                    1 => "Giải nhất",
-                    2 => "Giải nhì",
-                    3 => "Giải ba",
+                    1 => "first",
+                    2 => "second",
+                    3 => "third",
+                    4 => "honorable",
                     _ => null
                 };
                 var award = registration.CompetitionCategory.Awards
@@ -201,6 +220,28 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
         }
 
         return response;
+    }
+    
+    private int GetRoundTypeOrder(string roundType)
+    {
+        return roundType?.ToLower() switch
+        {
+            var type when type == RoundEnum.Preliminary.ToString().ToLower() => 1,
+            var type when type == RoundEnum.Evaluation.ToString().ToLower() => 2, // Semifinal = Evaluation
+            var type when type == RoundEnum.Final.ToString().ToLower() => 3,
+            _ => 99 // Các loại vòng thi khác (nếu có)
+        };
+    }
+
+    private string GetRoundTypeDisplayName(string roundType)
+    {
+        return roundType switch
+        {
+            var type when type.Equals(RoundEnum.Preliminary.ToString(), StringComparison.OrdinalIgnoreCase) => "Vòng sơ khảo",
+            var type when type.Equals(RoundEnum.Evaluation.ToString(), StringComparison.OrdinalIgnoreCase) => "Vòng đánh giá",
+            var type when type.Equals(RoundEnum.Final.ToString(), StringComparison.OrdinalIgnoreCase) => "Vòng chung kết",
+            _ => $"Vòng {roundType}"
+        };
     }
 
 
