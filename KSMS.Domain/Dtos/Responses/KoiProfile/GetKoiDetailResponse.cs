@@ -50,4 +50,5 @@ public class KoiCompetitionHistoryResponse
     public string? ShowStatus { get; set; }
     public string? Location { get; set; }
     public string? Result { get; set; }
+    public string? EliminationRound { get; set; }
 }    
