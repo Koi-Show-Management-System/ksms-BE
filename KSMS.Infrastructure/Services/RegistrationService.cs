@@ -439,6 +439,24 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
                 throw new ForbiddenMethodException("You are not authorized to update this registration.");
             }
         }
+
+        if (status == RegistrationStatus.Confirmed)
+        {
+            var category = await _unitOfWork.GetRepository<CompetitionCategory>().SingleOrDefaultAsync(
+                predicate: x => x.Id == registration.CompetitionCategoryId);
+            if (category == null)
+            {
+                throw new NotFoundException("Không tìm thấy hạng mục thi đấu");
+            }
+            var confirmedCount = await _unitOfWork.GetRepository<Registration>()
+                .CountAsync(predicate: x => x.CompetitionCategoryId == category.Id 
+                                            && x.Status == RegistrationStatus.Confirmed.ToString().ToLower()
+                                            && x.Id != registrationId);
+            if (confirmedCount >= category.MaxEntries)
+            {
+                throw new BadRequestException($"Hạng mục '{category.Name}' đã đạt số lượng đăng ký tối đa ({category.MaxEntries}). Không thể xác nhận thêm.");
+            }
+        }
         registration.Status = status switch
         {
             RegistrationStatus.Confirmed => RegistrationStatus.Confirmed.ToString().ToLower(),
