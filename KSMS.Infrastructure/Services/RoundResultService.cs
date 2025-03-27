@@ -420,9 +420,10 @@ namespace KSMS.Infrastructure.Services
             {
                 var award = result.Rank switch
                 {
-                    1 => awards.FirstOrDefault(a => a.AwardType == "Giải nhất"),
-                    2 => awards.FirstOrDefault(a => a.AwardType == "Giải nhì"),
-                    3 => awards.FirstOrDefault(a => a.AwardType == "Giải ba"),
+                    1 => awards.FirstOrDefault(a => a.AwardType == "first"),
+                    2 => awards.FirstOrDefault(a => a.AwardType == "second"),
+                    3 => awards.FirstOrDefault(a => a.AwardType == "third"),
+                    4 => awards.FirstOrDefault(a => a.AwardType == "honorable"),
                     _ => null
                 };
                 if (award == null) continue;
