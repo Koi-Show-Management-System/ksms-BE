@@ -267,6 +267,7 @@ public static string ConfirmCategoryAssignment(Registration registration)
                             <p>Thông tin cá Koi đã đăng ký:</p>
                             <ul style='margin: 10px 0; padding-left: 20px;'>
                                 <li><strong>Tên người đăng ký:</strong> {registration.RegisterName}</li>
+                                <li><strong>Số báo danh:</strong> <span style='font-weight: bold; color: #b21f1f; font-size: 18px;'>{registration.RegistrationNumber}</span></li>
                                 <li><strong>Giống loại:</strong> {registration.KoiProfile.Variety.Name}</li>
                                 <li><strong>Tên cá:</strong> {registration.KoiProfile.Name}</li>
                                 <li><strong>Kích thước:</strong> {registration.KoiSize} cm</li>
