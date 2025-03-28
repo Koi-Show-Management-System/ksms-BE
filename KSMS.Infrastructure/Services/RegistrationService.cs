@@ -478,7 +478,15 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
         if (registration.Status == RegistrationStatus.Confirmed.ToString().ToLower())
         {
             registration.ApprovedAt = VietNamTimeUtil.GetVietnamTime();
-
+            var category = await _unitOfWork.GetRepository<CompetitionCategory>().SingleOrDefaultAsync(
+                predicate: x => x.Id == registration.CompetitionCategoryId);
+            var koiShow = await _unitOfWork.GetRepository<KoiShow>().SingleOrDefaultAsync(
+                predicate: x => x.Id == registration.KoiShowId);
+            var confirmedCount = await _unitOfWork.GetRepository<Registration>()
+                .CountAsync(predicate: x => x.CompetitionCategoryId == category.Id &&
+                                            x.KoiShowId == registration.KoiShowId &&
+                                            x.Status == RegistrationStatus.Confirmed.ToString().ToLower());
+            registration.RegistrationNumber = $"{GetShowCode(koiShow)}-{GetCategoryPrefix(category)}{confirmedCount:D3}";
             // Generate QR code
             var qrCodeData = QrcodeUtil.GenerateQrCode(registration.RegistrationPayment.Id);
             registration.RegistrationPayment.QrcodeData = await _firebaseService.UploadImageAsync(
@@ -680,5 +688,18 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
         return filterQuery;
     }
 
+    private string GetCategoryPrefix(CompetitionCategory category)
+    {
+        return category.Name.Substring(0, Math.Min(2, category.Name.Length)).ToUpper();
+    }
 
+    private string GetShowCode(KoiShow show)
+    {
+        var yearPart = show.StartDate?.Year.ToString() ?? DateTime.Now.Year.ToString();
+        var namePart = !string.IsNullOrEmpty(show.Name)
+            ? string.Concat(show.Name.Split(' ').Select(s => s.Length > 0 ? s[0] : ' '))
+            : "KS";
+        namePart = namePart.Length > 3 ? namePart.Substring(0, 3) : namePart;
+        return $"{namePart.ToUpper()}{yearPart.Substring(Math.Max(0, yearPart.Length - 2))}";
+    }
 }
