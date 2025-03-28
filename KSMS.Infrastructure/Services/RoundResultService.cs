@@ -341,7 +341,7 @@ namespace KSMS.Infrastructure.Services
                         else if (isFinalRound)
                         {
                             if (currentRank <= totalAwards)
-                            {
+                            {   
                                 registration.Status = "prizewinner";
                             }
                             else
