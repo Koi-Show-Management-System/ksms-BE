@@ -22,8 +22,6 @@ public class GetRegistrationResponse // for user
     public string? QrcodeData { get; set; }
 
     public string? Status { get; set; }
-    
-    public int? Rank { get; set; }
 
     public string? Notes { get; set; }
     

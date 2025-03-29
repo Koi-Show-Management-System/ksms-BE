@@ -141,14 +141,14 @@ namespace KSMS.Infrastructure.Services
                 // 1️⃣ Kiểm tra danh sách cá hợp lệ
                 if (registrationIds == null || !registrationIds.Any())
                 {
-                    throw new ArgumentException("Danh sách cá không được để trống.");
+                    throw new BadRequestException("Danh sách cá không được để trống.");
                 }
 
                 // 2️⃣ Kiểm tra RoundId có tồn tại không
                 var roundExists = (await roundRepository.GetListAsync(predicate: r => r.Id == roundId)).Any();
                 if (!roundExists)
                 {
-                    throw new Exception($"Không tìm thấy vòng thi {roundId}. Vui lòng tạo vòng thi trước.");
+                    throw new NotFoundException($"Không tìm thấy vòng thi {roundId}. Vui lòng tạo vòng thi trước.");
                 }
                 var existingInRound = await regisRoundRepository.GetListAsync(
                     predicate: rr => rr.RoundId == roundId && registrationIds.Contains(rr.RegistrationId));
@@ -156,7 +156,7 @@ namespace KSMS.Infrastructure.Services
                 if (existingInRound.Any())
                 {
                     var duplicateIds = existingInRound.Select(r => r.RegistrationId).ToList();
-                    throw new BadRequestException($"Một số cá đã được phân vào vòng này. ID: {string.Join(", ", duplicateIds)}");
+                    throw new BadRequestException($"Tất cả cá đã được phân vào vòng tiếp theo");
                 }
                 // 3️⃣ Lấy danh sách đơn đăng ký của cá
                 var registrations = await registrationRepository.GetListAsync(
@@ -166,7 +166,7 @@ namespace KSMS.Infrastructure.Services
                 var categoryId = registrations.First().CompetitionCategoryId;
                 if (registrations.Any(r => r.CompetitionCategoryId != categoryId))
                 {
-                    throw new Exception("Tất cả các cá phải thuộc cùng một hạng mục.");
+                    throw new BadRequestException("Tất cả các cá phải thuộc cùng một hạng mục.");
                 }
 
                 // 5️⃣ Lấy danh sách cá đã thi đấu trong vòng trước
@@ -201,7 +201,7 @@ namespace KSMS.Infrastructure.Services
             catch (Exception ex)
             {
                 await transaction.RollbackAsync();
-                throw new Exception("Không thể phân cá vào vòng tiếp theo: " + ex.Message);
+                throw;
             }
         }
 
@@ -288,6 +288,79 @@ namespace KSMS.Infrastructure.Services
                 Size = registrationRounds.Size,
                 TotalPages = registrationRounds.TotalPages
             };
+            // Tính toán ban đầu cho tất cả các items
+            bool hasRoundResults = items.All(x => x.RoundResults.Any());
+            
+            // Xử lý đặc biệt cho vòng Preliminary
+            if (round.RoundType == "Preliminary" && hasRoundResults)
+            {
+                // Đếm tổng số pass và tổng số đăng ký (trên toàn bộ hệ thống, không phụ thuộc phân trang)
+                var allRegistrationRounds = await _unitOfWork.GetRepository<RegistrationRound>().GetListAsync(
+                    predicate: x => x.RoundId == roundId && x.RoundResults.Any(),
+                    include: query => query.Include(x => x.RoundResults));
+                
+                int totalPassed = allRegistrationRounds.Count(x => x.RoundResults.Any() && 
+                                                        x.RoundResults.FirstOrDefault()?.Status?.ToLower() == "pass");
+                int totalRegistrations = await _unitOfWork.GetRepository<RegistrationRound>().CountAsync(
+                    predicate: x => x.RoundId == roundId);
+                
+                // Kiểm tra quyền xem chi tiết
+                bool canViewDetailedResults;
+                if (role.ToUpper() == "MEMBER" || role.ToUpper() == "GUEST")
+                {
+                    canViewDetailedResults = items.Any(x => x.RoundResults.Any(rr => rr.IsPublic == true));
+                }
+                else
+                {
+                    canViewDetailedResults = true;
+                }
+                
+                // Các bước gán rank vẫn giữ nguyên
+                foreach (var item in response.Items)
+                {
+                    var originalItem = items.FirstOrDefault(x => x.Id == item.Id);
+                    
+                    if (!canViewDetailedResults)
+                    {
+                        item.Rank = totalRegistrations;
+                    }
+                    else if (originalItem != null && originalItem.RoundResults.Any())
+                    {
+                        bool isPassed = originalItem.RoundResults.FirstOrDefault()?.Status?.ToLower() == "pass";
+                        item.Rank = isPassed ? totalPassed : totalRegistrations;
+                    }
+                    else
+                    {
+                        item.Rank = totalRegistrations;
+                    }
+                }
+            }
+            // Xử lý các trường hợp không phải vòng Preliminary
+            else
+            {
+                // Nếu chưa có round result, gán rank cho tất cả item không phụ thuộc quyền
+                if (!hasRoundResults)
+                {
+                    int totalRegistrations = items.Count;
+                    foreach (var item in response.Items)
+                    {
+                        item.Rank = totalRegistrations;
+                    }
+                }
+                // Nếu có round result, chỉ gán rank dựa vào quyền
+                else if (((role.ToUpper() != "MEMBER" && role.ToUpper() != "GUEST") ||
+                          items.Any(x => x.RoundResults.Any(rr => rr.IsPublic == true))))
+                {
+                    // Tính offset dựa trên trang hiện tại và kích thước trang
+                    int offset = (page - 1) * size;
+                    
+                    // Gán rank tính từ vị trí thực trong toàn bộ danh sách
+                    for (int i = 0; i < response.Items.Count; i++)
+                    {
+                        response.Items[i].Rank = offset + i + 1;
+                    }
+                }
+            }
             foreach (var registrationRound in response.Items)
             {
                 var registrationRoundEntity =
