@@ -6,7 +6,10 @@ namespace KSMS.Domain.Dtos.Responses.RegistrationRound;
 public class GetPageRegistrationRoundResponse
 {
     public Guid Id { get; set; }
+    public int? Rank { get; set; }
     public GetRegistrationResponse? Registration { get; set; }
+    
+    
     
     public DateTime? CheckInTime { get; set; }
 
