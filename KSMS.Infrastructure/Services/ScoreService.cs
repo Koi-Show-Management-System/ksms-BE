@@ -292,7 +292,7 @@ namespace KSMS.Infrastructure.Services
 
             if (referee == null)
             {
-                throw new ForbiddenMethodException($"Trọng tài '{request.RefereeAccountId}' không được phân công cho hạng mục '{competitionCategoryId}' trong vòng này");
+                throw new ForbiddenMethodException($"Bạn không được phân công cho hạng mục này trong vòng này");
             }
 
             // 3️⃣ Kiểm tra trọng tài đã chấm điểm chưa
@@ -333,7 +333,7 @@ namespace KSMS.Infrastructure.Services
             //  Kiểm tra nếu không có trọng tài nào (tránh lỗi chia cho 0)
             if (totalReferees == 0)
             {
-                throw new Exception($"Không có trọng tài nào được phân công cho hạng mục {competitionCategoryId} trong vòng này");
+                throw new Exception($"Không có trọng tài nào được phân công cho hạng mục này trong vòng này");
             }
 
             bool isLastJudge = totalVotes >= totalReferees; // Nếu số phiếu chấm bằng số trọng tài → Trọng tài cuối cùng
