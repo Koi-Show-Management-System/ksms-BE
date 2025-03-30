@@ -229,9 +229,6 @@ namespace KSMS.Infrastructure.Services
             {
                 predicate = predicate.AndAlso(x => x.Status == "public");
             }
-            var criteriaCompetitionCategories = await _unitOfWork.GetRepository<CriteriaCompetitionCategory>()
-                .GetListAsync(predicate: c => c.CompetitionCategoryId == round.CompetitionCategoriesId &&
-                                              c.RoundType == round.RoundType);
             var registrationRounds = await _unitOfWork.GetRepository<RegistrationRound>().GetPagingListAsync(
                 predicate: predicate,
                 include: query => query.AsSplitQuery()
@@ -252,126 +249,73 @@ namespace KSMS.Infrastructure.Services
                     .Include(x => x.RoundResults),
                 orderBy: q =>
                 {
-                    if ((role.ToUpper() == "MEMBER" || role.ToUpper() == "GUEST") 
-                        && !q.Any(x => x.RoundResults.Any(rr => rr.IsPublic == true)))
+                    // Nếu người dùng có quyền xem (không phải MEMBER/GUEST) và đã có kết quả -> Sắp xếp theo Rank
+                    if (role.ToUpper() != "MEMBER" && role.ToUpper() != "GUEST" && 
+                        q.Any(x => x.RoundResults.Any()) && q.Any(x => x.Rank.HasValue))
                     {
-                        return q.OrderBy(x => x.CreatedAt);
+                        return q.OrderBy(x => x.Rank);
                     }
+                    // Nếu kết quả đã công bố công khai -> Sắp xếp theo Rank cho tất cả người dùng
 
-                    if (q.All(x => x.RoundResults.Any()))
+                    if (q.Any(x => x.RoundResults.Any(rr => rr.IsPublic == true)) && q.Any(x => x.Rank.HasValue))
+                    {
+                        return q.OrderBy(x => x.Rank);
+                    }
+                    // Nếu có kết quả nhưng chưa công bố và người dùng có quyền xem -> Sắp xếp theo điểm
+                    // (Trường hợp này xử lý khi chưa có Rank hoặc mục đích sắp xếp khác)
+                    if (q.Any(x => x.RoundResults.Any()) &&
+                        (role.ToUpper() != "MEMBER" && role.ToUpper() != "GUEST"))
                     {
                         return q.OrderByDescending(x => x.RoundResults.First().TotalScore);
                     }
-                    return q.OrderBy(x => x.CreatedAt);
+
+                    // Mặc định sắp xếp theo thời gian tạo
+                    return q.OrderBy(x => x.Registration.RegistrationNumber);
                 },
                 page: page,
                 size: size);
-            //var response = registrationRounds.Adapt<Paginate<GetPageRegistrationRoundResponse>>();
             var items = registrationRounds.Items.ToList();
-            if (items.All(x => x.RoundResults.Any()) && 
-                ((role.ToUpper() != "MEMBER" && role.ToUpper() != "GUEST") || 
-                 items.Any(x => x.RoundResults.Any(rr => rr.IsPublic == true))))
-            {
-                items = items
-                    .OrderByDescending(x => x.RoundResults.First().TotalScore)
-                    .ThenBy(x => GetHighestWeightCriteriaDeduction(
-                        x.ScoreDetails.ToList(), 
-                        criteriaCompetitionCategories.ToList()))
-                    .ToList();
-            }
-            
-            var response = new Paginate<GetPageRegistrationRoundResponse>
-            {
-                Items = items.Adapt<List<GetPageRegistrationRoundResponse>>(),
-                Total = registrationRounds.Total,
-                Page = registrationRounds.Page,
-                Size = registrationRounds.Size,
-                TotalPages = registrationRounds.TotalPages
-            };
+
+            // Sử dụng Adapt để chuyển đổi toàn bộ đối tượng Paginate
+            var response = registrationRounds.Adapt<Paginate<GetPageRegistrationRoundResponse>>();
+
             // Tính toán ban đầu cho tất cả các items
-            bool hasRoundResults = items.All(x => x.RoundResults.Any());
+            var hasRoundResults = items.All(x => x.RoundResults.Any());
+            var canViewDetailedResults = (role.ToUpper() != "MEMBER" && role.ToUpper() != "GUEST") || 
+                                          items.Any(x => x.RoundResults.Any(rr => rr.IsPublic == true));
             
-            // Xử lý đặc biệt cho vòng Preliminary
-            if (round.RoundType == "Preliminary" && hasRoundResults)
+            // Lặp qua từng item để cập nhật Rank và các thông tin khác
+            foreach (var item in response.Items)
             {
-                // Đếm tổng số pass và tổng số đăng ký (trên toàn bộ hệ thống, không phụ thuộc phân trang)
-                var allRegistrationRounds = await _unitOfWork.GetRepository<RegistrationRound>().GetListAsync(
-                    predicate: x => x.RoundId == roundId && x.RoundResults.Any(),
-                    include: query => query.Include(x => x.RoundResults));
+                var originalItem = items.FirstOrDefault(x => x.Id == item.Id);
                 
-                int totalPassed = allRegistrationRounds.Count(x => x.RoundResults.Any() && 
-                                                        x.RoundResults.FirstOrDefault()?.Status?.ToLower() == "pass");
-                int totalRegistrations = await _unitOfWork.GetRepository<RegistrationRound>().CountAsync(
-                    predicate: x => x.RoundId == roundId);
+                if (originalItem == null) continue;
                 
-                // Kiểm tra quyền xem chi tiết
-                bool canViewDetailedResults;
-                if (role.ToUpper() == "MEMBER" || role.ToUpper() == "GUEST")
+                // Ưu tiên sử dụng Rank từ database
+                if (originalItem.Rank.HasValue && 
+                    (canViewDetailedResults || originalItem.RoundResults.Any(rr => rr.IsPublic == true)))
                 {
-                    canViewDetailedResults = items.Any(x => x.RoundResults.Any(rr => rr.IsPublic == true));
+                    // Sử dụng Rank đã lưu trong database
+                    item.Rank = originalItem.Rank.Value;
                 }
-                else
+                // Nếu không có Rank trong database hoặc người dùng không có quyền xem
+                else 
                 {
-                    canViewDetailedResults = true;
+                    // Sử dụng giá trị mặc định là tổng số đăng ký trong vòng
+                    var totalRegistrations = await _unitOfWork.GetRepository<RegistrationRound>().CountAsync(
+                        predicate: x => x.RoundId == roundId);
+                    item.Rank = totalRegistrations;
                 }
                 
-                // Các bước gán rank vẫn giữ nguyên
-                foreach (var item in response.Items)
+                // Xử lý hiển thị RoundResults
+                if ((role.ToUpper() == "MEMBER" || role.ToUpper() == "GUEST") &&
+                    hasRoundResults && originalItem.RoundResults.All(rr => rr.IsPublic != true))
                 {
-                    var originalItem = items.FirstOrDefault(x => x.Id == item.Id);
-                    
-                    if (!canViewDetailedResults)
-                    {
-                        item.Rank = totalRegistrations;
-                    }
-                    else if (originalItem != null && originalItem.RoundResults.Any())
-                    {
-                        bool isPassed = originalItem.RoundResults.FirstOrDefault()?.Status?.ToLower() == "pass";
-                        item.Rank = isPassed ? totalPassed : totalRegistrations;
-                    }
-                    else
-                    {
-                        item.Rank = totalRegistrations;
-                    }
+                    item.RoundResults = [];
                 }
-            }
-            // Xử lý các trường hợp không phải vòng Preliminary
-            else
-            {
-                // Nếu chưa có round result, gán rank cho tất cả item không phụ thuộc quyền
-                if (!hasRoundResults)
-                {
-                    int totalRegistrations = items.Count;
-                    foreach (var item in response.Items)
-                    {
-                        item.Rank = totalRegistrations;
-                    }
-                }
-                // Nếu có round result, chỉ gán rank dựa vào quyền
-                else if (((role.ToUpper() != "MEMBER" && role.ToUpper() != "GUEST") ||
-                          items.Any(x => x.RoundResults.Any(rr => rr.IsPublic == true))))
-                {
-                    // Tính offset dựa trên trang hiện tại và kích thước trang
-                    int offset = (page - 1) * size;
-                    
-                    // Gán rank tính từ vị trí thực trong toàn bộ danh sách
-                    for (int i = 0; i < response.Items.Count; i++)
-                    {
-                        response.Items[i].Rank = offset + i + 1;
-                    }
-                }
-            }
-            foreach (var registrationRound in response.Items)
-            {
-                var registrationRoundEntity =
-                    registrationRounds.Items.FirstOrDefault(x => x.Id == registrationRound.Id);
-                registrationRound.TankName = registrationRoundEntity?.Tank?.Name;
                 
-                if (registrationRoundEntity != null && (role.ToUpper() == "MEMBER" || role.ToUpper() == "GUEST") &&
-                    registrationRoundEntity.RoundResults.All(rr => rr.IsPublic != true))
-                {
-                    registrationRound.RoundResults = [];
-                }
+                // Gán TankName
+                item.TankName = originalItem.Tank?.Name;
             }
 
             return response;
@@ -434,6 +378,7 @@ namespace KSMS.Infrastructure.Services
                 foreach (var regisRound in registrationRounds)
                 {
                     regisRound.Status = "public";
+                    regisRound.Rank = totalParticipants;
                     _unitOfWork.GetRepository<RegistrationRound>().UpdateAsync(regisRound);
                     var registration = regisRound.Registration;
                     registration.Rank = totalParticipants;
