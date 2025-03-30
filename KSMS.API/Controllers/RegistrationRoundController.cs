@@ -30,7 +30,7 @@ namespace KSMS.API.Controllers
             try
             {
                 await _registrationRoundService.AssignMultipleFishesToTankAndRound(request.RoundId, request.RegistrationIds);
-                return Ok(ApiResponse<object>.Success(null, "Assigned fishes successfully"));
+                return Ok(ApiResponse<object>.Success(null, "Gán cá vào vòng thành công"));
             }
             catch (Exception ex)
             {
@@ -46,7 +46,7 @@ namespace KSMS.API.Controllers
             try
             {
                 await _registrationRoundService.UpdateFishesWithTanks(updateRequests);
-                return Ok(ApiResponse<object>.Success(null, "Updated fish tanks successfully"));
+                return Ok(ApiResponse<object>.Success(null, "Gán cá vào bể thành công"));
             }
             catch (Exception ex)
             {
@@ -66,7 +66,7 @@ namespace KSMS.API.Controllers
         public async Task<ActionResult<ApiResponse<object>>> PublishRegistrationRound(Guid roundId)
         {
             await _registrationRoundService.PublishRound(roundId);
-            return Ok(ApiResponse<object>.Success(null, "Published registration round successfully"));
+            return Ok(ApiResponse<object>.Success(null, "Công bố vòng thi thành công"));
         }
         // quét mã qr cho trọng tài 
         [HttpGet("get-registration-round-for-referee")]
@@ -75,13 +75,13 @@ namespace KSMS.API.Controllers
             [FromQuery] Guid roundId)
         {
             var registrationRoundInfo = await _registrationRoundService.GetRegistrationRoundByIdAndRoundAsync(registrationId, roundId);
-            return Ok(ApiResponse<CheckQrRegistrationRoundResponse>.Success(registrationRoundInfo, "Fetched registration info successfully"));
+            return Ok(ApiResponse<CheckQrRegistrationRoundResponse>.Success(registrationRoundInfo, "QUét mã QR thành công"));
         }
         [HttpGet("{roundId:guid}")]
         public async Task<ActionResult<ApiResponse<object>>> GetPageRegistrationRounds(Guid roundId, [FromQuery] int page = 1, [FromQuery] int size = 10)
         {
             var registrationRounds = await _registrationRoundService.GetPageRegistrationRound(roundId, page, size);
-            return Ok(ApiResponse<object>.Success(registrationRounds, "Get successfully"));
+            return Ok(ApiResponse<object>.Success(registrationRounds, "Lấy danh sách vòng thi thành công"));
         }
     }
 }

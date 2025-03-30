@@ -38,7 +38,7 @@ namespace KSMS.API.Controllers
             {
                 await _roundResultService.ProcessFinalScoresForRound(roundId); // 🔥 THÊM `await` ĐỂ BẮT LỖI
 
-                return StatusCode(201, ApiResponse<object>.Created(null, "Final scores calculated successfully!"));
+                return StatusCode(201, ApiResponse<object>.Created(null, "Tạo kết quả thành công"));
             }
             catch (Exception ex)
             {
@@ -50,7 +50,7 @@ namespace KSMS.API.Controllers
         public async Task<ActionResult<ApiResponse<object>>> PublishRoundResult(Guid roundId)
         {
             await _roundResultService.PublishRoundResult(roundId);
-            return Ok(ApiResponse<object>.Success(null, "Published round result successfully"));
+            return Ok(ApiResponse<object>.Success(null, "Công bố kết quả vòng thi thành công"));
         }
 
         // phân trang danh sách đăng kí theo category và status pass hay k
@@ -65,7 +65,7 @@ namespace KSMS.API.Controllers
         public async Task<ActionResult<ApiResponse<List<FinalResultResponse>>> > GetFinalResultByCategoryId(Guid categoryId)
         {
             var finalResults = await _roundResultService.GetFinalResultByCategoryId(categoryId);
-            return Ok(ApiResponse<List<FinalResultResponse>>.Success(finalResults, "Get final results successfully"));
+            return Ok(ApiResponse<List<FinalResultResponse>>.Success(finalResults, "Lấy kết quả phần thưởng thành công"));
         }
 
         // public điểm của từng cá theo category

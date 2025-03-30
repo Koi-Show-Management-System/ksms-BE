@@ -27,7 +27,7 @@ namespace KSMS.API.Controllers
              Guid competitionCategoryId, [FromQuery] int page = 1, [FromQuery] int size = 10)
         {
             var tanks = await _tankService.GetPagedTanksByCategoryIdAsync(competitionCategoryId, page, size);
-            return Ok(ApiResponse<Paginate<TankResponse>>.Success(tanks, "Get paged tanks successfully"));
+            return Ok(ApiResponse<Paginate<TankResponse>>.Success(tanks, "Lấy danh sách bể thành công"));
         }
 
         /// <summary>
@@ -37,7 +37,7 @@ namespace KSMS.API.Controllers
         public async Task<IActionResult> UpdateTankStatus(Guid id, [FromQuery] TankStatus status)
         {
             await _tankService.UpdateTankStatusAsync(id, status);
-            return Ok(new { message = "Tank status updated successfully!" });
+            return Ok(new { message = "Cập nhật trạng thái bể thành công" });
         }
 
         /// <summary>
@@ -48,7 +48,7 @@ namespace KSMS.API.Controllers
         public async Task<IActionResult> CreateTank([FromBody] CreateTankRequest tankRequest)
         {
             await _tankService.CreateTankAsync(tankRequest);
-            return StatusCode(201, ApiResponse<object>.Success(null, "Create tank successfully"));
+            return StatusCode(201, ApiResponse<object>.Success(null, "Tạo bể thành công"));
         }
 
      
@@ -61,7 +61,7 @@ namespace KSMS.API.Controllers
         public async Task<IActionResult> UpdateTank(Guid id, [FromBody] UpdateTankRequest request)
         {
             await _tankService.UpdateTankAsync(id, request);
-            return Ok(ApiResponse<object>.Success(null, "Tank updated successfully"));
+            return Ok(ApiResponse<object>.Success(null, "Cập nhật bể thành công"));
         }
     }
 }
