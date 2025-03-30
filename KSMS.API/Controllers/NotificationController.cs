@@ -20,18 +20,18 @@ public class NotificationController : ControllerBase
         [FromQuery] int page = 1, [FromQuery]int size  = 10)
     {
         var notifications = await _notificationService.GetPageNotification(accountId, isRead, notificationType, page, size);
-        return Ok(ApiResponse<object>.Success(notifications, "Get list successfully"));
+        return Ok(ApiResponse<object>.Success(notifications, "Lấy danh sách thông báo thành công"));
     }
     [HttpPatch("mark-as-read{id:guid}")]
     public async Task<ActionResult<ApiResponse<object>>> MarkAsRead(Guid id)
     {
         await _notificationService.MarkNotificationAsRead(id);
-        return Ok(ApiResponse<object>.Success(null, "Mark as read successfully"));
+        return Ok(ApiResponse<object>.Success(null, "Đánh dấu đã đọc thành công"));
     }
     [HttpPatch("mark-as-read-all/{accountId:guid}")]
     public async Task<ActionResult<ApiResponse<object>>> MarkAsReadAll(Guid accountId)
     {
         await _notificationService.MarkAllNotificationAsRead(accountId);
-        return Ok(ApiResponse<object>.Success(null, "Mark all as read successfully"));
+        return Ok(ApiResponse<object>.Success(null, "Đánh dấu tất cả đã đọc thành công"));
     }
 }

@@ -27,7 +27,7 @@ namespace KSMS.API.Controllers
         public async Task<ActionResult<ApiResponse<object>>> UpdateRoundsStatusByKoiShow([FromQuery] Guid roundID)
         {
             await _roundService.UpdateRoundStatusAsync(roundID);
-            return Ok(ApiResponse<object>.Success(null, "Round statuses updated successfully"));
+            return Ok(ApiResponse<object>.Success(null, "Cập nhật trạng thái vòng thi thành công"));
         }
         [HttpGet("{competitionCategoryId:guid}")]
         public async Task<ActionResult<ApiResponse<object>>> GetPageRegistrationRounds(Guid competitionCategoryId, [FromQuery]RoundEnum roundType, [FromQuery] int page = 1, [FromQuery] int size = 10)
@@ -39,14 +39,14 @@ namespace KSMS.API.Controllers
         public async Task<ActionResult<ApiResponse<object>>> GetNextRound(Guid roundId)
         {
             var roundTypes = await _roundService.GetNextRound(roundId);
-            return Ok(ApiResponse<object>.Success(roundTypes, "Get successfully"));
+            return Ok(ApiResponse<object>.Success(roundTypes, "Lấy được vòng tiếp theo thành công"));
         }
         [HttpGet("get-round-type-for-referee/{competitionCategoryId:guid}")]
         [Authorize(Roles = "Referee")]
         public async Task<ActionResult<ApiResponse<object>>> GetRoundTypeForReferee(Guid competitionCategoryId)
         {
             var roundTypes = await _roundService.GetRoundTypeForReferee(competitionCategoryId);
-            return Ok(ApiResponse<object>.Success(roundTypes, "Get successfully"));
+            return Ok(ApiResponse<object>.Success(roundTypes, "Lấy loại vòng cho trọng tài thành công"));
         }
     }
 }

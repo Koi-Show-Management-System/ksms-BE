@@ -48,7 +48,7 @@ namespace KSMS.API.Controllers
         public async Task<ActionResult<ApiResponse<object>>> CreateRegistration([FromForm]CreateRegistrationRequest createRegistrationRequest)
         {
             var registration = await _registrationService.CreateRegistration(createRegistrationRequest);
-            return StatusCode(201, ApiResponse<object>.Created(registration, "Create registration successfully"));
+            return StatusCode(201, ApiResponse<object>.Created(registration, "Tạo đăng ký thành công"));
         }
 
         [HttpGet("find-suitable-category")]
@@ -59,7 +59,7 @@ namespace KSMS.API.Controllers
         {
             var result =
                 await _registrationService.FindSuitableCategoryAsync(koiShowId, varietyId, size);
-            return Ok(ApiResponse<object>.Success(result, "Get successfully"));
+            return Ok(ApiResponse<object>.Success(result, "Đã tìm thấy hạng mục phù hợp cho hồ sơ đăng ký của bạn"));
             
         }
 
@@ -68,7 +68,7 @@ namespace KSMS.API.Controllers
         public async Task<ActionResult<ApiResponse<CheckOutRegistrationResponse>>> CheckOut(Guid registrationId)
         {
             var result = await _registrationService.CheckOut(registrationId);
-            return StatusCode(201, ApiResponse<CheckOutRegistrationResponse>.Created(result, "Create payment successfully"));
+            return StatusCode(201, ApiResponse<CheckOutRegistrationResponse>.Created(result, "Tạo thanh toán thành công"));
         }
 
 
@@ -91,7 +91,7 @@ namespace KSMS.API.Controllers
         {
             await _registrationService.UpdateStatusForRegistration(id, status);
 
-            return Ok(ApiResponse<object>.Success(null, "Update registration status successfully"));
+            return Ok(ApiResponse<object>.Success(null, "Cập nhật trạng thái đăng ký thành công"));
         }
 
        
@@ -101,7 +101,7 @@ namespace KSMS.API.Controllers
         public async Task<ActionResult<ApiResponse<object>>> GetAllRegistration([FromQuery]RegistrationFilter filter, [FromQuery]int page = 1, [FromQuery]int size = 10)
         {
             var registrations = await _registrationService.GetAllRegistrationForCurrentMember(filter, page, size);
-            return Ok(ApiResponse<object>.Success(registrations, "Get List successfully"));
+            return Ok(ApiResponse<object>.Success(registrations, "Lấy danh sách đơn đăng ký thành công"));
         }
         
         [HttpGet("get-page-history-registration")]
@@ -114,7 +114,7 @@ namespace KSMS.API.Controllers
         {
             var result =
                 await _registrationService.GetPageRegistrationHistory(registrationStatus, showStatus, page, size);
-            return Ok(ApiResponse<object>.Success(result, "Get list successfully"));
+            return Ok(ApiResponse<object>.Success(result, "Lấy lịch sử đơn đăng ký thành công"));
             
         }
         [HttpGet("get-show-member-detail/{showId:guid}")]
@@ -123,7 +123,7 @@ namespace KSMS.API.Controllers
             GetShowMemberDetail(Guid showId)
         {
             var result = await _registrationService.GetMemberRegisterShowDetail(showId);
-            return Ok(ApiResponse<GetShowMemberDetailResponse>.Success(result, "Get show member detail successfully"));
+            return Ok(ApiResponse<GetShowMemberDetailResponse>.Success(result, "Lấy danh sách đơn đăng ký thành công"));
         }
     }
 }

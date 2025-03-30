@@ -21,7 +21,7 @@ namespace KSMS.API.Controllers
         public async Task<ActionResult<ApiResponse<RegistrationPaymentResponse>>> CheckinRegistration(Guid id)
         {
             var payment = await _registrationPaymentService.GetRegistrationPaymentByIdAsync(id);
-            return Ok(ApiResponse<RegistrationPaymentResponse>.Success(payment, "Get registration for check in"));
+            return Ok(ApiResponse<RegistrationPaymentResponse>.Success(payment, "Lấy thông tin checkin thành công"));
         }
     }
 }

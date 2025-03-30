@@ -212,7 +212,7 @@ namespace KSMS.Infrastructure.Services
 
                 if (referee == null)
                 {
-                    throw new ForbiddenMethodException("Trọng tài không được phân công cho hạng mục này");
+                    throw new ForbiddenMethodException("Bạn không được phân công cho hạng mục này");
                 }
 
                 // 3️ Kiểm tra nếu trọng tài này đã chấm điểm vòng này
@@ -222,7 +222,7 @@ namespace KSMS.Infrastructure.Services
 
                 if (existingScore != null)
                 {
-                    throw new BadRequestException("Trọng tài này đã chấm điểm cho vòng thi này");
+                    throw new BadRequestException("Bạn đã chấm điểm cho cá này");
                 }
 
                 // 4️⃣ Tạo ScoreDetail
@@ -254,7 +254,7 @@ namespace KSMS.Infrastructure.Services
             catch (Exception ex)
             {
                 await transaction.RollbackAsync();
-                throw new Exception($"Failed to process score: {ex.Message}");
+                throw;
             }
         }
 
@@ -302,7 +302,7 @@ namespace KSMS.Infrastructure.Services
 
             if (existingScore != null)
             {
-                throw new BadRequestException($"Trọng tài '{request.RefereeAccountId}' đã chấm điểm cho vòng này");
+                throw new BadRequestException($"Bạn đã chấm điểm cho cá này");
             }
 
             // 4️⃣ Tạo mới ScoreDetail cho trọng tài hiện tại
