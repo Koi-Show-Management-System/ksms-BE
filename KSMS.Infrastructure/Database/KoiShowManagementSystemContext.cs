@@ -573,6 +573,7 @@ public partial class KoiShowManagementSystemContext : DbContext
             entity.Property(e => e.Status)
                 .HasMaxLength(20)
                 .IsUnicode(false);
+            entity.Property(e => e.Rank);
             entity.Property(e => e.UpdatedAt).HasColumnType("datetime");
 
             entity.HasOne(d => d.Registration).WithMany(p => p.RegistrationRounds)

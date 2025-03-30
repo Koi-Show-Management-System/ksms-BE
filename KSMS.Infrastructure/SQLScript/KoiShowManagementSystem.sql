@@ -250,6 +250,7 @@ CREATE TABLE [dbo].[RegistrationRound](
   [TankId]  UNIQUEIDENTIFIER NULL,
   [Status] varchar(20) NULL,
   [Notes] nvarchar(max) NULL,
+  [Rank] int NULL,
   [CreatedAt] datetime NOT NULL,
   [UpdatedAt] datetime NULL,
   FOREIGN KEY ([RegistrationId]) REFERENCES [Registration]([Id]),
