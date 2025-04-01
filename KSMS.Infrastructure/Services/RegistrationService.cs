@@ -485,7 +485,7 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
                 "Đơn đăng kí của bạn đã bị từ chối",
                 " Đơn đăng kí tham gia triễn lãm " + show.Name + "của bạn đã bị từ chối. Vui lòng xem email để biết thêm chi tiết",
                 NotificationType.Registration);
-            _backgroundJobClient.Enqueue(() => _emailService.SendRegistrationRejectionEmail(registrationId));
+            _backgroundJobClient.Enqueue(() => _emailService.SendRegistrationRejectionEmail(registrationId, rejectedReason));
         }
         if (registration.Status == RegistrationStatus.Confirmed.ToString().ToLower())
         {

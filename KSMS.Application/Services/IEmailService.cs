@@ -5,7 +5,7 @@ namespace KSMS.Application.Services;
 
 public interface IEmailService
 {
-    Task SendRegistrationRejectionEmail(Guid registrationId);
+    Task SendRegistrationRejectionEmail(Guid registrationId, string rejectedReason);
     Task SendRegistrationConfirmationEmail(Guid registrationId);
     Task SendConfirmationTicket(Guid orderId);
     Task SendPaymentConfirmationEmail(Guid registrationPaymentId);
