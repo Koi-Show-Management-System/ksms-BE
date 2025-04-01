@@ -504,34 +504,5 @@ namespace KSMS.Infrastructure.Services
 
             return totalDeduction;
         }
-
-
-
-
-
-        //public async Task<RoundResultResponse> CreateRoundResultAsync(CreateRoundResult request)
-        //{
-        //    var roundResultRepository = _unitOfWork.GetRepository<RoundResult>();
-
-
-        //    var existingRoundResult = await roundResultRepository.SingleOrDefaultAsync(
-        //        predicate: rr => rr.RegistrationRoundsId == request.RegistrationRoundsId
-        //    );
-
-        //    if (existingRoundResult != null)
-        //    {
-        //        throw new BadRequestException("Round result already exists for this registration round.");
-        //    }
-
-
-        //    var roundResult = request.Adapt<RoundResult>();
-
-
-        //    var createdRoundResult = await roundResultRepository.InsertAsync(roundResult);
-        //    await _unitOfWork.CommitAsync();
-
-
-        //    return createdRoundResult.Adapt<RoundResultResponse>();
-        //}
     }
 }

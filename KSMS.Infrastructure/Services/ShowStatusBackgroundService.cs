@@ -84,7 +84,8 @@ namespace KSMS.Infrastructure.Services
                     var fifteenMinutesLater = currentTime.AddMinutes(15);
 
                     var showStatuses = await unitOfWork.GetRepository<ShowStatus>()
-                        .GetListAsync(include: query => query.Include(s => s.KoiShow));
+                        .GetListAsync(predicate: x => x.KoiShow.Status != Domain.Enums.ShowStatus.Cancelled.ToString()
+                            ,include: query => query.Include(s => s.KoiShow));
 
                     foreach (var status in showStatuses)
                     {

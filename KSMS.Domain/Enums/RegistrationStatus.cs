@@ -3,6 +3,7 @@
 public enum RegistrationStatus
 {
     WaitToPaid,
+    PendingRefund,
     Cancelled,
     Pending,
     Confirmed,

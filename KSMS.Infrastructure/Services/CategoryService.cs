@@ -30,9 +30,14 @@ namespace KSMS.Infrastructure.Services
                 .SingleOrDefaultAsync(predicate: x => x.Id == request.KoiShowId);
             if (show == null)
             {
-                throw new NotFoundException("Không tìm thấy cuộc thi");
+                throw new NotFoundException("Không tìm thấy triển lãm");
             }
-
+            var existingCategory = await _unitOfWork.GetRepository<CompetitionCategory>().SingleOrDefaultAsync(predicate: k =>
+                k.Name.ToLower() == request.Name.ToLower());
+            if (existingCategory is not null)
+            {
+                throw new BadRequestException("Tên hạng mục đã tồn tại. Vui lòng chọn tên khác");
+            }
             if (request.CreateCompetionCategoryVarieties.Any())
             {
                 foreach (var varietyId in request.CreateCompetionCategoryVarieties)

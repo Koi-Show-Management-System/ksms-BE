@@ -3,6 +3,8 @@
 public enum ShowStatus
 {
     Pending,
+    InternalPublished,
+    Cancelled,
     Published,
     Upcoming,
     InProgress,

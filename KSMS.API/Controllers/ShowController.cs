@@ -62,5 +62,16 @@ namespace KSMS.API.Controllers
             var shows = await _showService.GetMemberRegisterShowAsync(showStatus, page, size);
             return Ok(ApiResponse<object>.Success(shows, "Lấy lịch sử triển lãm đã đăng ký thành công"));
         }
+        
+        [HttpPut("update-show-status{id:guid}")]
+        [Authorize(Roles = "Admin, Manager")]
+        public async Task<ActionResult<ApiResponse<object>>> UpdateShowStatus(
+            Guid id,
+            [FromQuery]ShowStatus status,
+            [FromQuery]string? cancellationReason)
+        {
+            await _showService.CancelShowAsync(id, status, cancellationReason);
+            return Ok(ApiResponse<object>.Success(null, "Cập nhật trạng thái triển lãm thành công"));
+        }
     }
 }
