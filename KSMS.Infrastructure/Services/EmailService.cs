@@ -18,7 +18,7 @@ public class EmailService : BaseService<EmailService>, IEmailService
     public EmailService(IUnitOfWork<KoiShowManagementSystemContext> unitOfWork, ILogger<EmailService> logger, IHttpContextAccessor httpContextAccessor) : base(unitOfWork, logger, httpContextAccessor)
     {
     }
-    public async Task SendRegistrationRejectionEmail(Guid registrationId)
+    public async Task SendRegistrationRejectionEmail(Guid registrationId, string rejectedReason)
     {
         var registration = await _unitOfWork.GetRepository<Registration>()
             .SingleOrDefaultAsync(
@@ -33,7 +33,7 @@ public class EmailService : BaseService<EmailService>, IEmailService
                     .Include(r => r.KoiShow));
         var sendMail = MailUtil.SendEmail(registration.Account.Email,
             "KOI SHOW - Thông báo từ chối đơn đăng ký",
-            MailUtil.ContentMailUtil.RejectRegistration(registration), "");
+            MailUtil.ContentMailUtil.RejectRegistration(registration, rejectedReason), "");
                 
         if (!sendMail)
         {
