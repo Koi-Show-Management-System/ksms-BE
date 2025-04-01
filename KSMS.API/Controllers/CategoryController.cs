@@ -22,13 +22,13 @@ namespace KSMS.API.Controllers
         public async Task<ActionResult<ApiResponse<object>>> CreateCategory([FromBody] CreateCompetitionCategoryRequest request)
         {
             await _categoryService.CreateCompetitionCategory(request);
-            return StatusCode(201, ApiResponse<object>.Created(null, "Create category successfully"));
+            return StatusCode(201, ApiResponse<object>.Created(null, "Tạo hạng mục thành công"));
         }
         [HttpPut("{id:guid}")]
         public async Task<ActionResult<ApiResponse<object>>> UpdateCategory(Guid id, [FromBody] UpdateCompetitionCategoryRequest request)
         {
             await _categoryService.UpdateCompetitionCategory(id, request);
-            return Ok(ApiResponse<object>.Success(null, "Update category successfully"));
+            return Ok(ApiResponse<object>.Success(null, "Cập nhật hạng mục thành công"));
         }
         [HttpGet("get-page")]
         public async Task<ActionResult<ApiResponse<object>>> GetPageCategory(
@@ -38,13 +38,13 @@ namespace KSMS.API.Controllers
             [FromQuery] int size = 10)    
         {
             var categories = await _categoryService.GetPagedCompetitionCategory(showId,hasTank, page, size);
-            return Ok(ApiResponse<object>.Success(categories, "Get list successfully"));
+            return Ok(ApiResponse<object>.Success(categories, "Lấy danh sách hạng mục thành công"));
         }
         [HttpGet("{id:guid}")]
         public async Task<ActionResult<ApiResponse<object>>> GetCategoryById(Guid id)
         {
             var category = await _categoryService.GetCompetitionCategoryDetailById(id);
-            return Ok(ApiResponse<object>.Success(category, "Get detail successfully"));
+            return Ok(ApiResponse<object>.Success(category, "Lấy chi tiết hạng mục thành công"));
         }
     }
 }

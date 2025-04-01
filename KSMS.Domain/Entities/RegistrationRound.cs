@@ -19,6 +19,8 @@ public partial class RegistrationRound : BaseEntity
     public string? Status { get; set; }
 
     public string? Notes { get; set; }
+    
+    public int? Rank { get; set; }
 
     public virtual Registration Registration { get; set; } = null!;
 

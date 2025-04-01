@@ -25,20 +25,20 @@ public class ShowStaffController : ControllerBase
         [FromQuery] int size = 10)
     {
         var response = await _showStaffService.GetPageStaffAndManager(showId, role, page, size);
-        return Ok(ApiResponse<object>.Success(response, "Get page successfully"));
+        return Ok(ApiResponse<object>.Success(response, "Lấy danh sách nhân viên và quản lý thành công"));
     }
     [Authorize(Roles = "Admin, Manager")]
     [HttpPost("add-staff-or-manager/{showId:guid}/{accountId:guid}")]
     public async Task<ActionResult<ApiResponse<object>>> AddStaffOrManager(Guid showId, Guid accountId)
     {
         await _showStaffService.AddStaffOrManager(showId, accountId);
-        return StatusCode(201, ApiResponse<object>.Created(null, "Add successfully"));
+        return StatusCode(201, ApiResponse<object>.Created(null, "Thêm nhân viên hoặc quản lý thành công"));
     }
     [Authorize(Roles = "Admin, Manager")]
     [HttpDelete("{id:guid}")]
     public async Task<ActionResult<ApiResponse<object>>> RemoveStaffOrManager(Guid id)
     {
         await _showStaffService.RemoveStaffOrManager(id);
-        return Ok(ApiResponse<object>.Success(null, "Remove successfully"));
+        return Ok(ApiResponse<object>.Success(null, "Xóa nhân viên hoặc quản lý thành công"));
     }
 }

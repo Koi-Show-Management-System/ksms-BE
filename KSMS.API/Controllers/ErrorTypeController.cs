@@ -18,6 +18,6 @@ public class ErrorTypeController : ControllerBase
     public async Task<ActionResult<ApiResponse<object>>> CreateErrorType([FromBody] CreateErrorTypeRequest request)
     { 
         var errorType = await _errorTypeService.CreateErrorType(request);
-        return StatusCode(201, ApiResponse<object>.Created(errorType, "Created Error Type successfully"));
+        return StatusCode(201, ApiResponse<object>.Created(errorType, "Tạo lỗi thành công"));
     }
 }
