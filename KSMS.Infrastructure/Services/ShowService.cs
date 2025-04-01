@@ -18,19 +18,27 @@ using Microsoft.AspNetCore.Http;
 using static KSMS.Infrastructure.Utils.MailUtil;
 using KSMS.Domain.Pagination;
 using System.Linq.Expressions;
+using Hangfire;
 using KSMS.Application.Extensions;
 using KSMS.Domain.Dtos;
 using KSMS.Domain.Dtos.Requests.ShowRule;
+using KSMS.Domain.Enums;
+using ShowStatus = KSMS.Domain.Entities.ShowStatus;
 
 namespace KSMS.Infrastructure.Services
 {
     public class ShowService : BaseService<ShowService>, IShowService
     {
-
+        private readonly INotificationService _notificationService;
+        private readonly IBackgroundJobClient _backgroundJobClient;
+        private readonly IEmailService _emailService;
         public ShowService(IUnitOfWork<KoiShowManagementSystemContext> unitOfWork,
-            ILogger<ShowService> logger, IHttpContextAccessor httpContextAccessor)
+            ILogger<ShowService> logger, IHttpContextAccessor httpContextAccessor, INotificationService notificationService, IBackgroundJobClient backgroundJobClient, IEmailService emailService)
             : base(unitOfWork, logger, httpContextAccessor)
         {
+            _notificationService = notificationService;
+            _backgroundJobClient = backgroundJobClient;
+            _emailService = emailService;
         }
 
         public async Task UpdateShowV2(Guid id, UpdateShowRequestV2 request)
@@ -42,7 +50,17 @@ namespace KSMS.Infrastructure.Services
                     .Include(x => x.ShowStatuses));
             if (show is null)
             {
-                throw new NotFoundException("Không tìm thấy cuộc thi");
+                throw new NotFoundException("Không tìm thấy triển lãm");
+            }
+            if (request.Name is not null)
+            {
+                var existingShow = await _unitOfWork.GetRepository<KoiShow>().SingleOrDefaultAsync(predicate: k =>
+                    k.Name.ToLower() == request.Name.ToLower());
+
+                if (existingShow is not null && existingShow.Id != show.Id)
+                {
+                    throw new BadRequestException("Tên triển lãm này đã tồn tại. Vui lòng chọn tên khác");
+                }
             }
             request.Adapt(show);
             _unitOfWork.GetRepository<KoiShow>().UpdateAsync(show);
@@ -62,7 +80,7 @@ namespace KSMS.Infrastructure.Services
                     .ThenInclude(cc => cc.Criteria));
             if (show is null)
             {
-                throw new NotFoundException("Không tìm thấy cuộc thi");
+                throw new NotFoundException("Không tìm thấy triển lãm");
             }
             var response = show.Adapt<GetKoiShowDetailResponse>();
             var criteria = show.CompetitionCategories
@@ -74,8 +92,14 @@ namespace KSMS.Infrastructure.Services
         
         public async Task CreateShowAsync(CreateShowRequest createShowRequest)
         {
+            var show = await _unitOfWork.GetRepository<KoiShow>().SingleOrDefaultAsync(predicate: k =>
+                k.Name.ToLower() == createShowRequest.Name.ToLower());
+            if (show is not null)
+            {
+                throw new BadRequestException("Tên triển lãm đã tồn tại. Vui lòng chọn tên khác");
+            }
             if (string.IsNullOrWhiteSpace(createShowRequest.Name))
-                throw new BadRequestException("Tên cuộc thi không được để trống");
+                throw new BadRequestException("Tên triển lãm không được để trống");
 
             if (createShowRequest.StartDate >= createShowRequest.EndDate)
                 throw new BadRequestException("Ngày bắt đầu phải sớm hơn ngày kết thúc");
@@ -352,8 +376,7 @@ namespace KSMS.Infrastructure.Services
             catch (Exception ex)
             {
                 await transaction.RollbackAsync();
-                var detailedMessage = $"Không thể tạo cuộc thi và dữ liệu liên quan.\nChi tiết lỗi: {ex.Message}";
-                throw new Exception(detailedMessage);
+                throw;
             }
         }
 
@@ -385,10 +408,126 @@ namespace KSMS.Infrastructure.Services
                     StartDate = group.First().KoiShow.StartDate,
                     EndDate = group.First().KoiShow.EndDate,
                     Status = group.First().KoiShow.Status,
-                    
+                    CancellationReason = group.First().KoiShow.CancellationReason
                 }).ToList();
                 var result = new Paginate<GetMemberRegisterShowResponse>(groupedByShow, page, size, 1);
                 return result;
+        }
+
+        public async Task CancelShowAsync(Guid id, Domain.Enums.ShowStatus status, string? reason)
+        {
+            var show = await _unitOfWork.GetRepository<KoiShow>()
+                .SingleOrDefaultAsync(predicate: s => s.Id == id);
+            if (show is null)
+            {
+                throw new NotFoundException("Không tìm thấy triển lãm");
+            }
+            show.Status = status switch
+            {
+                Domain.Enums.ShowStatus.Cancelled =>  Domain.Enums.ShowStatus.Cancelled.ToString().ToLower(),
+                Domain.Enums.ShowStatus.InternalPublished =>  Domain.Enums.ShowStatus.InternalPublished.ToString().ToLower(),
+                Domain.Enums.ShowStatus.InProgress =>  Domain.Enums.ShowStatus.InProgress.ToString().ToLower(),
+                Domain.Enums.ShowStatus.Pending =>  Domain.Enums.ShowStatus.Pending.ToString().ToLower(),
+                Domain.Enums.ShowStatus.Finished =>  Domain.Enums.ShowStatus.Finished.ToString().ToLower(),
+                Domain.Enums.ShowStatus.Published =>  Domain.Enums.ShowStatus.Published.ToString().ToLower(),
+                Domain.Enums.ShowStatus.Upcoming =>  Domain.Enums.ShowStatus.Upcoming.ToString().ToLower(),
+                _ => show.Status
+            };
+            if (show.Status == Domain.Enums.ShowStatus.Cancelled.ToString().ToLower())
+            {
+                if (reason is null)
+                {
+                    throw new BadRequestException("Lý do hủy triển lãm không được để trống");
+                }
+                show.CancellationReason = reason;
+                _unitOfWork.GetRepository<KoiShow>().UpdateAsync(show);
+                
+                var registrations = await _unitOfWork.GetRepository<Registration>()
+                    .GetListAsync(predicate: r => r.KoiShowId == id,
+                        include: query => query.Include(r => r.Account));
+                if (registrations.Any())
+                {
+                    foreach (var registration in registrations)
+                    {
+                        if (registration.Status == RegistrationStatus.Confirmed.ToString().ToLower())
+                        {
+                            registration.Status = RegistrationStatus.PendingRefund.ToString().ToLower();
+                            await _notificationService.SendNotification(
+                                registration.AccountId,
+                                "Triển lãm đã bị hủy - Đang chờ xử lí hoàn tiền",
+                                $"Triển lãm {show.Name} đã bị hủy. Phí đăng ký của bạn đang được xử lí hoàn trả trong 3-5 ngày làm việc.",
+                                NotificationType.Registration);
+                        }
+                        _unitOfWork.GetRepository<Registration>().UpdateAsync(registration);
+                    }
+                }
+                var tickets = await _unitOfWork.GetRepository<Ticket>().GetListAsync(
+                    predicate: t => t.TicketOrderDetail.TicketType.KoiShowId == id,
+                    include: query => query
+                        .Include(t => t.TicketOrderDetail)
+                            .ThenInclude(tod => tod.TicketOrder)
+                        .Include(t => t.TicketOrderDetail)
+                            .ThenInclude(tod => tod.TicketType));
+                if (tickets.Any())
+                {
+                    var ticketsByAccount = tickets
+                        .Where(t => t.Status == TicketStatus.Sold.ToString().ToLower())
+                        .GroupBy(t => t.TicketOrderDetail.TicketOrder.AccountId);
+                    foreach (var group in ticketsByAccount)
+                    {
+                        var accountId = group.Key;
+                        var accountTickets = group.ToList();
+                        var showName = accountTickets.First().TicketOrderDetail.TicketType.KoiShow.Name;
+                        foreach (var ticket in accountTickets)
+                        {
+                            ticket.Status = TicketStatus.Cancelled.ToString().ToLower();
+                            _unitOfWork.GetRepository<Ticket>().UpdateAsync(ticket);
+                        }
+                        await _notificationService.SendNotification(
+                            accountId,
+                            "Vé đã bị hủy do triển lãm không diễn ra",
+                            $"Các vé của bạn cho triển lãm {showName} đã bị hủy do triển lãm không được tổ chức." +
+                            $" Tiền vé của bạn đang được xử lí hoàn trả trong 3-5 ngày làm việc.",
+                            NotificationType.System);
+                    }
+                }
+                await _unitOfWork.CommitAsync();
+                var subscribers = await _unitOfWork.GetRepository<Account>()
+                    .GetListAsync(predicate: a => a.Role == RoleName.Member.ToString().ToLower());
+                foreach (var subscriber in subscribers)
+                {
+                    await _notificationService.SendNotification(
+                        subscriber.Id,
+                        $"Triển lãm {show.Name} đã bị hủy",
+                        $"Triển lãm {show.Name} đã bị hủy do lý do: {reason}. Nếu bạn đã đăng ký hoặc mua vé, chúng tôi sẽ liên hệ với bạn để hoàn tiền.",
+                        NotificationType.System);
+                }
+            }
+
+            if (show.Status == Domain.Enums.ShowStatus.InternalPublished.ToString().ToLower())
+            {
+                _unitOfWork.GetRepository<KoiShow>().UpdateAsync(show);
+                await _unitOfWork.CommitAsync();
+                _backgroundJobClient.Enqueue(() => _emailService.SendShowStatusChange(show.Id));
+            }
+
+            if (show.Status == Domain.Enums.ShowStatus.Published.ToString().ToLower())
+            {
+                _unitOfWork.GetRepository<KoiShow>().UpdateAsync(show);
+                await _unitOfWork.CommitAsync();
+                var subscribers = await _unitOfWork.GetRepository<Account>()
+                    .GetListAsync(predicate: a => a.Role == RoleName.Member.ToString().ToLower());
+                foreach (var subscriber in subscribers)
+                {
+                    await _notificationService.SendNotification(
+                        subscriber.Id,
+                        $"Triển lãm {show.Name} đã chính thức được công bố",
+                        $"Triển lãm {show.Name} đã được công bố. Bạn có thể mua vé và đăng ký tham gia ngay từ bây giờ.",
+                        NotificationType.System);
+                }
+                _backgroundJobClient.Enqueue(() => _emailService.SendRefereeAssignmentNotification(show.Id));
+            }
+            
         }
 
         public async Task<Paginate<PaginatedKoiShowResponse>> GetPagedShowsAsync(int page, int size)
@@ -399,7 +538,8 @@ namespace KSMS.Infrastructure.Services
             Expression<Func<KoiShow, bool>> filterQuery = show => true;
             if (role is "Guest" or "Member")
             {
-                filterQuery = filterQuery.AndAlso(show => show.Status != Domain.Enums.ShowStatus.Pending.ToString().ToLower());
+                filterQuery = filterQuery.AndAlso(show => show.Status != Domain.Enums.ShowStatus.Pending.ToString().ToLower()
+                && show.Status != Domain.Enums.ShowStatus.InternalPublished.ToString().ToLower());
             }
             else if (role is "Staff" or "Manager")
             {

@@ -27,6 +27,10 @@ public partial class Registration : BaseEntity
     public int? Rank { get; set; }
 
     public string? Status { get; set; }
+    
+    public string? RefundType { get; set; }
+    
+    public string? RejectedReason { get; set; }
 
     public string? QrcodeData { get; set; }
 

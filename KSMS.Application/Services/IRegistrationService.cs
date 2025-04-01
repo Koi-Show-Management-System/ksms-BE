@@ -17,7 +17,7 @@ public interface IRegistrationService
     Task<object> CreateRegistration(CreateRegistrationRequest createRegistrationRequest);
     Task<GetPageCompetitionCategoryResponse> FindSuitableCategoryAsync(Guid koiShowId, Guid varietyId, decimal size);
     Task UpdateRegistrationPaymentStatusForPayOs(Guid registrationPaymentId, RegistrationPaymentStatus status);
-    Task UpdateStatusForRegistration(Guid registrationId, RegistrationStatus status);
+    Task UpdateStatusForRegistration(Guid registrationId, RegistrationStatus status, string? rejectedReason, RefundType? refundType);
     Task<CheckOutRegistrationResponse> CheckOut(Guid registrationId);
     
     Task<Paginate<GetPageRegistrationHistoryResponse>> GetPageRegistrationHistory(

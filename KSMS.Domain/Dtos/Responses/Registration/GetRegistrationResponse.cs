@@ -22,6 +22,10 @@ public class GetRegistrationResponse // for user
     public string? QrcodeData { get; set; }
 
     public string? Status { get; set; }
+    
+    public string? RefundType { get; set; }
+    
+    public string? RejectedReason { get; set; }
 
     public string? Notes { get; set; }
     

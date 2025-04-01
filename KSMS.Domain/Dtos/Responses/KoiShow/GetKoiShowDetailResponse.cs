@@ -21,6 +21,8 @@ public class GetKoiShowDetailResponse
     public string? Location { get; set; }
 
     public string? Description { get; set; }
+    
+    public string? CancellationReason { get; set; }
 
     public DateOnly? RegistrationDeadline { get; set; }
 

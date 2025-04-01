@@ -87,15 +87,13 @@ namespace KSMS.API.Controllers
 
         [HttpPut("{id:guid}")]
         [Authorize(Roles = "Staff, Admin, Manager")]
-        public async Task<ActionResult<ApiResponse<object>>> ToggleUserStatus(Guid id, [FromQuery] RegistrationStatus status)
+        public async Task<ActionResult<ApiResponse<object>>> ToggleUserStatus(Guid id, [FromQuery] RegistrationStatus status,
+            [FromQuery]string? rejectedReason,[FromQuery] RefundType? refundType)
         {
-            await _registrationService.UpdateStatusForRegistration(id, status);
+            await _registrationService.UpdateStatusForRegistration(id, status, rejectedReason, refundType);
 
             return Ok(ApiResponse<object>.Success(null, "Cập nhật trạng thái đăng ký thành công"));
         }
-
-       
-
         [HttpGet("get-paging-registration-for-current-account")]
         [Authorize(Roles = "Staff, Admin, Manager, Member")]
         public async Task<ActionResult<ApiResponse<object>>> GetAllRegistration([FromQuery]RegistrationFilter filter, [FromQuery]int page = 1, [FromQuery]int size = 10)

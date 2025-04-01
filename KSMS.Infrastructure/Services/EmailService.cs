@@ -1,12 +1,15 @@
 ﻿using KSMS.Application.Repositories;
 using KSMS.Application.Services;
+using KSMS.Domain.Dtos.Responses.RefereeAssignment;
 using KSMS.Domain.Entities;
+using KSMS.Domain.Enums;
 using KSMS.Domain.Exceptions;
 using KSMS.Infrastructure.Database;
 using KSMS.Infrastructure.Utils;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using ShowStatus = KSMS.Domain.Enums.ShowStatus;
 
 namespace KSMS.Infrastructure.Services;
 
@@ -131,5 +134,93 @@ public class EmailService : BaseService<EmailService>, IEmailService
         {
             throw new BadRequestException("Error sending refund notification email.");
         }
+    }
+
+    public async Task SendShowStatusChange(Guid showId)
+    {
+        var show = await _unitOfWork.GetRepository<KoiShow>()
+            .SingleOrDefaultAsync(predicate: s => s.Id == showId);
+        if (show == null)
+        {
+            throw new NotFoundException("Không tìm thấy triển lãm");
+        }
+
+        var staffList = await _unitOfWork.GetRepository<ShowStaff>()
+            .GetListAsync(
+                predicate: s => s.KoiShowId == showId,
+                include: query => query.Include(s => s.Account));
+        foreach (var staff in staffList)
+        {
+            string emailSubject;
+            string emailBody;
+            if (staff.Account.Role == RoleName.Staff.ToString())
+            {
+                emailSubject = MailUtil.ContentMailUtil.Title_ShowInternalReviewStaff;
+                emailBody = MailUtil.ContentMailUtil.ShowInternalReviewNotificationForStaff(staff.Account.FullName, show);
+            }
+            else
+            {
+                emailSubject = MailUtil.ContentMailUtil.Title_ShowInternalReviewManager;
+                emailBody = MailUtil.ContentMailUtil.ShowInternalReviewNotificationForManager(staff.Account.FullName, show); 
+            }
+            var mailSent = MailUtil.SendEmail(staff.Account.Email, emailSubject, emailBody, "");
+            if (!mailSent)
+            {
+                throw new BadRequestException($"Không thể gửi email thông báo đến {staff.Account.Email}");
+            }
+        }
+        
+    }
+
+    public async Task SendRefereeAssignmentNotification(Guid showId)
+    {
+        var show = await _unitOfWork.GetRepository<KoiShow>()
+            .SingleOrDefaultAsync(predicate: s => s.Id == showId);
+        if (show == null)
+        {
+            throw new NotFoundException("Không tìm thấy triển lãm");
+        }
+        var categories = await _unitOfWork.GetRepository<CompetitionCategory>()
+            .GetListAsync(predicate: c => c.KoiShowId == showId);
+        var categoryIds = categories.Select(c => c.Id).ToList();
+        var refereeAssignments = await _unitOfWork.GetRepository<RefereeAssignment>()
+            .GetListAsync(
+                predicate: r => categoryIds.Contains(r.CompetitionCategoryId),
+                include: query => query
+                    .Include(r => r.RefereeAccount)
+                    .Include(r => r.CompetitionCategory));
+        var groupedAssignments = refereeAssignments
+            .GroupBy(r => r.RefereeAccountId)
+            .Select(group => new
+            {
+                RefereeId = group.Key,
+                Referee = group.First().RefereeAccount,
+                Assigments = group.Select(ra => new RefereeAssignmentInfo()
+                {
+                    CategoryName = ra.CompetitionCategory.Name,
+                    RoundTypeName = GetRoundTypeName(ra.RoundType)
+                }).ToList()
+            });
+        foreach (var referee in groupedAssignments)
+        {
+            if (referee.Referee.Email == null) continue;
+            var mailSent = MailUtil.SendEmail(referee.Referee.Email,
+                MailUtil.ContentMailUtil.Title_RefereeAssignment,
+                MailUtil.ContentMailUtil.RefereeAssignmentNotification(referee.Referee.FullName, show, referee.Assigments), "");
+            if (!mailSent)
+            {
+                throw new BadRequestException("Không thể gửi email thông báo đến trọng tài");
+            }
+        }
+    }
+    private string GetRoundTypeName(string roundType)
+    {
+        return roundType.ToLower() switch
+        {
+            "preliminary" => "Vòng sơ khảo",
+            "evaluation" => "Vòng đánh giá chính",
+            "final" => "Vòng chung kết",
+            _ => "Khác"
+        };
     }
 }

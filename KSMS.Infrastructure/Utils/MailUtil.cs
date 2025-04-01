@@ -1,6 +1,7 @@
 ﻿using System.Net;
 using System.Net.Mail;
 using KSMS.Domain.Common;
+using KSMS.Domain.Dtos.Responses.RefereeAssignment;
 using KSMS.Domain.Entities;
 
 namespace KSMS.Infrastructure.Utils;
@@ -46,9 +47,12 @@ public static class MailUtil
           "[KOI SHOW SYSTEM] Xác nhận duyệt đơn đăng kí cá koi thành công";
       public readonly static string Title_ForgotPassword =
           "[KOI SHOW SYSTEM] Mã OTP đặt lại mật khẩu";
-
-
-
+      public readonly static string Title_ShowInternalReviewManager = 
+          "[KOI SHOW SYSTEM] Thông báo quản lí triển lãm";
+      public readonly static string Title_ShowInternalReviewStaff =
+          "[KOI SHOW SYSTEM] Thông báo phân công nhân viên triển lãm";
+      public readonly static string Title_RefereeAssignment =
+          "[KOI SHOW SYSTEM] Thông báo phân công trọng tài";
         public static string StaffRoleNotification(string staffFullName, string showName, string username, string defaultPassword)
         {
             return $@"
@@ -638,6 +642,146 @@ public static string RefundRegistrationPayment(Registration registration)
             </td>
         </tr>
     </table>
+</body>
+</html>";
+}
+public static string ShowInternalReviewNotificationForManager(string managerName, KoiShow show)
+{
+    return $@"
+<!DOCTYPE html>
+<html lang='vi'>
+<head>
+    <meta charset='UTF-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <title>KOI SHOW - Thông báo quản lý triển lãm</title>
+</head>
+<body style='font-family: Arial, sans-serif; background-color: #f4f4f4;'>
+    <div style='max-width: 600px; margin: 20px auto; padding: 20px; background-color: #fff; border-radius: 8px;'>
+        <h2 style='color: #b21f1f;'>Kính gửi <span style='font-weight: bold;'>{managerName}</span>,</h2>
+        <p>Chúng tôi xin thông báo rằng triển lãm sau đây đã được chuyển sang trạng thái <strong>Nội bộ (InternalReview)</strong> và bạn đã được chỉ định làm <strong>Quản lý</strong> cho triển lãm này:</p>
+        
+        <div style='background-color: #f8f8f8; padding: 15px; border-left: 4px solid #b21f1f; margin: 15px 0;'>
+            <h3 style='color: #b21f1f; margin-top: 0;'>{show.Name}</h3>
+            <p><strong>Thời gian:</strong> {show.StartDate:dd/MM/yyyy} - {show.EndDate:dd/MM/yyyy}</p>
+            <p><strong>Địa điểm:</strong> {show.Location}</p>
+        </div>
+        
+        <p><strong>Trách nhiệm của bạn với vai trò Quản lý bao gồm:</strong></p>
+        <ul style='margin: 10px 0; padding-left: 20px;'>
+            <li>Quản lý tổng thể việc tổ chức triển lãm</li>
+            <li>Phân công nhiệm vụ cho các nhân viên</li>
+            <li>Giám sát tiến độ và chất lượng công việc</li>
+            <li>Phê duyệt các quyết định quan trọng</li>
+            <li>Báo cáo tình hình cho ban tổ chức</li>
+        </ul>
+        
+        <p>Hiện triển lãm đang ở trạng thái nội bộ, chỉ quản lý và nhân viên được phân công mới có thể xem. Vui lòng truy cập hệ thống để cập nhật thông tin và bắt đầu phân công nhiệm vụ cho nhân viên.</p>
+        
+        <div style='margin: 25px 0; text-align: center;'>
+            <a href='{AppConfig.AppSetting.BaseUrl}/admin/shows/{show.Id}' style='background-color: #b21f1f; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;'>QUẢN LÝ TRIỂN LÃM</a>
+        </div>
+        
+        <p>Nếu bạn có bất kỳ câu hỏi hoặc cần hỗ trợ, vui lòng liên hệ với quản trị viên hệ thống.</p>
+        
+        <p style='margin-top: 30px;'>Trân trọng,<br>KOI SHOW TEAM</p>
+    </div>
+</body>
+</html>";
+}
+
+public static string ShowInternalReviewNotificationForStaff(string staffName, KoiShow show)
+{
+    return $@"
+<!DOCTYPE html>
+<html lang='vi'>
+<head>
+    <meta charset='UTF-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <title>KOI SHOW - Thông báo triển lãm</title>
+</head>
+<body style='font-family: Arial, sans-serif; background-color: #f4f4f4;'>
+    <div style='max-width: 600px; margin: 20px auto; padding: 20px; background-color: #fff; border-radius: 8px;'>
+        <h2 style='color: #b21f1f;'>Kính gửi <span style='font-weight: bold;'>{staffName}</span>,</h2>
+        <p>Chúng tôi xin thông báo rằng triển lãm sau đây đã được chuyển sang trạng thái <strong>Nội bộ (InternalReview)</strong> và bạn đã được phân công làm <strong>Nhân viên</strong> cho triển lãm này:</p>
+        
+        <div style='background-color: #f8f8f8; padding: 15px; border-left: 4px solid #b21f1f; margin: 15px 0;'>
+            <h3 style='color: #b21f1f; margin-top: 0;'>{show.Name}</h3>
+            <p><strong>Thời gian:</strong> {show.StartDate:dd/MM/yyyy} - {show.EndDate:dd/MM/yyyy}</p>
+            <p><strong>Địa điểm:</strong> {show.Location}</p>
+        </div>
+        
+        <p><strong>Nhiệm vụ của bạn có thể bao gồm:</strong></p>
+        <ul style='margin: 10px 0; padding-left: 20px;'>
+            <li>Hỗ trợ kiểm tra thông tin đăng ký</li>
+            <li>Hỗ trợ quy trình check-in</li>
+            <li>Xử lý các vấn đề phát sinh trong triển lãm</li>
+            <li>Thực hiện các nhiệm vụ do quản lý phân công</li>
+        </ul>
+        
+        <p>Hiện triển lãm đang ở trạng thái nội bộ, chỉ quản lý và nhân viên được phân công mới có thể xem. Vui lòng theo dõi hệ thống để nhận nhiệm vụ cụ thể từ quản lý.</p>
+        
+        <div style='margin: 25px 0; text-align: center;'>
+            <a href='{AppConfig.AppSetting.BaseUrl}/admin/shows/{show.Id}' style='background-color: #b21f1f; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;'>XEM TRIỂN LÃM</a>
+        </div>
+        
+        <p>Nếu bạn có bất kỳ câu hỏi hoặc cần hỗ trợ, vui lòng liên hệ với quản lý hoặc quản trị viên hệ thống.</p>
+        
+        <p style='margin-top: 30px;'>Trân trọng,<br>KOI SHOW TEAM</p>
+    </div>
+</body>
+</html>";
+}
+public static string RefereeAssignmentNotification(string refereeName, KoiShow show, List<RefereeAssignmentInfo> assignments)
+{
+    var categoryList = string.Join("", assignments.Select(a => $@"
+        <tr>
+            <td style='padding: 12px; border-bottom: 1px solid #eee;'>{a.CategoryName}</td>
+            <td style='padding: 12px; border-bottom: 1px solid #eee;'>{a.RoundTypeName}</td>
+        </tr>
+    "));
+    return $@"
+<!DOCTYPE html>
+<html lang='vi'>
+<head>
+    <meta charset='UTF-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <title>KOI SHOW - Phân công trọng tài</title>
+</head>
+<body style='font-family: Arial, sans-serif; background-color: #f4f4f4;'>
+    <div style='max-width: 600px; margin: 20px auto; padding: 20px; background-color: #fff; border-radius: 8px;'>
+        <h2 style='color: #b21f1f;'>Kính gửi <span style='font-weight: bold;'>{refereeName}</span>,</h2>
+        <p>Chúng tôi xin thông báo rằng bạn đã được phân công làm <strong>Trọng tài</strong> cho sự kiện sau:</p>
+        
+        <div style='background-color: #f8f8f8; padding: 15px; border-left: 4px solid #b21f1f; margin: 15px 0;'>
+            <h3 style='color: #b21f1f; margin-top: 0;'>{show.Name}</h3>
+            <p><strong>Thời gian:</strong> {show.StartDate:dd/MM/yyyy} - {show.EndDate:dd/MM/yyyy}</p>
+            <p><strong>Địa điểm:</strong> {show.Location}</p>
+        </div>
+        
+        <p><strong>Chi tiết phân công của bạn:</strong></p>
+        
+        <table style='width: 100%; border-collapse: collapse; margin: 15px 0;'>
+            <thead>
+                <tr style='background-color: #f0f0f0;'>
+                    <th style='padding: 12px; text-align: left; border-bottom: 2px solid #ddd;'>Hạng mục thi</th>
+                    <th style='padding: 12px; text-align: left; border-bottom: 2px solid #ddd;'>Vòng thi</th>
+                </tr>
+            </thead>
+            <tbody>
+                {categoryList}
+            </tbody>
+        </table>
+        
+        <p>Vui lòng đăng nhập vào hệ thống để xem chi tiết và chuẩn bị cho việc chấm điểm. Chúng tôi rất mong được làm việc cùng bạn để đảm bảo sự kiện diễn ra công bằng và thành công.</p>
+        
+        <div style='margin: 25px 0; text-align: center;'>
+            <a href='{AppConfig.AppSetting.BaseUrl}/referee/shows/{show.Id}' style='background-color: #b21f1f; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;'>XEM CHI TIẾT PHÂN CÔNG</a>
+        </div>
+        
+        <p>Nếu bạn có bất kỳ câu hỏi hoặc cần hỗ trợ, vui lòng liên hệ ban tổ chức.</p>
+        
+        <p style='margin-top: 30px;'>Trân trọng,<br>KOI SHOW TEAM</p>
+    </div>
 </body>
 </html>";
 }
