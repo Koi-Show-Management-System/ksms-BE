@@ -4,6 +4,7 @@ public enum TicketStatus
 {
     Sold,
     Cancelled,
+    Refunded,
     Checkin
         
 }

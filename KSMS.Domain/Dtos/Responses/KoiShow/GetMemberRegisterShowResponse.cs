@@ -10,5 +10,7 @@ public class GetMemberRegisterShowResponse
     public DateTime? EndDate { get; set; }
     public string? Status { get; set; }
     
+    public string? CancellationReason { get; set; }
+    
     
 }

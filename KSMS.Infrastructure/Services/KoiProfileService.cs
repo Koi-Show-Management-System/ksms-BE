@@ -241,6 +241,7 @@ public class KoiProfileService : BaseService<KoiProfileService>, IKoiProfileServ
                 var s when s == RegistrationStatus.Cancelled.ToString().ToLower() => "Đã hủy",
                 var s when s == RegistrationStatus.Confirmed.ToString().ToLower() => "Đã được duyệt - Chờ check in",
                 var s when s == RegistrationStatus.CheckIn.ToString().ToLower() => "Đã check in và đang chờ thi đấu",
+                var s when s == RegistrationStatus.PendingRefund.ToString().ToLower() => "Chờ hoàn tiền",
                 var s when s == "eliminated" => "Đã bị loại",
                 _ => "Đang thi đấu"
             };
