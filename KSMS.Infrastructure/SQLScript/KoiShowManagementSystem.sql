@@ -79,6 +79,7 @@ CREATE TABLE [dbo].[CompetitionCategory](
     [SizeMin] decimal(5,2) NULL,
     [SizeMax] decimal(5,2) NULL,
     [Description] nvarchar(max) NULL,
+    [MinEntries] int NULL,
     [MaxEntries] int NULL,
     [HasTank] BIT NOT NULL DEFAULT '0',
     [RegistrationFee] decimal(18,2) NOT NULL,

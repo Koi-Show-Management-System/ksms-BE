@@ -19,7 +19,8 @@ public class CreateCompetitionCategoryRequest
     public decimal? SizeMax { get; set; }
 
     public string? Description { get; set; }
-
+    [Range(1, int.MaxValue, ErrorMessage = "Minimum entries must be greater than 0.")]
+    public int? MinEntries { get; set; }
     [Range(1, int.MaxValue, ErrorMessage = "Maximum entries must be greater than 0.")]
     public int? MaxEntries { get; set; }
     
