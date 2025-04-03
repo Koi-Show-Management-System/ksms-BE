@@ -127,9 +127,9 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
 
         var allShowRegistrations = await _unitOfWork.GetRepository<Registration>()
             .GetListAsync(
-                predicate: r => r.KoiShowId == showId,
+                predicate: r => r.KoiShowId == showId && r.Votes.Any(),
                 include: query => query.Include(r => r.Votes));
-        var maxVotes = allShowRegistrations.Max(r => r.Votes.Count);
+        var maxVotes = allShowRegistrations.Any() ? allShowRegistrations.Max(r => r.Votes.Count) : 0;
         var response = new GetShowMemberDetailResponse()
         {
             ShowId = show.Id,
