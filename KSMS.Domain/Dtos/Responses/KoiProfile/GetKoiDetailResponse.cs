@@ -45,6 +45,7 @@ public class KoiAchievementResponse
 
 public class KoiCompetitionHistoryResponse
 {
+    public Guid KoiShowId { get; set; }
     public string? Year { get; set; }
     public string? ShowName { get; set; }
     public string? ShowStatus { get; set; }
