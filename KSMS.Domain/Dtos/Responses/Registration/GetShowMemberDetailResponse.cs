@@ -43,7 +43,7 @@ public class RegistrationDetailItems
     public string? CurrentRound { get; set; }
     
     public string? EliminatedAtRound { get; set; }
-    public List<AwardResponse> Awards { get; set; }
+    public List<AwardResponse> Awards { get; set; } = [];
     public RegistrationPaymentGetRegistrationResponse? Payment { get; set; }
     public List<GetKoiMediaResponse> Media { get; set; } = [];
 }

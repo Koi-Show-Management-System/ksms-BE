@@ -227,7 +227,7 @@ public class KoiProfileService : BaseService<KoiProfileService>, IKoiProfileServ
             .OrderByDescending(r => r.KoiShow.EndDate)
             .Select(r => new KoiCompetitionHistoryResponse
             {
-                
+                KoiShowId = r.KoiShowId,
                 Year = r.KoiShow.EndDate?.Year.ToString(),
                 ShowName = r.KoiShow.Name,
                 ShowStatus = r.KoiShow.Status,

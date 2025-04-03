@@ -259,18 +259,7 @@ public class VoteService : BaseService<VoteService>, IVoteService
                         MediaUrl = km.MediaUrl,
                         MediaType = km.MediaType,
                     }).ToList(),
-                    VoteCount = r.Votes.Count,
-                    Rank = r.Votes.Any()
-                        ? r.Votes.Count == r.KoiShow.Registrations.Max(reg => reg.Votes.Count) ? 1 : null
-                        : null,
-                    Award = !show.EnableVoting && r.Votes.Count == r.KoiShow.Registrations.Max(reg => reg.Votes.Count)
-                        ? new GetFinalRegistrationResponse.AwardInfo
-                        {
-                            Name = "People's Choice Award",
-                            AwardType = "People's Choice Award",
-                            PrizeValue = null
-                        }
-                        : null
+                    VoteCount = r.Votes.Count
                 },
                 predicate: r => r.KoiShowId == showId &&
                                 r.RegistrationRounds.Any(rr =>
@@ -289,7 +278,37 @@ public class VoteService : BaseService<VoteService>, IVoteService
                         .ThenInclude(s => s.Registrations)
                             .ThenInclude(r => r.Votes)
             );
-        return votingResults.ToList();
+        var registrations = votingResults.ToList();
+        if (registrations.Any())
+        {
+            var groupedByVotes = registrations
+                .GroupBy(r => r.VoteCount)
+                .OrderByDescending(g => g.Key)
+                .ToList();
+            int currentRank = 1;
+            foreach (var group in groupedByVotes)
+            {
+                if (group.Key <= 0)
+                    continue;
+            
+                foreach (var reg in group)
+                {
+                    reg.Rank = currentRank;
+                    if (currentRank == 1 && !show.EnableVoting)
+                    {
+                        reg.Award = new GetFinalRegistrationResponse.AwardInfo
+                        {
+                            Name = "Giải bình chọn khán giả",
+                            AwardType = "peoples_choice",
+                            PrizeValue = null
+                        };
+                    }
+                }
+                currentRank++;
+            }
+        }
+
+        return registrations;
     }
 
     public async Task<List<GetFinalRegistrationResponse>> GetVotingRegistrationsForStaff(Guid showId)
@@ -328,14 +347,6 @@ public class VoteService : BaseService<VoteService>, IVoteService
                             TankNumber = rr.Tank.Name,
                         }).FirstOrDefault(),
                     VoteCount = r.Votes.Count,
-                    Award = !show.EnableVoting && r.Votes.Count == r.KoiShow.Registrations.Max(reg => reg.Votes.Count)
-                        ? new GetFinalRegistrationResponse.AwardInfo
-                        {
-                            Name = "People's Choice Award",
-                            AwardType = "People's Choice Award",
-                            PrizeValue = null
-                        }
-                        : null
                 },
                 predicate: r => r.KoiShowId == showId && 
                     r.RegistrationRounds.Any(rr => highestFinalRounds.Select(fr => fr.Id).Contains(rr.RoundId)),
@@ -352,7 +363,26 @@ public class VoteService : BaseService<VoteService>, IVoteService
                     .Include(r => r.RegistrationRounds)
                         .ThenInclude(rr => rr.Tank)
             );
-        return response.ToList();
+        
+        var registrations = response.ToList();
+        if (registrations.Any() && !show.EnableVoting)
+        {
+            var maxVotes = registrations.Max(r => r.VoteCount);
+            if (maxVotes <= 0) return registrations;
+            {
+                foreach (var reg in registrations.Where(r => r.VoteCount == maxVotes))
+                {
+                    reg.Award = new GetFinalRegistrationResponse.AwardInfo
+                    {
+                        Name = "Giải bình chọn khán giả",
+                        AwardType = "peoples_choice",
+                        PrizeValue = null
+                    };
+                }
+            }
+        }
+
+        return registrations;
     }
 
     private async Task<List<Round>> GetHighestFinalRounds(Guid showId)
