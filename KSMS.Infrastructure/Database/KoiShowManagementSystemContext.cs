@@ -384,6 +384,9 @@ public partial class KoiShowManagementSystemContext : DbContext
             entity.Property(e => e.CreatedAt).HasColumnType("datetime");
             entity.Property(e => e.EndDate).HasColumnType("datetime");
             entity.Property(e => e.EndExhibitionDate).HasColumnType("datetime");
+            entity.Property(e => e.EnableVoting)
+                .IsRequired()
+                .HasDefaultValue(false);
             entity.Property(e => e.HasBestInShow).HasDefaultValue(false);
             entity.Property(e => e.HasGrandChampion).HasDefaultValue(false);
             entity.Property(e => e.ImgUrl)
@@ -502,6 +505,9 @@ public partial class KoiShowManagementSystemContext : DbContext
             entity.Property(e => e.Status)
                 .HasMaxLength(20)
                 .IsUnicode(false);
+            entity.Property(e => e.RefundType)
+                .HasMaxLength(20)
+                .IsUnicode(false);
             entity.Property(e => e.UpdatedAt).HasColumnType("datetime");
 
             entity.HasOne(d => d.Account).WithMany(p => p.RegistrationAccounts)
@@ -573,6 +579,7 @@ public partial class KoiShowManagementSystemContext : DbContext
             entity.Property(e => e.Status)
                 .HasMaxLength(20)
                 .IsUnicode(false);
+            entity.Property(e => e.Rank);
             entity.Property(e => e.UpdatedAt).HasColumnType("datetime");
 
             entity.HasOne(d => d.Registration).WithMany(p => p.RegistrationRounds)

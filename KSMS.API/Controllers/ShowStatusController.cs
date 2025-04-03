@@ -22,20 +22,20 @@ public class ShowStatusController : ControllerBase
     public async Task<ActionResult<ApiResponse<object>>> CreateStatus(Guid showId, [FromBody]CreateShowStatusRequest request)
     {
         await _showStatusService.CreateShowStatusAsync(showId, request);
-        return StatusCode(201, ApiResponse<object>.Created(null, "Create successfully"));
+        return StatusCode(201, ApiResponse<object>.Created(null, "Tạo tiến trình triển lãm thành công"));
     }
     [Authorize(Roles = "Admin, Manager, Staff")]
     [HttpPut("{id:guid}")]
     public async Task<ActionResult<ApiResponse<object>>> UpdateStatus(Guid id,[FromBody] UpdateShowStatusRequestV2 request)
     {
         await _showStatusService.UpdateShowStatusAsync(id, request);
-        return Ok(ApiResponse<object>.Success(null, "Update successfully"));
+        return Ok(ApiResponse<object>.Success(null, "Cập nhật tiến trình triển lãm thành công"));
     }
     [Authorize(Roles = "Admin, Manager, Staff")]
     [HttpDelete("{id:guid}")]
     public async Task<ActionResult<ApiResponse<object>>> DeleteStatus(Guid id)
     {
         await _showStatusService.DeleteShowStatusAsync(id);
-        return Ok(ApiResponse<object>.Success(null, "Delete successfully"));
+        return Ok(ApiResponse<object>.Success(null, "Xóa tiến trình triển lãm thành công"));
     }
 }

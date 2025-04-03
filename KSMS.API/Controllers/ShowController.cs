@@ -26,7 +26,7 @@ namespace KSMS.API.Controllers
         public async Task<ActionResult<ApiResponse<object>>> CreateShow([FromBody] CreateShowRequest createShowRequest)
         {
              await _showService.CreateShowAsync(createShowRequest);
-            return StatusCode(201, ApiResponse<object>.Created(null, "Create show successfully"));
+            return StatusCode(201, ApiResponse<object>.Created(null, "Tạo triển lãm thành công"));
         }
         
         [HttpGet("{id:guid}")]
@@ -34,7 +34,7 @@ namespace KSMS.API.Controllers
         {
             var show = await _showService.GetShowDetailByIdAsync(id);
 
-            return Ok(ApiResponse<object>.Success(show, "Get show successfully"));
+            return Ok(ApiResponse<object>.Success(show, "Lấy thông tin triển lãm thành công"));
         }
         
 
@@ -42,14 +42,14 @@ namespace KSMS.API.Controllers
         public async Task<ActionResult<ApiResponse<object>>> UpdateShow(Guid id, [FromBody] UpdateShowRequestV2 request)
         {
             await _showService.UpdateShowV2(id, request);
-            return Ok(ApiResponse<object>.Success(null, "Update show successfully"));
+            return Ok(ApiResponse<object>.Success(null, "Cập nhật triển lãm thành công"));
         }
 
         [HttpGet("paged")]
         public async Task<ActionResult<ApiResponse<object>>> GetPagedShows( [FromQuery] int page = 1, [FromQuery] int size = 10)
         {
             var shows = await _showService.GetPagedShowsAsync(page, size);
-            return Ok(ApiResponse<Paginate<PaginatedKoiShowResponse>>.Success(shows, "Get paged shows successfully"));
+            return Ok(ApiResponse<Paginate<PaginatedKoiShowResponse>>.Success(shows, "Lấy danh sách triển lãm thành công"));
         }
         
         [HttpGet("get-history-register-show")]
@@ -60,7 +60,18 @@ namespace KSMS.API.Controllers
             [FromQuery] int size = 10)
         {
             var shows = await _showService.GetMemberRegisterShowAsync(showStatus, page, size);
-            return Ok(ApiResponse<object>.Success(shows, "Get paged shows successfully"));
+            return Ok(ApiResponse<object>.Success(shows, "Lấy lịch sử triển lãm đã đăng ký thành công"));
+        }
+        
+        [HttpPut("update-show-status{id:guid}")]
+        [Authorize(Roles = "Admin, Manager")]
+        public async Task<ActionResult<ApiResponse<object>>> UpdateShowStatus(
+            Guid id,
+            [FromQuery]ShowStatus status,
+            [FromQuery]string? cancellationReason)
+        {
+            await _showService.CancelShowAsync(id, status, cancellationReason);
+            return Ok(ApiResponse<object>.Success(null, "Cập nhật trạng thái triển lãm thành công"));
         }
     }
 }

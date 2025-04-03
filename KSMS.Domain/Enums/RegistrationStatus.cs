@@ -3,11 +3,14 @@
 public enum RegistrationStatus
 {
     WaitToPaid,
+    PendingRefund,
     Cancelled,
     Pending,
     Confirmed,
     CheckIn,
     Rejected,
-    Refunded
-    
+    Refunded,
+    PrizeWinner,
+    Eliminated,
+    Competition,
 }

@@ -118,12 +118,18 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
                         .ThenInclude(rr => rr.Round)
                     .Include(r => r.RegistrationRounds)
                         .ThenInclude(rr => rr.RoundResults)
-                    .Include(r => r.RegistrationPayment));
+                    .Include(r => r.RegistrationPayment)
+                    .Include(r => r.Votes));
         if (!memberRegistrations.Any())
         {
             throw new NotFoundException("Ban chưa đăng ký tham gia cuộc thi này");
         }
 
+        var allShowRegistrations = await _unitOfWork.GetRepository<Registration>()
+            .GetListAsync(
+                predicate: r => r.KoiShowId == showId,
+                include: query => query.Include(r => r.Votes));
+        var maxVotes = allShowRegistrations.Max(r => r.Votes.Count);
         var response = new GetShowMemberDetailResponse()
         {
             ShowId = show.Id,
@@ -133,6 +139,7 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
             Duration = $"{show.StartDate:dd/MM/yyyy} - {show.EndDate:dd/MM/yyyy}",
             Description = show.Description,
             Status = show.Status,
+            CancellationReason = show.CancellationReason,
             TotalRegisteredKoi = memberRegistrations.Count,
         };
         foreach (var registration in memberRegistrations)
@@ -166,6 +173,8 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
                 RegistrationId = registration.Id,
                 RegistrationNumber = registration.RegistrationNumber,
                 Status = registration.Status,
+                RefundType = registration.RefundType,
+                RejectedReason = registration.RejectedReason,
                 KoiProfileId = registration.KoiProfileId,
                 KoiName = registration.KoiProfile.Name,
                 Variety = registration.KoiProfile.Variety.Name,
@@ -213,8 +222,28 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
                     .FirstOrDefault(a => a.AwardType == awardType);
                 if (award != null)
                 {
-                    regDetail.Award = award.Name;
+                    regDetail.Awards.Add(new AwardResponse
+                    {
+                        CategoryName = registration.CompetitionCategory.Name,
+                        AwardType = award.AwardType,
+                        PrizeValue = award.PrizeValue,
+                        AwardName = award.Name
+                    }); 
                 }
+            }
+
+            if (!show.EnableVoting &&
+                registration.Votes.Any() &&
+                registration.Votes.Count == maxVotes &&
+                maxVotes > 0)
+            {
+                regDetail.Awards.Add(new AwardResponse
+                {
+                    CategoryName = null,
+                    AwardType = "peoples_choice",
+                    PrizeValue = null,
+                    AwardName = "Giải bình chọn khán giả"
+                });
             }
             response.Registrations.Add(regDetail);
         }
@@ -269,6 +298,10 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
             throw new NotFoundException("Không tìm thấy hạng mục");
         }
 
+        if (koiShow.Status == ShowStatus.Cancelled.ToString().ToLower())
+        {
+            throw new BadRequestException("Triển lãm đã bị hủy. Không thể đăng ký tham gia");
+        }
         var existingRegistration = await _unitOfWork.GetRepository<Registration>()
             .SingleOrDefaultAsync(
                 predicate: r => r.KoiShowId == koiShow.Id &&
@@ -407,7 +440,7 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
         }
         
     }
-    public async Task UpdateStatusForRegistration(Guid registrationId, RegistrationStatus status)
+    public async Task UpdateStatusForRegistration(Guid registrationId, RegistrationStatus status, string? rejectedReason, RefundType? refundType)
     {
 
         var registration = await _unitOfWork.GetRepository<Registration>()
@@ -467,13 +500,18 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
         };
         if (registration.Status == RegistrationStatus.Rejected.ToString().ToLower())
         {
+            if (string.IsNullOrEmpty(rejectedReason))
+            {
+                throw new BadRequestException("Vui lòng nhập lý do từ chối");
+            }
+            registration.RejectedReason = rejectedReason;
             _unitOfWork.GetRepository<Registration>().UpdateAsync(registration);
             await _unitOfWork.CommitAsync();
             await _notificationService.SendNotification(registration.AccountId,
                 "Đơn đăng kí của bạn đã bị từ chối",
                 " Đơn đăng kí tham gia triễn lãm " + show.Name + "của bạn đã bị từ chối. Vui lòng xem email để biết thêm chi tiết",
                 NotificationType.Registration);
-            _backgroundJobClient.Enqueue(() => _emailService.SendRegistrationRejectionEmail(registrationId));
+            _backgroundJobClient.Enqueue(() => _emailService.SendRegistrationRejectionEmail(registrationId, rejectedReason));
         }
         if (registration.Status == RegistrationStatus.Confirmed.ToString().ToLower())
         {
@@ -522,11 +560,16 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
 
         if (registration.Status == RegistrationStatus.Refunded.ToString().ToLower())
         {
+            if (refundType == null)
+            {
+                throw new BadRequestException("Vui lòng chọn hình thức hoàn tiền");
+            }
+            registration.RefundType = refundType.ToString().ToLower();
             _unitOfWork.GetRepository<Registration>().UpdateAsync(registration);
             await _unitOfWork.CommitAsync();
             await _notificationService.SendNotification(registration.AccountId,
                 "Phí đăng ký của bạn đã được hoàn tiền",
-                "Đơn đăng ký tham gia triển lãm " + registration.KoiShow.Name + " đã được hoàn phí đăng ký. Vui lòng kiểm tra tài khoản của bạn trong vòng 3-5 ngày làm việc. Chi tiết đã được gửi qua email.",
+                "Đơn đăng ký tham gia triển lãm " + show.Name + " đã được hoàn phí đăng ký. Vui lòng kiểm tra tài khoản của bạn trong vòng 3-5 ngày làm việc. Chi tiết đã được gửi qua email.",
                 NotificationType.Registration);
             _backgroundJobClient.Enqueue(() => _emailService.SendRefundEmail(registrationId));
         }
@@ -547,6 +590,10 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
             throw new NotFoundException("Không tìm thấy đăng ký");
         }
 
+        if (registration.KoiShow.Status == ShowStatus.Cancelled.ToString().ToLower())
+        {
+            throw new BadRequestException("Triển lãm đã bị hủy. Không thể thanh toán đăng ký");
+        }
         if (registration.AccountId != accountId)
         {
             throw new ForbiddenMethodException("Đây không phải đăng ký của bạn!");

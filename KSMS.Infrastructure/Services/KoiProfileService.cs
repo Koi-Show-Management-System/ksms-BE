@@ -150,7 +150,9 @@ public class KoiProfileService : BaseService<KoiProfileService>, IKoiProfileServ
                         .ThenInclude(rr => rr.Round)
                 .Include(k => k.Registrations)
                     .ThenInclude(r => r.RegistrationRounds)
-                        .ThenInclude(rr => rr.RoundResults));
+                        .ThenInclude(rr => rr.RoundResults)
+                .Include(k => k.Registrations)
+                    .ThenInclude(r => r.Votes));
         if (koiProfile is null)
         {
             throw new NotFoundException("Không tìm thấy cá Koi");
@@ -184,6 +186,43 @@ public class KoiProfileService : BaseService<KoiProfileService>, IKoiProfileServ
             }
         }
 
+        var showIds = koiProfile.Registrations
+            .Where(r => !r.KoiShow.EnableVoting && r.Votes.Any())
+            .Select(r => r.KoiShowId)
+            .Distinct()
+            .ToList();
+        var showMaxVotes = new Dictionary<Guid, int>();
+        foreach (var showId in showIds)
+        {
+            var votes = await _unitOfWork.GetRepository<Registration>()
+                .GetListAsync(
+                    selector: r => r.Votes.Count,
+                    predicate: r => r.KoiShowId == showId);
+            showMaxVotes[showId] = votes.Max();
+        }
+        foreach (var registration in koiProfile.Registrations)
+        {
+            if (!registration.KoiShow.EnableVoting &&
+                registration.Votes.Any() &&
+                showMaxVotes.TryGetValue(registration.KoiShowId, out int maxVotes) &&
+                registration.Votes.Count == maxVotes)
+            {
+                response.Achievements.Add(new KoiAchievementResponse
+                {
+                    ShowName = registration.KoiShow.Name,
+                    Location = registration.KoiShow.Location,
+                    CategoryName = null,
+                    AwardType = "peoples_choice",
+                    PrizeValue = null,
+                    AwardName = "Giải bình chọn khán giả",
+                    CompetitionDate = registration.KoiShow.EndDate
+                });
+               
+            }
+        }
+        response.Achievements = response.Achievements
+            .OrderByDescending(a => a.CompetitionDate)
+            .ToList();
         response.CompetitionHistory = koiProfile.Registrations
             .OrderByDescending(r => r.KoiShow.EndDate)
             .Select(r => new KoiCompetitionHistoryResponse
@@ -241,6 +280,7 @@ public class KoiProfileService : BaseService<KoiProfileService>, IKoiProfileServ
                 var s when s == RegistrationStatus.Cancelled.ToString().ToLower() => "Đã hủy",
                 var s when s == RegistrationStatus.Confirmed.ToString().ToLower() => "Đã được duyệt - Chờ check in",
                 var s when s == RegistrationStatus.CheckIn.ToString().ToLower() => "Đã check in và đang chờ thi đấu",
+                var s when s == RegistrationStatus.PendingRefund.ToString().ToLower() => "Chờ hoàn tiền",
                 var s when s == "eliminated" => "Đã bị loại",
                 _ => "Đang thi đấu"
             };

@@ -182,6 +182,16 @@ namespace KSMS.Infrastructure.Services
                             await roundResultRepository.InsertAsync(result);
                         }
                     }
+
+                    for (int i = 0; i < sortedResults.Count; i++)
+                    {
+                        var item = sortedResults[i];
+                        var registrationRound = await registrationRoundRepository.SingleOrDefaultAsync(
+                            predicate: rr => rr.Id == item.RegistrationRoundId);
+                        registrationRound.Rank = i + 1;
+                        registrationRoundRepository.UpdateAsync(registrationRound);
+                    }
+                    
                 }
 
                 // ✅ Commit UoW để đảm bảo dữ liệu được ghi vào DB
@@ -286,12 +296,15 @@ namespace KSMS.Infrastructure.Services
                         _unitOfWork.GetRepository<RoundResult>().UpdateAsync(roundResult);
 
                         var registration = regisRound.Registration;
-                        registration.Rank = roundResult.Status == "Pass" ? passCount : totalParticipants;
+                        var newRank = roundResult.Status == "Pass" ? passCount : totalParticipants;
+                        registration.Rank = newRank;
+                        regisRound.Rank = newRank;
                         if (roundResult.Status == "Fail")
                         {
                             registration.Status = "eliminated";
                         }
                         _unitOfWork.GetRepository<Registration>().UpdateAsync(registration);
+                        _unitOfWork.GetRepository<RegistrationRound>().UpdateAsync(regisRound);
                     }
                 }
                 else
@@ -334,6 +347,7 @@ namespace KSMS.Infrastructure.Services
 
                         var registration = regisRound.Registration;
                         registration.Rank = currentRank;
+                        regisRound.Rank = currentRank;
                         if (roundResult.Status == "Fail")
                         {
                             registration.Status = "eliminated";
@@ -352,6 +366,7 @@ namespace KSMS.Infrastructure.Services
                         }
                         
                         _unitOfWork.GetRepository<Registration>().UpdateAsync(registration);
+                        _unitOfWork.GetRepository<RegistrationRound>().UpdateAsync(regisRound);
                     }
                 }
                 await _unitOfWork.CommitAsync();
@@ -489,34 +504,5 @@ namespace KSMS.Infrastructure.Services
 
             return totalDeduction;
         }
-
-
-
-
-
-        //public async Task<RoundResultResponse> CreateRoundResultAsync(CreateRoundResult request)
-        //{
-        //    var roundResultRepository = _unitOfWork.GetRepository<RoundResult>();
-
-
-        //    var existingRoundResult = await roundResultRepository.SingleOrDefaultAsync(
-        //        predicate: rr => rr.RegistrationRoundsId == request.RegistrationRoundsId
-        //    );
-
-        //    if (existingRoundResult != null)
-        //    {
-        //        throw new BadRequestException("Round result already exists for this registration round.");
-        //    }
-
-
-        //    var roundResult = request.Adapt<RoundResult>();
-
-
-        //    var createdRoundResult = await roundResultRepository.InsertAsync(roundResult);
-        //    await _unitOfWork.CommitAsync();
-
-
-        //    return createdRoundResult.Adapt<RoundResultResponse>();
-        //}
     }
 }

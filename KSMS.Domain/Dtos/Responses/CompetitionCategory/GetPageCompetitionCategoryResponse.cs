@@ -10,6 +10,8 @@ public class GetPageCompetitionCategoryResponse
     public decimal? SizeMax { get; set; }
 
     public string? Description { get; set; }
+    
+    public int? MinEntries { get; set; }
 
     public int? MaxEntries { get; set; }
     

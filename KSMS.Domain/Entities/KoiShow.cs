@@ -19,6 +19,8 @@ public partial class KoiShow : BaseEntity
     public string? Location { get; set; }
 
     public string? Description { get; set; }
+    
+    public string? CancellationReason { get; set; }
 
     public DateOnly? RegistrationDeadline { get; set; }
 
@@ -26,6 +28,7 @@ public partial class KoiShow : BaseEntity
 
     public int? MaxParticipants { get; set; }
 
+    public bool EnableVoting { get; set; } = false;
     public bool? HasGrandChampion { get; set; }
 
     public bool? HasBestInShow { get; set; }

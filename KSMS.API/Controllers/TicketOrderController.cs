@@ -22,7 +22,7 @@ public class TicketOrderController : ControllerBase
     public async Task<ActionResult<ApiResponse<object>>> CreateOrder([FromBody] CreateTicketOrderRequest createTicketOrderRequest)
     {
         var createOrder = await _ticketOrderService.CreateTicketOrder(createTicketOrderRequest);
-        return StatusCode(201, ApiResponse<object>.Created(createOrder, "Check out successfully"));
+        return StatusCode(201, ApiResponse<object>.Created(createOrder, "Tạo thanh toán thành công"));
     }
     [HttpGet("call-back")]
     public async Task<IActionResult> Success([FromQuery] Guid ticketOrderId,[FromQuery] string status)
@@ -42,18 +42,18 @@ public class TicketOrderController : ControllerBase
         [FromQuery] int page = 1, [FromQuery]int size  = 10)
     {
         var orders = await _ticketOrderService.GetAllOrder(koiShowId, orderStatus, page, size);
-        return Ok(ApiResponse<object>.Success(orders, "Get list successfully"));
+        return Ok(ApiResponse<object>.Success(orders, "Lấy danh sách đơn hàng vé thành công"));
     }
     [HttpGet("get-order-details/{orderId:guid}")]
     public async Task<ActionResult<ApiResponse<object>>> GetOrderDetails(Guid orderId)
     {
         var orderDetails = await _ticketOrderService.GetOrderDetailByOrderId(orderId);
-        return Ok(ApiResponse<object>.Success(orderDetails, "Get list successfully"));
+        return Ok(ApiResponse<object>.Success(orderDetails, "Lấy chi tiết đơn hàng vé thành công"));
     }
     [HttpGet("get-all-tickets/{orderDetailId:guid}")]
     public async Task<ActionResult<ApiResponse<object>>> GetTicketByOrderDetailId(Guid orderDetailId)
     {
         var orderDetails = await _ticketOrderService.GetTicketByOrderDetailId(orderDetailId);
-        return Ok(ApiResponse<object>.Success(orderDetails, "Get list successfully"));
+        return Ok(ApiResponse<object>.Success(orderDetails, "Lấy danh sách vé thành công"));
     }
 }

@@ -36,7 +36,7 @@ namespace KSMS.API.Controllers
         {
             
              await _scoreService.CreateScoreAsync(request);
-            return StatusCode(201, ApiResponse<object>.Created(null, "Create score successfully"));
+            return StatusCode(201, ApiResponse<object>.Created(null, "Tạo điểm số thành công"));
         }
         /// <summary>
         /// Chấm điểm vòng loại (trọng tài chỉ chọn `Pass` hoặc `Fail`).
@@ -48,7 +48,7 @@ namespace KSMS.API.Controllers
            
             
                 await _scoreService.CreateEliminationScoreAsync(request);
-            return Ok(ApiResponse<ScoreDetailResponse>.Success(null, "Elimination score submitted successfully"));
+            return Ok(ApiResponse<ScoreDetailResponse>.Success(null, "Đã tạo điểm vòng sơ khảo thành công"));
             
         }
         [HttpGet("get-score-detail/{registrationRoundId}")]
@@ -57,7 +57,7 @@ namespace KSMS.API.Controllers
             GetScoresByRegistrationRoundId(Guid registrationRoundId)
         {
             var scores = await _scoreService.GetScoresByRegistrationRoundId(registrationRoundId);
-            return Ok(ApiResponse<object>.Success(scores, "Get the list of score successfully"));
+            return Ok(ApiResponse<object>.Success(scores, "Lấy danh sách điểm số thành công"));
         }
     }
 }

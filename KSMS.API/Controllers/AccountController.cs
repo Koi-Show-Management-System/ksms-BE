@@ -2,9 +2,6 @@
 using KSMS.Application.Services;
 using KSMS.Domain.Dtos.Requests.Account;
 using KSMS.Domain.Enums;
-using KSMS.Infrastructure.Utils;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using KSMS.Domain.Dtos;
 
@@ -26,21 +23,27 @@ namespace KSMS.API.Controllers
         public async Task<ActionResult<ApiResponse<object>>> ToggleUserStatus(Guid id, [FromQuery]AccountStatus status)
         {
             var updatedUser = await _accountService.UpdateStatus(id, status);
-            var statusMessage = status.ToString().ToLower();
-            return Ok(ApiResponse<object>.Success(updatedUser, $"Account has been {statusMessage}"));
+            var statusMessage = status switch
+            {
+                AccountStatus.Active => "kích hoạt",
+                AccountStatus.Blocked => "khóa",
+                AccountStatus.Deleted => "xóa",
+                _ => status.ToString().ToLower()
+            };
+            return Ok(ApiResponse<object>.Success(updatedUser, $"Tài khoản đã được {statusMessage}"));
         }
 
         [HttpPost("create")]
         public async Task<ActionResult<ApiResponse<object>>> CreateUser([FromForm] CreateAccountRequest createAccountRequest)
         {
             var newUser = await _accountService.CreateUserAsync(createAccountRequest);
-            return StatusCode(201, ApiResponse<object>.Created(newUser, "Register account successfully"));
+            return StatusCode(201, ApiResponse<object>.Created(newUser, "Thêm tài khoản thành công"));
         }
         [HttpGet("{id:guid}")]
         public async Task<ActionResult<ApiResponse<object>>> GetUserById(Guid id)
         {
             var user = await _accountService.GetUserByIdAsync(id);
-            return Ok(ApiResponse<object>.Success(user, "Get account successfully"));
+            return Ok(ApiResponse<object>.Success(user, "Lấy thông tin tài khoản thành công"));
         }
 
         [Route("admin/get-paging-account")]
@@ -48,14 +51,14 @@ namespace KSMS.API.Controllers
         public async Task<ActionResult<ApiResponse<object>>> GetAccUsersByAdmin([FromQuery] RoleName? roleName, [FromQuery] int page = 1, [FromQuery] int size = 10)
         {
             var pagedUsers = await _accountService.GetPagedUsersAsync(roleName, page, size);
-            return Ok(ApiResponse<object>.Success(pagedUsers, "Get list of account successfully"));
+            return Ok(ApiResponse<object>.Success(pagedUsers, "Lấy danh sách tài khoản thành công"));
         }
 
         [HttpPut("{id:guid}")]
         public async Task<ActionResult<ApiResponse<object>>> UpdateCurrentAccount(Guid id, [FromForm] UpdateAccountRequest updateAccountRequest)
         {
             await _accountService.UpdateAccount(id, updateAccountRequest);
-            return Ok(ApiResponse<object>.Success(null, "Update account successfully"));
+            return Ok(ApiResponse<object>.Success(null, "Cập nhật tài khoản thành công"));
         }
     }
 }
