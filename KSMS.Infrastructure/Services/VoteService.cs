@@ -121,9 +121,9 @@ public class VoteService : BaseService<VoteService>, IVoteService
             throw new NotFoundException("Không tìm thấy triển lãm");
         }
         show.EnableVoting = false;
-        var topVoted = await GetVotingResults(showId);
         _unitOfWork.GetRepository<KoiShow>().UpdateAsync(show);
         await _unitOfWork.CommitAsync();
+        var topVoted = await GetVotingResults(showId);
         if (topVoted.Any())
         {
             var mostVoted = topVoted.First();
