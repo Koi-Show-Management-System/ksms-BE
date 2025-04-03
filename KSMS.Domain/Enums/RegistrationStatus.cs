@@ -9,6 +9,8 @@ public enum RegistrationStatus
     Confirmed,
     CheckIn,
     Rejected,
-    Refunded
-    
+    Refunded,
+    PrizeWinner,
+    Eliminated,
+    Competition,
 }

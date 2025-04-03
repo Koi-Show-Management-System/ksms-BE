@@ -51,6 +51,7 @@ CREATE TABLE [dbo].[KoiShow](
     [RegistrationDeadline] date NULL,
     [MinParticipants] int NULL,
     [MaxParticipants] int NULL,
+    [EnableVoting] BIT NOT NULL DEFAULT '0',
     [HasGrandChampion] bit DEFAULT 0,
     [HasBestInShow] bit DEFAULT 0,
     [ImgURL] nvarchar(255) NULL,

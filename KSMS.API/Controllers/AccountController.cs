@@ -2,9 +2,6 @@
 using KSMS.Application.Services;
 using KSMS.Domain.Dtos.Requests.Account;
 using KSMS.Domain.Enums;
-using KSMS.Infrastructure.Utils;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using KSMS.Domain.Dtos;
 
