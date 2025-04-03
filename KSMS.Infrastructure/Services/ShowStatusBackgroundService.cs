@@ -46,8 +46,8 @@ namespace KSMS.Infrastructure.Services
                 { ShowProgress.Preliminary, "Vòng sơ loại đã bắt đầu!" },
                 { ShowProgress.Evaluation, "Vòng đánh giá đã bắt đầu!" },
                 { ShowProgress.Final, "Vòng chung kết đã bắt đầu!" },
-                { ShowProgress.GrandChampion, "Vòng Grand Champion đã bắt đầu!" },
-                { ShowProgress.Completed, "Triển lãm đã hoàn thành!" },
+                // { ShowProgress.GrandChampion, "Vòng Grand Champion đã bắt đầu!" },
+                // { ShowProgress.Completed, "Triển lãm đã hoàn thành!" },
                 { ShowProgress.Exhibition, "Triển lãm đang diễn ra!" },
                 { ShowProgress.Finished, "Triển lãm đã kết thúc!" }
             };
@@ -81,38 +81,43 @@ namespace KSMS.Infrastructure.Services
                     var notificationService = scope.ServiceProvider.GetRequiredService<INotificationService>();
 
                     var currentTime = VietNamTimeUtil.GetVietnamTime();
-                    var fifteenMinutesLater = currentTime.AddMinutes(15);
+                    //var fifteenMinutesLater = currentTime.AddMinutes(15);
 
                     var showStatuses = await unitOfWork.GetRepository<ShowStatus>()
-                        .GetListAsync(predicate: x => x.KoiShow.Status != Domain.Enums.ShowStatus.Cancelled.ToString()
+                        .GetListAsync(predicate: x => x.KoiShow.Status != Domain.Enums.ShowStatus.Cancelled.ToString() &&
+                                                      x.KoiShow.Status != Domain.Enums.ShowStatus.Finished.ToString()
                             ,include: query => query.Include(s => s.KoiShow));
 
                     foreach (var status in showStatuses)
                     {
                         var isNowActive = currentTime >= status.StartDate && currentTime <= status.EndDate;
-                        var willBeActiveSoon = fifteenMinutesLater >= status.StartDate && fifteenMinutesLater <= status.EndDate;
+                        //var willBeActiveSoon = fifteenMinutesLater >= status.StartDate && fifteenMinutesLater <= status.EndDate;
                         var showProgress = Enum.Parse<ShowProgress>(status.StatusName);
-
-                        if (status.IsActive != isNowActive)
+                        var nextStatus = showStatuses.Where(
+                            s => s.KoiShowId == status.KoiShowId &&
+                                 s.StartDate > status.StartDate).MinBy(s => s.StartDate);
+                        var shouldBeActive = isNowActive ||
+                                             (status.IsActive && nextStatus != null && currentTime < nextStatus.StartDate);
+                        if (status.IsActive != shouldBeActive)
                         {
                             status.IsActive = isNowActive;
                             await UpdateShowStatus(unitOfWork, status, showProgress);
 
-                            if (isNowActive)
-                            {
-                                ClearNotificationCache(status.KoiShowId, status.StatusName);
-                                if (!HasNotificationBeenSent(status.KoiShowId, status.StatusName))
-                                {
-                                    await SendNotifications(notificationService, status, showProgress);
-                                    MarkNotificationAsSent(status.KoiShowId, status.StatusName);
-                                }
-                            }
+                            // if (isNowActive)
+                            // {
+                            //     ClearNotificationCache(status.KoiShowId, status.StatusName);
+                            //     if (!HasNotificationBeenSent(status.KoiShowId, status.StatusName))
+                            //     {
+                            //         await SendNotifications(notificationService, status, showProgress);
+                            //         MarkNotificationAsSent(status.KoiShowId, status.StatusName);
+                            //     }
+                            // }
                         }
-                        else if (!status.IsActive && willBeActiveSoon && !HasNotificationBeenSent(status.KoiShowId, status.StatusName))
-                        {
-                            await SendUpcomingNotifications(notificationService, status, showProgress);
-                            MarkNotificationAsSent(status.KoiShowId, status.StatusName);
-                        }
+                        // else if (!status.IsActive && willBeActiveSoon && !HasNotificationBeenSent(status.KoiShowId, status.StatusName))
+                        // {
+                        //     await SendUpcomingNotifications(notificationService, status, showProgress);
+                        //     MarkNotificationAsSent(status.KoiShowId, status.StatusName);
+                        // }
                     }
                 }
                 catch (Exception ex)
@@ -144,8 +149,8 @@ namespace KSMS.Infrastructure.Services
                         ShowProgress.Preliminary or 
                         ShowProgress.Evaluation or 
                         ShowProgress.Final or 
-                        ShowProgress.GrandChampion or 
-                        ShowProgress.Completed or 
+                        ShowProgress.Award or 
+                        ShowProgress.PublicResult or 
                         ShowProgress.Exhibition => "inprogress",
                         
                         ShowProgress.Finished => "finished",

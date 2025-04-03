@@ -118,12 +118,18 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
                         .ThenInclude(rr => rr.Round)
                     .Include(r => r.RegistrationRounds)
                         .ThenInclude(rr => rr.RoundResults)
-                    .Include(r => r.RegistrationPayment));
+                    .Include(r => r.RegistrationPayment)
+                    .Include(r => r.Votes));
         if (!memberRegistrations.Any())
         {
             throw new NotFoundException("Ban chưa đăng ký tham gia cuộc thi này");
         }
 
+        var allShowRegistrations = await _unitOfWork.GetRepository<Registration>()
+            .GetListAsync(
+                predicate: r => r.KoiShowId == showId,
+                include: query => query.Include(r => r.Votes));
+        var maxVotes = allShowRegistrations.Max(r => r.Votes.Count);
         var response = new GetShowMemberDetailResponse()
         {
             ShowId = show.Id,
@@ -216,8 +222,28 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
                     .FirstOrDefault(a => a.AwardType == awardType);
                 if (award != null)
                 {
-                    regDetail.Award = award.Name;
+                    regDetail.Awards.Add(new AwardResponse
+                    {
+                        CategoryName = registration.CompetitionCategory.Name,
+                        AwardType = award.AwardType,
+                        PrizeValue = award.PrizeValue,
+                        AwardName = award.Name
+                    }); 
                 }
+            }
+
+            if (!show.EnableVoting &&
+                registration.Votes.Any() &&
+                registration.Votes.Count == maxVotes &&
+                maxVotes > 0)
+            {
+                regDetail.Awards.Add(new AwardResponse
+                {
+                    CategoryName = null,
+                    AwardType = "peoples_choice",
+                    PrizeValue = null,
+                    AwardName = "Giải bình chọn khán giả"
+                });
             }
             response.Registrations.Add(regDetail);
         }
@@ -543,7 +569,7 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
             await _unitOfWork.CommitAsync();
             await _notificationService.SendNotification(registration.AccountId,
                 "Phí đăng ký của bạn đã được hoàn tiền",
-                "Đơn đăng ký tham gia triển lãm " + registration.KoiShow.Name + " đã được hoàn phí đăng ký. Vui lòng kiểm tra tài khoản của bạn trong vòng 3-5 ngày làm việc. Chi tiết đã được gửi qua email.",
+                "Đơn đăng ký tham gia triển lãm " + show.Name + " đã được hoàn phí đăng ký. Vui lòng kiểm tra tài khoản của bạn trong vòng 3-5 ngày làm việc. Chi tiết đã được gửi qua email.",
                 NotificationType.Registration);
             _backgroundJobClient.Enqueue(() => _emailService.SendRefundEmail(registrationId));
         }

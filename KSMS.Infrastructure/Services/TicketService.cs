@@ -132,11 +132,11 @@ public class TicketService : BaseService<TicketService>, ITicketService
         {
             throw new BadRequestException("Vé đã được checkin trước đó");
         }
-        if (ticket.Status == TicketStatus.Cancelled.ToString().ToLower())
+        if (ticket.Status == TicketStatus.Cancelled.ToString().ToLower() || ticket.Status == TicketStatus.Refunded.ToString().ToLower())
         {
             throw new BadRequestException("Vé đã bị hủy");
         }
-        if (ticket.TicketOrderDetail.TicketType.KoiShow.EndDate < VietNamTimeUtil.GetVietnamTime())
+        if (ticketOrderDetail.TicketType.KoiShow.EndDate < VietNamTimeUtil.GetVietnamTime())
         {
             throw new BadRequestException("Triển lãm đã kết thúc");
         }

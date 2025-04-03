@@ -384,6 +384,9 @@ public partial class KoiShowManagementSystemContext : DbContext
             entity.Property(e => e.CreatedAt).HasColumnType("datetime");
             entity.Property(e => e.EndDate).HasColumnType("datetime");
             entity.Property(e => e.EndExhibitionDate).HasColumnType("datetime");
+            entity.Property(e => e.EnableVoting)
+                .IsRequired()
+                .HasDefaultValue(false);
             entity.Property(e => e.HasBestInShow).HasDefaultValue(false);
             entity.Property(e => e.HasGrandChampion).HasDefaultValue(false);
             entity.Property(e => e.ImgUrl)

@@ -433,6 +433,7 @@ namespace KSMS.Infrastructure.Services
                 Domain.Enums.ShowStatus.Upcoming =>  Domain.Enums.ShowStatus.Upcoming.ToString().ToLower(),
                 _ => show.Status
             };
+
             if (show.Status == Domain.Enums.ShowStatus.Cancelled.ToString().ToLower())
             {
                 if (reason is null)
@@ -441,63 +442,85 @@ namespace KSMS.Infrastructure.Services
                 }
                 show.CancellationReason = reason;
                 _unitOfWork.GetRepository<KoiShow>().UpdateAsync(show);
-                
+                await _unitOfWork.CommitAsync();
                 var registrations = await _unitOfWork.GetRepository<Registration>()
-                    .GetListAsync(predicate: r => r.KoiShowId == id,
-                        include: query => query.Include(r => r.Account));
-                if (registrations.Any())
+                    .GetListAsync(
+                        selector: r => new { r.Id, r.AccountId, r.Status },
+                        predicate: r => r.KoiShowId == id);
+                var registrationsByAccount = registrations
+                    .Where(r => r.Status == RegistrationStatus.Confirmed.ToString().ToLower() || 
+                                r.Status == RegistrationStatus.Pending.ToString().ToLower())
+                    .GroupBy(r => r.AccountId);
+
+                foreach (var accountGroup in registrationsByAccount)
                 {
-                    foreach (var registration in registrations)
+                    foreach (var registration in accountGroup)
                     {
-                        if (registration.Status == RegistrationStatus.Confirmed.ToString().ToLower())
+                        var reg = await _unitOfWork.GetRepository<Registration>()
+                            .SingleOrDefaultAsync(predicate: r => r.Id == registration.Id);
+                        if (reg != null)
                         {
-                            registration.Status = RegistrationStatus.PendingRefund.ToString().ToLower();
-                            await _notificationService.SendNotification(
-                                registration.AccountId,
-                                "Triển lãm đã bị hủy - Đang chờ xử lí hoàn tiền",
-                                $"Triển lãm {show.Name} đã bị hủy. Phí đăng ký của bạn đang được xử lí hoàn trả trong 3-5 ngày làm việc.",
-                                NotificationType.Registration);
+                            reg.Status = RegistrationStatus.PendingRefund.ToString().ToLower();
+                            _unitOfWork.GetRepository<Registration>().UpdateAsync(reg);
                         }
-                        _unitOfWork.GetRepository<Registration>().UpdateAsync(registration);
                     }
+                    await _notificationService.SendNotification(
+                        accountGroup.Key,
+                        "Triển lãm đã bị hủy - Đang chờ xử lí hoàn tiền",
+                        $"Triển lãm {show.Name} đã bị hủy. Phí đăng ký của bạn đang được xử lí hoàn trả trong 3-5 ngày làm việc.",
+                        NotificationType.Registration);
                 }
-                var tickets = await _unitOfWork.GetRepository<Ticket>().GetListAsync(
-                    predicate: t => t.TicketOrderDetail.TicketType.KoiShowId == id,
-                    include: query => query
-                        .Include(t => t.TicketOrderDetail)
-                            .ThenInclude(tod => tod.TicketOrder)
-                        .Include(t => t.TicketOrderDetail)
-                            .ThenInclude(tod => tod.TicketType));
-                if (tickets.Any())
+                await _unitOfWork.CommitAsync();
+
+                // Handle ticket orders
+                var ticketOrders = await _unitOfWork.GetRepository<TicketOrder>()
+                    .GetListAsync(
+                        selector: t => new { t.Id, t.AccountId },
+                        include: query => query
+                            .Include(t => t.TicketOrderDetails)
+                                .ThenInclude(tod => tod.Tickets),
+                        predicate: t => t.TicketOrderDetails
+                            .Any(tod => tod.TicketType.KoiShowId == id));
+
+                // Group ticket orders by AccountId
+                var ticketOrdersByAccount = ticketOrders.GroupBy(t => t.AccountId);
+
+                foreach (var accountGroup in ticketOrdersByAccount)
                 {
-                    var ticketsByAccount = tickets
-                        .Where(t => t.Status == TicketStatus.Sold.ToString().ToLower())
-                        .GroupBy(t => t.TicketOrderDetail.TicketOrder.AccountId);
-                    foreach (var group in ticketsByAccount)
+                    // Process all tickets in all orders of this account
+                    foreach (var order in accountGroup)
                     {
-                        var accountId = group.Key;
-                        var accountTickets = group.ToList();
-                        var showName = accountTickets.First().TicketOrderDetail.TicketType.KoiShow.Name;
-                        foreach (var ticket in accountTickets)
+                        var tickets = await _unitOfWork.GetRepository<Ticket>()
+                            .GetListAsync(
+                                predicate: t => t.TicketOrderDetail.TicketOrderId == order.Id &&
+                                              t.Status == TicketStatus.Sold.ToString().ToLower());
+                        
+                        foreach (var ticket in tickets)
                         {
                             ticket.Status = TicketStatus.Cancelled.ToString().ToLower();
                             _unitOfWork.GetRepository<Ticket>().UpdateAsync(ticket);
                         }
-                        await _notificationService.SendNotification(
-                            accountId,
-                            "Vé đã bị hủy do triển lãm không diễn ra",
-                            $"Các vé của bạn cho triển lãm {showName} đã bị hủy do triển lãm không được tổ chức." +
-                            $" Tiền vé của bạn đang được xử lí hoàn trả trong 3-5 ngày làm việc.",
-                            NotificationType.System);
                     }
+
+                    // Send a single notification per account
+                    await _notificationService.SendNotification(
+                        accountGroup.Key,
+                        "Triển lãm đã bị hủy - Hoàn tiền vé",
+                        $"Triển lãm {show.Name} đã bị hủy. Tiền vé của bạn sẽ được hoàn trả trong 3-5 ngày làm việc.",
+                        NotificationType.System);
                 }
                 await _unitOfWork.CommitAsync();
-                var subscribers = await _unitOfWork.GetRepository<Account>()
-                    .GetListAsync(predicate: a => a.Role == RoleName.Member.ToString().ToLower());
-                foreach (var subscriber in subscribers)
+
+                // Notify all members
+                var memberIds = await _unitOfWork.GetRepository<Account>()
+                    .GetListAsync(
+                        selector: a => a.Id,
+                        predicate: a => a.Role == RoleName.Member.ToString().ToLower());
+
+                foreach (var memberId in memberIds)
                 {
                     await _notificationService.SendNotification(
-                        subscriber.Id,
+                        memberId,
                         $"Triển lãm {show.Name} đã bị hủy",
                         $"Triển lãm {show.Name} đã bị hủy do lý do: {reason}. Nếu bạn đã đăng ký hoặc mua vé, chúng tôi sẽ liên hệ với bạn để hoàn tiền.",
                         NotificationType.System);
@@ -515,19 +538,22 @@ namespace KSMS.Infrastructure.Services
             {
                 _unitOfWork.GetRepository<KoiShow>().UpdateAsync(show);
                 await _unitOfWork.CommitAsync();
-                var subscribers = await _unitOfWork.GetRepository<Account>()
-                    .GetListAsync(predicate: a => a.Role == RoleName.Member.ToString().ToLower());
-                foreach (var subscriber in subscribers)
+
+                var memberIds = await _unitOfWork.GetRepository<Account>()
+                    .GetListAsync(
+                        selector: a => a.Id,
+                        predicate: a => a.Role == RoleName.Member.ToString().ToLower());
+
+                foreach (var memberId in memberIds)
                 {
                     await _notificationService.SendNotification(
-                        subscriber.Id,
+                        memberId,
                         $"Triển lãm {show.Name} đã chính thức được công bố",
                         $"Triển lãm {show.Name} đã được công bố. Bạn có thể mua vé và đăng ký tham gia ngay từ bây giờ.",
                         NotificationType.System);
                 }
                 _backgroundJobClient.Enqueue(() => _emailService.SendRefereeAssignmentNotification(show.Id));
             }
-            
         }
 
         public async Task<Paginate<PaginatedKoiShowResponse>> GetPagedShowsAsync(int page, int size)
