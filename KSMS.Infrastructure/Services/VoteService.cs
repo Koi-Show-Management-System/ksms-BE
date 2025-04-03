@@ -108,6 +108,7 @@ public class VoteService : BaseService<VoteService>, IVoteService
             throw new BadRequestException("Có vài vòng chung kết chưa hoàn thành, không thể kích hoạt chức năng bình chọn");
         }
         show.EnableVoting = true;
+        _unitOfWork.GetRepository<KoiShow>().UpdateAsync(show);
         await _unitOfWork.CommitAsync();
     }
 
@@ -121,6 +122,8 @@ public class VoteService : BaseService<VoteService>, IVoteService
         }
         show.EnableVoting = false;
         var topVoted = await GetVotingResults(showId);
+        _unitOfWork.GetRepository<KoiShow>().UpdateAsync(show);
+        await _unitOfWork.CommitAsync();
         if (topVoted.Any())
         {
             var mostVoted = topVoted.First();
@@ -138,8 +141,7 @@ public class VoteService : BaseService<VoteService>, IVoteService
                     NotificationType.System);
             }
         }
-
-        await _unitOfWork.CommitAsync();
+        
     }
 
     public async Task<List<GetFinalRegistrationResponse>> GetFinalRegistration(Guid showId)
