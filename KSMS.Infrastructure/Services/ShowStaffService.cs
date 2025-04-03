@@ -43,13 +43,9 @@ public class ShowStaffService : BaseService<ShowStaffService>, IShowStaffService
         {
             throw new BadRequestException("Tài khoản này đã được phân công cho cuộc thi");
         }
-        if (account.Role != RoleName.Staff.ToString())
+        if (account.Role != RoleName.Staff.ToString() && account.Role != RoleName.Manager.ToString())
         {
-            throw new BadRequestException("Tài khoản không phải là nhân viên");
-        }
-        if (account.Role != RoleName.Manager.ToString())
-        {
-            throw new BadRequestException("Tài khoản không phải là quản lý");
+            throw new BadRequestException("Tài khoản không phải là nhân viên hoặc quản lý");
         }
         if (GetRoleFromJwt() == RoleName.Manager.ToString())
         {

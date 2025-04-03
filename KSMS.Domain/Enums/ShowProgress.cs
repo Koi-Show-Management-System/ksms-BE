@@ -2,14 +2,14 @@
 
 public enum ShowProgress
 {
-    RegistrationOpen,
+    RegistrationOpen,   
     RegistrationClosed,
     CheckIn,
     Preliminary,
     Evaluation,
     Final,
-    GrandChampion,
-    Completed,
     Exhibition,
+    PublicResult,
+    Award,
     Finished
 }
