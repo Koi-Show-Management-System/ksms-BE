@@ -40,14 +40,14 @@ public class VoteController : ControllerBase
         await _voteService.CreateVote(registrationId);
         return StatusCode(201, ApiResponse<object>.Created(null, "Bình chọn thành công"));
     }
-    [HttpPost("enable-voting/{showId:guid}")]
+    [HttpPut("enable-voting/{showId:guid}")]
     [Authorize(Roles = "Admin, Staff, Manager")]
     public async Task<ActionResult<ApiResponse<object>>> EnableVoting(Guid showId)
     {
         await _voteService.EnableVoting(showId);
         return Ok(ApiResponse<object>.Success(null, "Đã kích hoạt chức năng bình chọn"));
     }
-    [HttpPost("disable-voting/{showId:guid}")]
+    [HttpPut("disable-voting/{showId:guid}")]
     [Authorize(Roles = "Admin, Staff, Manager")]
     public async Task<ActionResult<ApiResponse<object>>> DisableVoting(Guid showId)
     {
