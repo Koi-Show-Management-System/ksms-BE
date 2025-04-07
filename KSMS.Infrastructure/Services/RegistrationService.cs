@@ -354,7 +354,7 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
     }
 
     // New method to find suitable category
-    public async Task<GetPageCompetitionCategoryResponse> FindSuitableCategoryAsync(Guid koiShowId, Guid varietyId, decimal size)
+    public async Task<List<GetPageCompetitionCategoryResponse>> FindSuitableCategoryAsync(Guid koiShowId, Guid varietyId, decimal size)
     {
         var show = await _unitOfWork.GetRepository<KoiShow>()
         .SingleOrDefaultAsync(predicate: s => s.Id == koiShowId);
@@ -387,11 +387,27 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
                 throw new BadRequestException("Không tìm thấy hạng mục phù hợp với kích thước của cá");
             throw new BadRequestException("Không tìm thấy hạng mục phù hợp với giống và kích thước của cá");
         }
-        var bestCategory = eligibleCategories.MinBy(c => c.SizeMax - c.SizeMin);
-        if (bestCategory == null)
-            throw new BadRequestException("Không tìm thấy hạng mục phù hợp cho cá này");
+        var result = new List<GetPageCompetitionCategoryResponse>();
+        foreach (var category in eligibleCategories)
+        {
+            // Lấy tất cả varieties thuộc category này
+            var categoryWithVarieties = await _unitOfWork.GetRepository<CompetitionCategory>()
+                .SingleOrDefaultAsync(
+                    predicate: c => c.Id == category.Id,
+                    include: query => query.Include(c => c.CategoryVarieties)
+                        .ThenInclude(cv => cv.Variety));
+                    
+            var response = category.Adapt<GetPageCompetitionCategoryResponse>();
         
-        return bestCategory.Adapt<GetPageCompetitionCategoryResponse>();
+            // Lấy tên của tất cả các varieties cho category này
+            response.Varieties = categoryWithVarieties.CategoryVarieties
+                .Select(cv => cv.Variety.Name)
+                .ToList();
+            
+            result.Add(response);
+        }
+    
+        return result;
     }
 
 

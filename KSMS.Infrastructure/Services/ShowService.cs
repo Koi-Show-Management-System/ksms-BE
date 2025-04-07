@@ -549,7 +549,7 @@ namespace KSMS.Infrastructure.Services
                     await _notificationService.SendNotification(
                         memberId,
                         $"Triển lãm {show.Name} đã chính thức được công bố",
-                        $"Triển lãm {show.Name} đã được công bố. Bạn có thể mua vé và đăng ký tham gia ngay từ bây giờ.",
+                        $"Triển lãm {show.Name} đã được công bố. Bạn có thể theo dõi thời gian để mua vé và đăng ký tham gia ngay từ bây giờ.",
                         NotificationType.System);
                 }
                 _backgroundJobClient.Enqueue(() => _emailService.SendRefereeAssignmentNotification(show.Id));
@@ -570,7 +570,9 @@ namespace KSMS.Infrastructure.Services
             else if (role is "Staff" or "Manager")
             {
                 var accountId = GetIdFromJwt();
-                filterQuery = filterQuery.AndAlso(show => show.ShowStaffs.Any(ss => ss.AccountId == accountId));
+                filterQuery = filterQuery.AndAlso(show => 
+                    show.ShowStaffs.Any(ss => ss.AccountId == accountId)  
+                    /* && show.Status != Domain.Enums.ShowStatus.Pending.ToString().ToLower()*/);
             }
             else if (role == "Referee")
             {

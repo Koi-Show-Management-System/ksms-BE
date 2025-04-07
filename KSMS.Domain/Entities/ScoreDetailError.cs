@@ -12,7 +12,7 @@ public partial class ScoreDetailError
     public Guid ErrorTypeId { get; set; }
 
     public string Severity { get; set; } = null!;
-
+    
     public decimal PointMinus { get; set; }
 
     public virtual ErrorType ErrorType { get; set; } = null!;
