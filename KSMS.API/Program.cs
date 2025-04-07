@@ -100,6 +100,8 @@ app.MapControllers();
 
 app.MapHub<ScoreHub>("/scoreHub");
 app.MapHub<NotificationHub>("/notificationHub");
+app.MapHub<VoteHub>("/voteHub");
+app.MapHub<LivestreamHub>("/livestreamHub");
 
 await app.RunAsync();
 
