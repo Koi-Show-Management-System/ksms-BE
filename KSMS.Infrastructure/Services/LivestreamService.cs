@@ -23,7 +23,7 @@ public class LivestreamService : BaseService<LivestreamService>, ILivestreamServ
     private readonly HttpClient _httpClient;
     private readonly string _apiKey;
     private readonly string _apiSecret;
-    private readonly string _baseUrl = "https//api.getstream.io/video/v1";
+    private readonly string _baseUrl = "https://api.getstream.io/video/v1";
     public LivestreamService(IUnitOfWork<KoiShowManagementSystemContext> unitOfWork, ILogger<LivestreamService> logger, IHttpContextAccessor httpContextAccessor, INotificationService notificationService, IHubContext<LivestreamHub> livestreamHub, IConfiguration configuration, HttpClient httpClient) : base(unitOfWork, logger, httpContextAccessor)
     {
         _notificationService = notificationService;
@@ -34,8 +34,9 @@ public class LivestreamService : BaseService<LivestreamService>, ILivestreamServ
         _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {_apiSecret}");
     }
 
-    public async Task CreateLivestream(Guid koiShowId, string streamUrl)
+    public async Task<object> CreateLivestream(Guid koiShowId, string streamUrl)
     {
+        // Kiểm tra triển lãm tồn tại
         var show = await _unitOfWork.GetRepository<KoiShow>()
             .SingleOrDefaultAsync(predicate: s => s.Id == koiShowId);
         if (show == null)
@@ -43,22 +44,47 @@ public class LivestreamService : BaseService<LivestreamService>, ILivestreamServ
             throw new NotFoundException("Không tìm thấy triển lãm");
         }
 
-        var callId = $"livestream_{Guid.NewGuid()}";
+        // Tạo ID cho livestream
+        var livestreamId = Guid.NewGuid();
+        var callId = $"livestream_{livestreamId}";
+        
+        // Chuẩn bị request để tạo call trên getstream.io
         var createCallRequest = new
         {
-            Id = callId,
+            id = callId,
             type = "livestream",
-            member = new[] { GetIdFromJwt().ToString() }
+            member = new[] { GetIdFromJwt().ToString() },
         };
+        
+        // Gọi API để tạo call
         var response = await _httpClient.PostAsJsonAsync($"{_baseUrl}/{_apiKey}/call", createCallRequest);
         response.EnsureSuccessStatusCode();
-        await _unitOfWork.GetRepository<Livestream>().InsertAsync(new Livestream
+        
+        // Lưu thông tin livestream vào DB
+        var livestream = new Livestream
         {
+            Id = livestreamId,
             KoiShowId = show.Id,
             StreamUrl = streamUrl,
             StartTime = VietNamTimeUtil.GetVietnamTime()
-        });
+        };
+        
+        await _unitOfWork.GetRepository<Livestream>().InsertAsync(livestream);
         await _unitOfWork.CommitAsync();
+        
+        // Thông báo qua SignalR
+        await _livestreamHub.Clients.All.SendAsync("NewLivestream", new
+        {
+            Id = livestreamId,
+            ShowId = koiShowId,
+            ShowName = show.Name,
+            StreamUrl = streamUrl,
+            StartTime = VietNamTimeUtil.GetVietnamTime()
+        });
+        return new
+        {
+            Id = livestreamId
+        };
     }
 
     public async Task EndLivestream(Guid id)
@@ -70,7 +96,9 @@ public class LivestreamService : BaseService<LivestreamService>, ILivestreamServ
         {
             throw new NotFoundException("Không tìm thấy livestream");
         }
-        //if (!string.IsNullOrEmpty(livestream.))
+        var callId = $"livestream_{id}";
+        var response = await _httpClient.DeleteAsync($"{_baseUrl}/{_apiKey}/call/{callId}");
+        response.EnsureSuccessStatusCode();
         livestream.EndTime = VietNamTimeUtil.GetVietnamTime(); 
         _unitOfWork.GetRepository<Livestream>().UpdateAsync(livestream);
         await _unitOfWork.CommitAsync();
@@ -110,5 +138,49 @@ public class LivestreamService : BaseService<LivestreamService>, ILivestreamServ
                     ViewerCount = LivestreamHub.GetCurrentViewerCount(l.Id.ToString())
                 });
         return livestream;
+    }
+
+    public async Task<TokenResponse?> GetLiveStreamViewToken(Guid id)
+    {
+        var livestream = await _unitOfWork.GetRepository<Livestream>()
+            .SingleOrDefaultAsync(predicate: l => l.Id == id);
+        if (livestream == null)
+        {
+            throw new NotFoundException("Không tìm thấy livestream");
+        }
+
+        string userId;
+        var isAuthenticated = _httpContextAccessor.HttpContext?.User.Identity?.IsAuthenticated ?? false;
+        userId = isAuthenticated ? GetIdFromJwt().ToString() : $"guest_{Guid.NewGuid()}";
+        var createTokenRequest = new
+        {
+            user_id = userId,
+            call_id = $"livestream_{id}",
+            role = "viewer",
+        };
+        var response = await _httpClient.PostAsJsonAsync($"{_baseUrl}/{_apiKey}/token", createTokenRequest);
+        response.EnsureSuccessStatusCode();
+        var tokenResponse = await response.Content.ReadFromJsonAsync<TokenResponse>();
+        return tokenResponse;
+    }
+    public async Task<TokenResponse?> GetLiveStreamHostToken(Guid id)
+    {
+        var livestream = await _unitOfWork.GetRepository<Livestream>()
+            .SingleOrDefaultAsync(predicate: l => l.Id == id);
+        if (livestream == null)
+        {
+            throw new NotFoundException("Không tìm thấy livestream");
+        }
+
+        var createTokenRequest = new
+        {
+            user_id = GetIdFromJwt().ToString(),
+            call_id = $"livestream_{id}",
+            role = "broadcaster",
+        };
+        var response = await _httpClient.PostAsJsonAsync($"{_baseUrl}/{_apiKey}/token", createTokenRequest);
+        response.EnsureSuccessStatusCode();
+        var tokenResponse = await response.Content.ReadFromJsonAsync<TokenResponse>();
+        return tokenResponse;
     }
 }
