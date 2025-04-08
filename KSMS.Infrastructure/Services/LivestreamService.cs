@@ -1,4 +1,5 @@
-﻿using KSMS.Application.Repositories;
+﻿using System.Net.Http.Json;
+using KSMS.Application.Repositories;
 using KSMS.Application.Services;
 using KSMS.Domain.Dtos.Responses.Livestream;
 using KSMS.Domain.Entities;
@@ -9,7 +10,9 @@ using KSMS.Infrastructure.Utils;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+
 
 namespace KSMS.Infrastructure.Services;
 
@@ -17,10 +20,18 @@ public class LivestreamService : BaseService<LivestreamService>, ILivestreamServ
 {
     private readonly INotificationService _notificationService;
     private readonly IHubContext<LivestreamHub> _livestreamHub;
-    public LivestreamService(IUnitOfWork<KoiShowManagementSystemContext> unitOfWork, ILogger<LivestreamService> logger, IHttpContextAccessor httpContextAccessor, INotificationService notificationService, IHubContext<LivestreamHub> livestreamHub) : base(unitOfWork, logger, httpContextAccessor)
+    private readonly HttpClient _httpClient;
+    private readonly string _apiKey;
+    private readonly string _apiSecret;
+    private readonly string _baseUrl = "https//api.getstream.io/video/v1";
+    public LivestreamService(IUnitOfWork<KoiShowManagementSystemContext> unitOfWork, ILogger<LivestreamService> logger, IHttpContextAccessor httpContextAccessor, INotificationService notificationService, IHubContext<LivestreamHub> livestreamHub, IConfiguration configuration, HttpClient httpClient) : base(unitOfWork, logger, httpContextAccessor)
     {
         _notificationService = notificationService;
         _livestreamHub = livestreamHub;
+        _httpClient = httpClient;
+        _apiKey = configuration["GetStream:ApiKey"];
+        _apiSecret = configuration["GetStream:ApiSecret"];
+        _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {_apiSecret}");
     }
 
     public async Task CreateLivestream(Guid koiShowId, string streamUrl)
@@ -32,6 +43,15 @@ public class LivestreamService : BaseService<LivestreamService>, ILivestreamServ
             throw new NotFoundException("Không tìm thấy triển lãm");
         }
 
+        var callId = $"livestream_{Guid.NewGuid()}";
+        var createCallRequest = new
+        {
+            Id = callId,
+            type = "livestream",
+            member = new[] { GetIdFromJwt().ToString() }
+        };
+        var response = await _httpClient.PostAsJsonAsync($"{_baseUrl}/{_apiKey}/call", createCallRequest);
+        response.EnsureSuccessStatusCode();
         await _unitOfWork.GetRepository<Livestream>().InsertAsync(new Livestream
         {
             KoiShowId = show.Id,
@@ -50,6 +70,7 @@ public class LivestreamService : BaseService<LivestreamService>, ILivestreamServ
         {
             throw new NotFoundException("Không tìm thấy livestream");
         }
+        //if (!string.IsNullOrEmpty(livestream.))
         livestream.EndTime = VietNamTimeUtil.GetVietnamTime(); 
         _unitOfWork.GetRepository<Livestream>().UpdateAsync(livestream);
         await _unitOfWork.CommitAsync();
