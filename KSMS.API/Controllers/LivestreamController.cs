@@ -18,8 +18,8 @@ public class LivestreamController : ControllerBase
     [Authorize(Roles = "Staff, Admin, Manager")]
     public async Task<ActionResult<ApiResponse<object>>> CreateLivestream(Guid koiShowId, [FromBody] string streamUrl)
     {
-        await _livestreamService.CreateLivestream(koiShowId, streamUrl);
-        return StatusCode(201, ApiResponse<object>.Created(null, "Tạo livestream thành công"));
+        var response = await _livestreamService.CreateLivestream(koiShowId, streamUrl);
+        return StatusCode(201, ApiResponse<object>.Created(response, "Tạo livestream thành công"));
     }
     [HttpPost("end/{id:guid}")]
     [Authorize(Roles = "Staff, Admin, Manager")]
@@ -39,5 +39,17 @@ public class LivestreamController : ControllerBase
     {
         var livestream = await _livestreamService.GetLivestreamById(id);
         return Ok(ApiResponse<GetLiveStreamResponse>.Success(livestream, "Lấy livestream thành công"));
+    }
+    [HttpGet("token/{id:guid}")]
+    public async Task<ActionResult<ApiResponse<object>>> GetTokenForLivestream(Guid id)
+    {
+        var token = await _livestreamService.GetLiveStreamHostToken(id);
+        return Ok(ApiResponse<object>.Success(token, "Lấy token livestream thành công"));
+    }
+    [HttpGet("viewer-token/{id:guid}")]
+    public async Task<ActionResult<ApiResponse<object>>> GetViewerTokenForLivestream(Guid id)
+    {
+        var token = await _livestreamService.GetLiveStreamViewToken(id);
+        return Ok(ApiResponse<object>.Success(token, "Lấy token livestream thành công"));
     }
 }
