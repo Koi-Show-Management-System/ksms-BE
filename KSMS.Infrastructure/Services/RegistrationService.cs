@@ -429,9 +429,15 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
         };
         if (registrationPayment.Status == RegistrationStatus.Cancelled.ToString().ToLower())
         {
-            registrationPayment.Registration.Status = RegistrationStatus.Cancelled.ToString().ToLower();
-            _unitOfWork.GetRepository<RegistrationPayment>().UpdateAsync(registrationPayment);
-            _unitOfWork.GetRepository<Registration>().UpdateAsync(registrationPayment.Registration);
+            var registration = registrationPayment.Registration;
+            var koiMedia = await _unitOfWork.GetRepository<KoiMedium>()
+                .GetListAsync(predicate: x => x.RegistrationId == registration.Id);
+            if (koiMedia.Any())
+            {
+                await _mediaService.DeleteFiles(koiMedia);
+            }
+            _unitOfWork.GetRepository<RegistrationPayment>().DeleteAsync(registrationPayment);
+            _unitOfWork.GetRepository<Registration>().DeleteAsync(registration);
             await _unitOfWork.CommitAsync();
         }
         if (registrationPayment.Status == RegistrationPaymentStatus.Paid.ToString().ToLower())
