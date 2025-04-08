@@ -7,7 +7,9 @@ using KSMS.Domain.Enums;
 using KSMS.Domain.Exceptions;
 using KSMS.Domain.Pagination;
 using KSMS.Infrastructure.Database;
+using KSMS.Infrastructure.Hubs;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -16,68 +18,93 @@ namespace KSMS.Infrastructure.Services;
 public class VoteService : BaseService<VoteService>, IVoteService
 {
     private readonly INotificationService _notificationService;
-    public VoteService(IUnitOfWork<KoiShowManagementSystemContext> unitOfWork, ILogger<VoteService> logger, IHttpContextAccessor httpContextAccessor, INotificationService notificationService) : base(unitOfWork, logger, httpContextAccessor)
+    private readonly IHubContext<VoteHub> _voteHub;
+    public VoteService(IUnitOfWork<KoiShowManagementSystemContext> unitOfWork, ILogger<VoteService> logger, IHttpContextAccessor httpContextAccessor, INotificationService notificationService, IHubContext<VoteHub> voteHub) : base(unitOfWork, logger, httpContextAccessor)
     {
         _notificationService = notificationService;
+        _voteHub = voteHub;
     }
 
     public async Task CreateVote(Guid registrationId)
     {
-        var registration = await _unitOfWork.GetRepository<Registration>()
+        await using var transaction = await _unitOfWork.BeginTransactionAsync();
+        try
+        {
+            var accountId = GetIdFromJwt();
+            var registration = await _unitOfWork.GetRepository<Registration>()
             .SingleOrDefaultAsync(
                 predicate: r => r.Id == registrationId,
                 include: query => query
                     .Include(r => r.KoiShow)
                     .Include(r => r.RegistrationRounds)
                     .ThenInclude(rr => rr.Round));
-        if (registration == null)
-        {
-            throw new NotFoundException("Không tìm thấy thông tin cá");
-        }
-        if (!registration.KoiShow.EnableVoting)
-        {
-            throw new BadRequestException("Chức năng bình chọn chưa được kích hoạt");
-        }
+            if (registration == null)
+            {
+                throw new NotFoundException("Không tìm thấy thông tin cá");
+            }
+            if (!registration.KoiShow.EnableVoting)
+            {
+                throw new BadRequestException("Chức năng bình chọn chưa được kích hoạt");
+            }
 
-        var highestFinalRounds = await GetHighestFinalRounds(registration.KoiShowId);
-        if (!highestFinalRounds.Any())
-        {
-            throw new BadRequestException("Chưa có vòng chung kết nào");
-        }
-        if (!registration.RegistrationRounds.Any(rr => highestFinalRounds.Select(fr => fr.Id).Contains(rr.RoundId)))
-        {
-            throw new BadRequestException("Cá này không nằm trong vòng chung kết");
-        }
-
-        var accountId = GetIdFromJwt();
-        var hasCheckinTicket = await _unitOfWork.GetRepository<Ticket>()
-            .GetListAsync( predicate:t =>
-                t.TicketOrderDetail.TicketOrder.AccountId == accountId &&
-                t.TicketOrderDetail.TicketType.KoiShowId == registration.KoiShowId &&
-                t.Status == TicketStatus.Checkin.ToString().ToLower(),
-                include: query => query
-                    .Include(t => t.TicketOrderDetail)
+            var highestFinalRounds = await GetHighestFinalRounds(registration.KoiShowId);
+            if (!highestFinalRounds.Any())
+            {
+                throw new BadRequestException("Chưa có vòng chung kết nào");
+            }
+            if (!registration.RegistrationRounds.Any(rr => highestFinalRounds.Select(fr => fr.Id).Contains(rr.RoundId)))
+            {
+                throw new BadRequestException("Cá này không nằm trong vòng chung kết");
+            }
+            var hasCheckinTicket = await _unitOfWork.GetRepository<Ticket>()
+                .GetListAsync( predicate:t =>
+                        t.TicketOrderDetail.TicketOrder.AccountId == accountId &&
+                        t.TicketOrderDetail.TicketType.KoiShowId == registration.KoiShowId &&
+                        t.Status == TicketStatus.Checkin.ToString().ToLower(),
+                    include: query => query
+                        .Include(t => t.TicketOrderDetail)
                         .ThenInclude(tod => tod.TicketOrder)
-                    .Include(t => t.TicketOrderDetail)
+                        .Include(t => t.TicketOrderDetail)
                         .ThenInclude(tod => tod.TicketType));
-        if (!hasCheckinTicket.Any())
-        {
-            throw new BadRequestException("Bạn cần check-in vé để tham gia bình chọn");
+            if (!hasCheckinTicket.Any())
+            {
+                throw new BadRequestException("Bạn cần check-in vé để tham gia bình chọn");
+            }
+            var existingVote = await _unitOfWork.GetRepository<Vote>()
+                .SingleOrDefaultAsync(predicate: v => v.RegistrationId == registrationId && v.AccountId == accountId);
+            if (existingVote != null)
+            {
+                throw new BadRequestException("Bạn đã bình chọn cho cá này");
+            }
+            var hasVotedInShow = await _unitOfWork.GetRepository<Vote>()
+                .GetListAsync(predicate: v => v.AccountId == accountId && 
+                                              v.Registration.KoiShowId == registration.KoiShowId,
+                    include: query => query.Include(v => v.Registration));
+            if (hasVotedInShow.Any())
+            {
+                throw new BadRequestException("Bạn chỉ được bình chọn một lần và không thể thay đổi bình chọn");
+            }
+            var vote = new Vote
+            {
+                AccountId = accountId,
+                RegistrationId = registrationId
+            };
+            await _unitOfWork.GetRepository<Vote>().InsertAsync(vote);
+            await _unitOfWork.CommitAsync();
+            var actualVoteCount = await _unitOfWork.GetRepository<Vote>()
+                .CountAsync(predicate: v => v.RegistrationId == registrationId);
+            await _voteHub.Clients.All.SendAsync("ReceiveVoteUpdate", new
+            {
+                RegistrationId = registrationId,
+                VoteCount = actualVoteCount
+            });
+            await transaction.CommitAsync();
         }
-        var existingVote = await _unitOfWork.GetRepository<Vote>()
-            .SingleOrDefaultAsync(predicate: v => v.RegistrationId == registrationId && v.AccountId == accountId);
-        if (existingVote != null)
+        catch
         {
-            throw new BadRequestException("Bạn đã bình chọn cho cá này");
+            await transaction.RollbackAsync();
+            throw;
         }
-
-        var vote = new Vote
-        {
-            AccountId = accountId,
-            RegistrationId = registrationId
-        };
-        await _unitOfWork.GetRepository<Vote>().InsertAsync(vote);
-        await _unitOfWork.CommitAsync();
     }
 
     public async Task EnableVoting(Guid showId)
