@@ -102,6 +102,25 @@ public class KoiProfileService : BaseService<KoiProfileService>, IKoiProfileServ
                 throw new BadRequestException("Tên này đã tồn tại. Vui lòng chọn tên khác");
             }
         }
+        var waitToPaidRegistrations = await _unitOfWork.GetRepository<Registration>()
+            .GetListAsync(predicate: r => r.KoiProfileId == koi.Id 
+                                          && r.Status == RegistrationStatus.WaitToPaid.ToString().ToLower());
+        if (waitToPaidRegistrations.Any())
+        {
+            throw new BadRequestException("Bạn cần phải hủy tất cả các đơn đăng ký đang chờ thanh toán trước khi thay đổi thông tin cá Koi");
+        }
+        var activeRegistrations = await _unitOfWork.GetRepository<Registration>().GetListAsync(
+            predicate: r => r.KoiProfileId == id && 
+                            r.KoiShow.Status != ShowStatus.Finished.ToString().ToLower() &&
+                            r.Status != RegistrationStatus.Cancelled.ToString().ToLower() &&
+                            r.Status != RegistrationStatus.PendingRefund.ToString().ToLower() &&
+                            r.Status != RegistrationStatus.Rejected.ToString().ToLower() &&
+                            r.Status != RegistrationStatus.Refunded.ToString().ToLower(),
+            include: query => query.Include(r => r.KoiShow));
+        if (activeRegistrations.Any())
+        {
+            throw new BadRequestException("Không thể cập nhật thông tin cá Koi đang tham gia cuộc thi. Vui lòng đợi cuộc thi kết thúc hoặc hủy đơn đăng ký");
+        }
         if (updateKoiProfileRequest.VarietyId is not null)
         {
             var variety = await _unitOfWork.GetRepository<Variety>()

@@ -307,7 +307,9 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
                 predicate: r => r.KoiShowId == koiShow.Id &&
                                 r.KoiProfileId == koiProfile.Id &&
                                 r.Status != RegistrationStatus.Rejected.ToString().ToLower() &&
-                                r.Status != RegistrationStatus.Refunded.ToString().ToLower(),
+                                r.Status != RegistrationStatus.Refunded.ToString().ToLower() &&
+                                r.Status != RegistrationStatus.Cancelled.ToString().ToLower() &&
+                                r.Status != RegistrationStatus.WaitToPaid.ToString().ToLower(),
                 include: query => query.Include(r => r.CompetitionCategory));
         if (existingRegistration != null)
         {
@@ -512,8 +514,14 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
             RegistrationStatus.Rejected => RegistrationStatus.Rejected.ToString().ToLower(),
             RegistrationStatus.CheckIn => RegistrationStatus.CheckIn.ToString().ToLower(),
             RegistrationStatus.Refunded => RegistrationStatus.Refunded.ToString().ToLower(),
+            RegistrationStatus.Cancelled => RegistrationStatus.Cancelled.ToString().ToLower(),
             _ => registration.Status
         };
+        if (registration.Status == RegistrationStatus.Cancelled.ToString().ToLower())
+        {
+            _unitOfWork.GetRepository<Registration>().UpdateAsync(registration);
+            await _unitOfWork.CommitAsync();
+        }
         if (registration.Status == RegistrationStatus.Rejected.ToString().ToLower())
         {
             if (string.IsNullOrEmpty(rejectedReason))
