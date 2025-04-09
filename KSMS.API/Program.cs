@@ -58,7 +58,7 @@ builder.Services.AddDbContext();
 builder.Services.AddSignalR();
 builder.Services.AddMemoryCache();
 builder.Services.AddSingleton<ICacheService, MemoryCacheService>();
-
+builder.Services.AddHttpClient<ILivestreamService, LivestreamService>();
 builder.Services.AddMvc()
                 .AddJsonOptions(x => x.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles);
 builder.Services.AddHangfire(configuration => configuration

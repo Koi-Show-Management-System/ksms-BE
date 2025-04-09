@@ -673,6 +673,7 @@ public partial class KoiShowManagementSystemContext : DbContext
             entity.Property(e => e.Id).HasDefaultValueSql("(newid())");
             entity.Property(e => e.PointMinus).HasColumnType("decimal(5, 2)");
             entity.Property(e => e.Severity).HasMaxLength(20);
+            entity.Property(e => e.Weight).HasColumnType("decimal(3, 2)");
 
             entity.HasOne(d => d.ErrorType).WithMany(p => p.ScoreDetailErrors)
                 .HasForeignKey(d => d.ErrorTypeId)

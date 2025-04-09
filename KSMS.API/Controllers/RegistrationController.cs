@@ -123,5 +123,15 @@ namespace KSMS.API.Controllers
             var result = await _registrationService.GetMemberRegisterShowDetail(showId);
             return Ok(ApiResponse<GetShowMemberDetailResponse>.Success(result, "Lấy danh sách đơn đăng ký thành công"));
         }
+        
+        [HttpPost("check-out-koi/{registrationId:guid}")]
+        [Authorize(Roles = "Staff, Admin, Manager")]
+        public async Task<ActionResult<ApiResponse<object>>> CheckOutKoi(
+            Guid registrationId, 
+            [FromBody] CreateCheckoutRegistrationKoiRequest request)
+        {
+            var result = await _registrationService.CheckOutRegistrationKoi(registrationId, request);
+            return Ok(ApiResponse<object>.Success(result, "Check-out cá Koi thành công"));
+        }
     }
 }

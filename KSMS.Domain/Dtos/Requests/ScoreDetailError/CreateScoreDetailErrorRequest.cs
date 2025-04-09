@@ -13,6 +13,8 @@ namespace KSMS.Domain.Dtos.Requests.ScoreDetailError
         public Guid ErrorTypeId { get; set; }
 
         public string Severity { get; set; } = null!;
+        
+        public decimal Weight { get; set; }
 
         public decimal PointMinus { get; set; }
     }
