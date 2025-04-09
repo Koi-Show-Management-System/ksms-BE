@@ -761,6 +761,10 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
             var statusString = filter.Status.Value.ToString().ToLower();
             filterQuery = filterQuery.AndAlso(r => r.Status == statusString);
         }
+        if(filter.RegistrationNumber != null)
+        {
+            filterQuery = filterQuery.AndAlso(r => r.RegistrationNumber == filter.RegistrationNumber);
+        }
 
         return filterQuery;
     }
@@ -790,5 +794,92 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
             : "KS";
         namePart = namePart.Length > 3 ? namePart.Substring(0, 3) : namePart;
         return $"{namePart.ToUpper()}{yearPart.Substring(Math.Max(0, yearPart.Length - 2))}";
+    }
+
+    public async Task<object> CheckOutRegistrationKoi(Guid registrationId, CreateCheckoutRegistrationKoiRequest request)
+    {
+        var accountId = GetIdFromJwt();
+        var userRole = GetRoleFromJwt();
+        
+        // Check if the registration exists and is checked in
+        var registration = await _unitOfWork.GetRepository<Registration>()
+            .SingleOrDefaultAsync(
+                predicate: r => r.Id == registrationId,
+                include: query => query
+                    .Include(r => r.KoiShow)
+                    .Include(r => r.KoiProfile));
+                    
+        if (registration == null)
+        {
+            throw new NotFoundException("Không tìm thấy đăng ký");
+        }
+        
+        // Verify the user's permission
+        if (userRole != "Admin")
+        {
+            var showStaff = await _unitOfWork.GetRepository<ShowStaff>()
+                .SingleOrDefaultAsync(predicate: s => s.AccountId == accountId && s.KoiShowId == registration.KoiShowId);
+
+            if (showStaff is null)
+            {
+                throw new ForbiddenMethodException("Bạn không có quyền thực hiện check-out cá Koi");
+            }
+        }
+        
+        // Check if the registration is in a valid status
+        var validStatuses = new[] { 
+            RegistrationStatus.CheckIn.ToString().ToLower(), 
+            RegistrationStatus.Confirmed.ToString().ToLower(),
+            RegistrationStatus.Competition.ToString().ToLower(),
+            RegistrationStatus.PrizeWinner.ToString().ToLower(),
+            RegistrationStatus.Eliminated.ToString().ToLower()
+        };
+        
+        if (!validStatuses.Contains(registration.Status))
+        {
+            throw new BadRequestException("Không thể check-out cá Koi với trạng thái đơn đăng ký hiện tại");
+        }
+        
+        // Check if the registration was actually checked in
+        if (!registration.IsCheckedIn.HasValue || !registration.IsCheckedIn.Value)
+        {
+            throw new BadRequestException("Cá Koi chưa được check-in vào triển lãm");
+        }
+        
+        // Check if the Koi has already been checked out
+        var existingCheckOut = await _unitOfWork.GetRepository<CheckOutLog>()
+            .SingleOrDefaultAsync(predicate: c => c.RegistrationId == registrationId);
+            
+        if (existingCheckOut != null)
+        {
+            throw new BadRequestException("Cá Koi này đã được check-out trước đó");
+        }
+        
+        // All checks passed, create the check-out log
+        var checkOutLog = new CheckOutLog
+        {
+            Id = Guid.NewGuid(),
+            RegistrationId = registrationId,
+            ImgCheckOut = request.ImgCheckOut,
+            CheckOutTime = VietNamTimeUtil.GetVietnamTime(),
+            CheckedOutBy = accountId,
+            Notes = request.Notes
+        };
+        
+        await _unitOfWork.GetRepository<CheckOutLog>().InsertAsync(checkOutLog);
+        await _unitOfWork.CommitAsync();
+        
+        // Send notification to registration owner
+        await _notificationService.SendNotification(
+            registration.AccountId,
+            "Cá Koi đã được check-out",
+            $"Cá Koi {registration.KoiProfile.Name} của bạn đã được check-out khỏi triển lãm {registration.KoiShow.Name}",
+            NotificationType.Registration);
+            
+        return new
+        {
+            Id = checkOutLog.Id,
+            Message = "Check-out thành công"
+        };
     }
 }

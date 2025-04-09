@@ -13,4 +13,5 @@ public enum RegistrationStatus
     PrizeWinner,
     Eliminated,
     Competition,
+    CheckedOut,
 }
