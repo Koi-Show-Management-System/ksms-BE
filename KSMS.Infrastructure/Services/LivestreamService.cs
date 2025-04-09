@@ -34,7 +34,7 @@ public class LivestreamService : BaseService<LivestreamService>, ILivestreamServ
         _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {_apiSecret}");
     }
 
-    public async Task<object> CreateLivestream(Guid koiShowId, string streamUrl)
+    public async Task<object> CreateLivestream(Guid koiShowId)
     {
         // Kiểm tra triển lãm tồn tại
         var show = await _unitOfWork.GetRepository<KoiShow>()
@@ -51,9 +51,9 @@ public class LivestreamService : BaseService<LivestreamService>, ILivestreamServ
         // Chuẩn bị request để tạo call trên getstream.io
         var createCallRequest = new
         {
-            id = callId,
+            user_id = GetIdFromJwt().ToString(),
             type = "livestream",
-            member = new[] { GetIdFromJwt().ToString() },
+            members = new[] { new { user_id = GetIdFromJwt().ToString(), role = "broadcaster" } }
         };
         
         // Gọi API để tạo call
@@ -65,7 +65,7 @@ public class LivestreamService : BaseService<LivestreamService>, ILivestreamServ
         {
             Id = livestreamId,
             KoiShowId = show.Id,
-            StreamUrl = streamUrl,
+            StreamUrl = callId,
             StartTime = VietNamTimeUtil.GetVietnamTime()
         };
         
@@ -78,7 +78,7 @@ public class LivestreamService : BaseService<LivestreamService>, ILivestreamServ
             Id = livestreamId,
             ShowId = koiShowId,
             ShowName = show.Name,
-            StreamUrl = streamUrl,
+            StreamUrl = callId,
             StartTime = VietNamTimeUtil.GetVietnamTime()
         });
         return new

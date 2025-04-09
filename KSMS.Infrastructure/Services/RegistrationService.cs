@@ -767,7 +767,19 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
 
     private string GetCategoryPrefix(CompetitionCategory category)
     {
-        return category.Name.Substring(0, Math.Min(2, category.Name.Length)).ToUpper();
+        if (string.IsNullOrEmpty(category.Name))
+            return "XX";
+        var words = category.Name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        
+        if (words.Length == 1)
+        {
+            return words[0].Substring(0, Math.Min(2, words[0].Length)).ToUpper();
+        }
+        var firstChar = words[0].Length > 0 ? words[0][0].ToString() : "X";
+        var lastWord = words[^1];
+        var lastChar = lastWord.Length > 0 ? lastWord[0].ToString() : "X";
+            
+        return (firstChar + lastChar).ToUpper();
     }
 
     private string GetShowCode(KoiShow show)

@@ -13,6 +13,8 @@ public partial class ScoreDetailError
 
     public string Severity { get; set; } = null!;
     
+    public decimal? Weight { get; set; }
+    
     public decimal PointMinus { get; set; }
 
     public virtual ErrorType ErrorType { get; set; } = null!;

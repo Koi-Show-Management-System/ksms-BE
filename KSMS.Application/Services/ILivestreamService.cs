@@ -4,7 +4,7 @@ namespace KSMS.Application.Services;
 
 public interface ILivestreamService
 {
-    Task<object> CreateLivestream(Guid koiShowId, string streamUrl);
+    Task<object> CreateLivestream(Guid koiShowId);
     Task EndLivestream(Guid id);
     Task<List<GetLiveStreamResponse>> GetLivestreams(Guid koiShowId);
     Task<GetLiveStreamResponse> GetLivestreamById(Guid id);
