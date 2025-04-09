@@ -19,6 +19,7 @@ public interface IRegistrationService
     Task UpdateRegistrationPaymentStatusForPayOs(Guid registrationPaymentId, RegistrationPaymentStatus status);
     Task UpdateStatusForRegistration(Guid registrationId, RegistrationStatus status, string? rejectedReason, RefundType? refundType);
     Task<CheckOutRegistrationResponse> CheckOut(Guid registrationId);
+    Task<object> CheckOutRegistrationKoi(Guid registrationId, CreateCheckoutRegistrationKoiRequest request);
     
     Task<Paginate<GetPageRegistrationHistoryResponse>> GetPageRegistrationHistory(
         RegistrationStatus? registrationStatus, ShowStatus? showStatus, int page, int size);
