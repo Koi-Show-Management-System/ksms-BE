@@ -5,7 +5,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace KSMS.API.Controllers;
-
+[Route("api/v1/livestream")]
+[ApiController]
 public class LivestreamController : ControllerBase
 {
     private readonly ILivestreamService _livestreamService;
@@ -16,9 +17,9 @@ public class LivestreamController : ControllerBase
     }
     [HttpPost("create/{koiShowId:guid}")]
     [Authorize(Roles = "Staff, Admin, Manager")]
-    public async Task<ActionResult<ApiResponse<object>>> CreateLivestream(Guid koiShowId, [FromBody] string streamUrl)
+    public async Task<ActionResult<ApiResponse<object>>> CreateLivestream(Guid koiShowId)
     {
-        var response = await _livestreamService.CreateLivestream(koiShowId, streamUrl);
+        var response = await _livestreamService.CreateLivestream(koiShowId);
         return StatusCode(201, ApiResponse<object>.Created(response, "Tạo livestream thành công"));
     }
     [HttpPost("end/{id:guid}")]

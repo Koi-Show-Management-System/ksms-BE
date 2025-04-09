@@ -238,6 +238,7 @@ namespace KSMS.Infrastructure.Services
                         ScoreDetailId = score.Id,
                         ErrorTypeId = error.ErrorTypeId,
                         Severity = error.Severity,
+                        Weight = error.Weight,
                         PointMinus = error.PointMinus
                     }).ToList();
 
@@ -424,6 +425,7 @@ namespace KSMS.Infrastructure.Services
                                     Id = error.Id,
                                     ErrorTypeName = error.ErrorType.Name,
                                     Severity = error.Severity,
+                                    Weight = error.Weight,
                                     PointMinus = error.PointMinus
                                 }
                             }).ToList()

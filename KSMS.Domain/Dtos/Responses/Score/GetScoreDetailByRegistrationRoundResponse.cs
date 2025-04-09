@@ -30,5 +30,6 @@ public class ScoreDetailErrorWithTypeResponse
     public Guid Id { get; set; }
     public string? ErrorTypeName { get; set; }
     public string? Severity { get; set; }
+    public decimal? Weight { get; set; }
     public decimal? PointMinus { get; set; }
 }

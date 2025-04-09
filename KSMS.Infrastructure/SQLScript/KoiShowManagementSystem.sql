@@ -296,6 +296,7 @@ CREATE TABLE [dbo].[ScoreDetailError] (
    [ScoreDetailId]  UNIQUEIDENTIFIER NOT NULL,
    [ErrorTypeId]  UNIQUEIDENTIFIER NOT NULL,
    [Severity]  NVARCHAR(20) NOT NULL,
+   [Weight] decimal(3,2) NOT NULL,
    [PointMinus] decimal(5,2) NOT NULL,
    FOREIGN KEY ([ScoreDetailId]) REFERENCES [ScoreDetail]([Id]),
    FOREIGN KEY ([ErrorTypeId]) REFERENCES [ErrorType]([Id])
