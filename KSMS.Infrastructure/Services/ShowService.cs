@@ -572,7 +572,7 @@ namespace KSMS.Infrastructure.Services
                 var accountId = GetIdFromJwt();
                 filterQuery = filterQuery.AndAlso(show => 
                     show.ShowStaffs.Any(ss => ss.AccountId == accountId)  
-                    /* && show.Status != Domain.Enums.ShowStatus.Pending.ToString().ToLower()*/);
+                     && show.Status != Domain.Enums.ShowStatus.Pending.ToString().ToLower());
             }
             else if (role == "Referee")
             {
