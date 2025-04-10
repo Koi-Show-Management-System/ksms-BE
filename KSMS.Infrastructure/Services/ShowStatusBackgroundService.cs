@@ -85,7 +85,9 @@ namespace KSMS.Infrastructure.Services
 
                     var showStatuses = await unitOfWork.GetRepository<ShowStatus>()
                         .GetListAsync(predicate: x => x.KoiShow.Status != Domain.Enums.ShowStatus.Cancelled.ToString() &&
-                                                      x.KoiShow.Status != Domain.Enums.ShowStatus.Finished.ToString()
+                                                      x.KoiShow.Status != Domain.Enums.ShowStatus.Finished.ToString() &&
+                                                        x.KoiShow.Status != Domain.Enums.ShowStatus.Pending.ToString() &&
+                                                      x.KoiShow.Status != Domain.Enums.ShowStatus.InternalPublished.ToString()
                             ,include: query => query.Include(s => s.KoiShow));
 
                     foreach (var status in showStatuses)
@@ -125,7 +127,7 @@ namespace KSMS.Infrastructure.Services
                     _logger.LogError(ex, "Lỗi trong ShowStatusBackgroundService");
                 }
 
-                await Task.Delay(TimeSpan.FromDays(1), stoppingToken);
+                await Task.Delay(TimeSpan.FromMinutes(5), stoppingToken);
             }
         }
 
