@@ -133,6 +133,8 @@ public class TicketOrderService : BaseService<TicketOrder>, ITicketOrderService
 
         if (order.Status == OrderStatus.Paid.ToString().ToLower())
         {
+            var koiShow = await _unitOfWork.GetRepository<KoiShow>()
+                .SingleOrDefaultAsync(predicate: x => x.Id == order.TicketOrderDetails.First().TicketType.KoiShowId);
             var ticketTypes = new List<TicketType>();
             var tickets = new List<Ticket>();
             var qrCodeUploadTasks = new List<Task<string>>();
@@ -150,7 +152,7 @@ public class TicketOrderService : BaseService<TicketOrder>, ITicketOrderService
                         Id = ticketId,
                         TicketOrderDetailId = ticketOrderDetail.Id,
                         Status = TicketStatus.Sold.ToString().ToLower(),
-                        ExpiredDate = new DateTime(9999, 12, 31)
+                        ExpiredDate = koiShow.EndDate ?? DateTime.Now,
                     };
                     tickets.Add(ticket);
                     var qrCodeTask = _firebaseService.UploadImageAsync(
