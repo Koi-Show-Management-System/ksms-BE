@@ -127,7 +127,7 @@ namespace KSMS.Infrastructure.Services
                     _logger.LogError(ex, "Lỗi trong ShowStatusBackgroundService");
                 }
 
-                await Task.Delay(TimeSpan.FromMinutes(5), stoppingToken);
+                await Task.Delay(TimeSpan.FromDays(1), stoppingToken);
             }
         }
 
