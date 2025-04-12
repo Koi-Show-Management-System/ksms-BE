@@ -13,7 +13,9 @@ public partial class Livestream
 
     public DateTime? EndTime { get; set; }
 
-    public string StreamUrl { get; set; } = null!;
+    public string CallId { get; set; } = null!;
+    
+    public string? Status { get; set; } // "Created", "Active", "Ended"
 
     public virtual KoiShow KoiShow { get; set; } = null!;
 }

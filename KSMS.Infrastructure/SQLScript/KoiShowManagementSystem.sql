@@ -430,7 +430,8 @@ CREATE TABLE [dbo].[Livestream](
     [KoiShowId] UNIQUEIDENTIFIER NOT NULL,
     [StartTime] datetime NOT NULL,
     [EndTime] datetime NULL,
-    [StreamUrl] nvarchar(500) NOT NULL,
+    [CallId] nvarchar(500) NOT NULL,
+    [Status] varchar(20) NULL,
     FOREIGN KEY ([KoiShowId]) REFERENCES [KoiShow]([Id])
 )
 GO

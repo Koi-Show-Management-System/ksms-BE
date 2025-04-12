@@ -44,13 +44,17 @@ public class DashboardService : BaseService<DashboardService>, IDashboardService
         response.KoiShowRevenues = showRevenues;
 
         // 5. Tính tổng doanh thu và hoàn trả
-        // Doanh thu thực tế đã trừ hoàn trả
-        response.TotalRevenue = showRevenues.Sum(r => (r.RegistrationRevenue - r.RegistrationRefundAmount) + 
-                                                    (r.TicketRevenue - r.TicketRefundAmount) + 
-                                                    r.SponsorRevenue);
+        // Doanh thu tổng (chưa trừ hoàn trả)
+        response.TotalRevenue = showRevenues.Sum(r => r.RegistrationRevenue + r.TicketRevenue + r.SponsorRevenue);
+        
+        // Tổng số tiền hoàn trả
         response.TotalRefund = showRevenues.Sum(r => r.RegistrationRefundAmount + r.TicketRefundAmount);
-        // Lợi nhuận ròng là doanh thu thực tế
-        response.NetProfit = response.TotalRevenue;
+        
+        
+        // Lợi nhuận ròng = doanh thu ròng (trong trường hợp này không có chi phí)
+        response.NetProfit = showRevenues.Sum(r => (r.RegistrationRevenue - r.RegistrationRefundAmount) + 
+                                                   (r.TicketRevenue - r.TicketRefundAmount) + 
+                                                   r.SponsorRevenue);
 
         // 6. Tính phân bổ lợi nhuận
         var totalNetProfit = response.NetProfit;
@@ -98,7 +102,9 @@ public class DashboardService : BaseService<DashboardService>, IDashboardService
                 RegistrationStatus.PrizeWinner.ToString().ToLower(), // Đã đoạt giải
                 RegistrationStatus.Competition.ToString().ToLower(), // Đang thi đấu
                 RegistrationStatus.Eliminated.ToString().ToLower(),  // Đã bị loại nhưng vẫn tính doanh thu
-                RegistrationStatus.CheckedOut.ToString().ToLower()   // Đã check-out
+                RegistrationStatus.CheckedOut.ToString().ToLower(),
+                RegistrationStatus.Refunded.ToString().ToLower(),
+                RegistrationStatus.Rejected.ToString().ToLower()// Đã check-out
             };
 
             var confirmedRegistrations = show.Registrations
@@ -133,8 +139,10 @@ public class DashboardService : BaseService<DashboardService>, IDashboardService
             var paidTicketOrders = ticketOrderDetails
                 .Select(tod => tod.TicketOrder)
                 .Where(to => to.Status?.ToLower() == "paid")
-                .Distinct()
+                .GroupBy(to => to.Id) // Nhóm theo ID để loại bỏ trùng lặp
+                .Select(g => g.First()) // Lấy phần tử đầu tiên từ mỗi nhóm
                 .ToList();
+
 
             // Tính doanh thu từ vé đã thanh toán (tổng giá trị các đơn hàng)
             revenueItem.TicketRevenue = paidTicketOrders.Sum(to => to.TotalAmount);
@@ -159,9 +167,11 @@ public class DashboardService : BaseService<DashboardService>, IDashboardService
             revenueItem.TicketRefundAmount = refundedOrders.Sum(to => to.TotalAmount);
 
             // Tính lợi nhuận ròng (doanh thu thực tế đã trừ hoàn trả)
+                                   
+            // Hiện tại, lợi nhuận ròng bằng doanh thu ròng vì chưa tính các chi phí khác
             revenueItem.NetProfit = (revenueItem.RegistrationRevenue - revenueItem.RegistrationRefundAmount) + 
-                                   (revenueItem.TicketRevenue - revenueItem.TicketRefundAmount) + 
-                                   revenueItem.SponsorRevenue;
+                                    (revenueItem.TicketRevenue - revenueItem.TicketRefundAmount) + 
+                                    revenueItem.SponsorRevenue;
 
             revenueItems.Add(revenueItem);
         }
