@@ -1,4 +1,5 @@
-﻿using KSMS.Domain.Dtos.Responses.KoiMedium;
+﻿using KSMS.Domain.Dtos.Responses.Account;
+using KSMS.Domain.Dtos.Responses.KoiMedium;
 using KSMS.Domain.Dtos.Responses.RegistrationPayment;
 
 namespace KSMS.Domain.Dtos.Responses.Registration;
@@ -46,6 +47,8 @@ public class RegistrationDetailItems
     public List<AwardResponse> Awards { get; set; } = [];
     public RegistrationPaymentGetRegistrationResponse? Payment { get; set; }
     public List<GetKoiMediaResponse> Media { get; set; } = [];
+    
+    public CheckOutKoiResponse? CheckOutLog { get; set; }
 }
 
 public class AwardResponse
@@ -54,4 +57,14 @@ public class AwardResponse
     public string? AwardType { get; set; }
     public string? AwardName { get; set; }
     public decimal? PrizeValue { get; set; }
+}
+public class CheckOutKoiResponse
+{
+    public string? ImgCheckOut { get; set; }
+
+    public DateTime? CheckOutTime { get; set; }
+
+    public AccountResponse? CheckedOutBy { get; set; }
+
+    public string? Notes { get; set; }
 }

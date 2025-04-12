@@ -411,7 +411,7 @@ public partial class KoiShowManagementSystemContext : DbContext
             entity.Property(e => e.Id).HasDefaultValueSql("(newid())");
             entity.Property(e => e.EndTime).HasColumnType("datetime");
             entity.Property(e => e.StartTime).HasColumnType("datetime");
-            entity.Property(e => e.StreamUrl).HasMaxLength(500);
+            entity.Property(e => e.CallId).HasMaxLength(500);
 
             entity.HasOne(d => d.KoiShow).WithMany(p => p.Livestreams)
                 .HasForeignKey(d => d.KoiShowId)

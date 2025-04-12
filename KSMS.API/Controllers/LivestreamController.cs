@@ -22,6 +22,13 @@ public class LivestreamController : ControllerBase
         var response = await _livestreamService.CreateLivestream(koiShowId);
         return StatusCode(201, ApiResponse<object>.Created(response, "Tạo livestream thành công"));
     }
+    [HttpPost("start/{id:guid}")]
+    [Authorize(Roles = "Staff, Admin, Manager")]
+    public async Task<ActionResult<ApiResponse<object>>> StartLiveStream(Guid id)
+    {
+        await _livestreamService.StartLivestream(id);
+        return Ok(ApiResponse<object>.Success(null, "Bắt đầu livestream thành công"));
+    }
     [HttpPost("end/{id:guid}")]
     [Authorize(Roles = "Staff, Admin, Manager")]
     public async Task<ActionResult<ApiResponse<object>>> EndLivestream(Guid id)

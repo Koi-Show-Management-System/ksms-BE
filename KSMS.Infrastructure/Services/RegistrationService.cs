@@ -119,6 +119,8 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
                     .Include(r => r.RegistrationRounds)
                         .ThenInclude(rr => rr.RoundResults)
                     .Include(r => r.RegistrationPayment)
+                    .Include(r => r.CheckOutLog)
+                        .ThenInclude(r => r.CheckedOutByNavigation)
                     .Include(r => r.Votes));
         if (!memberRegistrations.Any())
         {
@@ -188,7 +190,8 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
                 Rank = registration.Rank,
                 CurrentRound = currentRound,
                 Payment = registration.RegistrationPayment.Adapt<RegistrationPaymentGetRegistrationResponse>(),
-                Media = registration.KoiMedia.Adapt<List<GetKoiMediaResponse>>()
+                Media = registration.KoiMedia.Adapt<List<GetKoiMediaResponse>>(),
+                CheckOutLog = registration.CheckOutLog.Adapt<CheckOutKoiResponse>()
             };
             if (registration.Status == "eliminated" && registration.RegistrationRounds.Any())
             {
@@ -269,7 +272,7 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
             var type when type.Equals(RoundEnum.Preliminary.ToString(), StringComparison.OrdinalIgnoreCase) => "Vòng sơ khảo",
             var type when type.Equals(RoundEnum.Evaluation.ToString(), StringComparison.OrdinalIgnoreCase) => "Vòng đánh giá",
             var type when type.Equals(RoundEnum.Final.ToString(), StringComparison.OrdinalIgnoreCase) => "Vòng chung kết",
-            _ => $"Vòng {roundType}"
+            _ => $"{roundType}"
         };
     }
 

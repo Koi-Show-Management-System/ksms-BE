@@ -189,13 +189,14 @@ public class LivestreamService : BaseService<LivestreamService>, ILivestreamServ
                 throw new Exception($"Failed to create call: {errorContent}");
             }
             
-            // Lưu thông tin livestream vào DB
+            // Lưu thông tin livestream vào DB với trạng thái Created (chứ không phải đã bắt đầu)
             var livestream = new Livestream
             {
                 Id = Guid.NewGuid(),
                 KoiShowId = show.Id,
-                StreamUrl = callId,
-                StartTime = VietNamTimeUtil.GetVietnamTime()
+                CallId = callId,
+                StartTime = VietNamTimeUtil.GetVietnamTime(), // StartTime sẽ được cập nhật khi stream thực sự bắt đầu
+                Status = "created" // Trạng thái ban đầu là "Created"
             };
             
             await _unitOfWork.GetRepository<Livestream>().InsertAsync(livestream);
@@ -220,6 +221,30 @@ public class LivestreamService : BaseService<LivestreamService>, ILivestreamServ
         }
     }
 
+    // Thêm phương thức để cập nhật trạng thái khi stream thực sự bắt đầu
+    public async Task StartLivestream(Guid id)
+    {
+        var livestream = await _unitOfWork.GetRepository<Livestream>()
+            .SingleOrDefaultAsync(predicate: l => l.Id == id);
+        if (livestream == null)
+        {
+            throw new NotFoundException("Không tìm thấy livestream");
+        }
+        
+        if (livestream.Status != "created")
+        {
+            throw new Exception("Livestream không ở trạng thái có thể bắt đầu");
+        }
+        
+        livestream.StartTime = VietNamTimeUtil.GetVietnamTime();
+        livestream.Status = "active";
+        
+        _unitOfWork.GetRepository<Livestream>().UpdateAsync(livestream);
+        await _unitOfWork.CommitAsync();
+        
+        _logger.LogInformation($"Livestream {id} đã bắt đầu phát sóng");
+    }
+
     public async Task EndLivestream(Guid id)
     {
         var livestream = await _unitOfWork.GetRepository<Livestream>()
@@ -238,7 +263,8 @@ public class LivestreamService : BaseService<LivestreamService>, ILivestreamServ
             _logger.LogInformation($"Setting livestream {id} as ended in database");
             
             // Cập nhật thông tin livestream trong DB
-            livestream.EndTime = VietNamTimeUtil.GetVietnamTime(); 
+            livestream.EndTime = VietNamTimeUtil.GetVietnamTime();
+            livestream.Status = "ended";
             _unitOfWork.GetRepository<Livestream>().UpdateAsync(livestream);
             await _unitOfWork.CommitAsync();
             
@@ -251,9 +277,9 @@ public class LivestreamService : BaseService<LivestreamService>, ILivestreamServ
                 // Thử một vài endpoint khác nhau
                 var endpoints = new[]
                 {
-                    $"{_baseUrl}/video/call/livestream/{livestream.StreamUrl}/end?api_key={_apiKey}",
-                    $"{_baseUrl}/call/livestream/{livestream.StreamUrl}/end?api_key={_apiKey}",
-                    $"{_baseUrl}/calls/livestream/{livestream.StreamUrl}/end?api_key={_apiKey}"
+                    $"{_baseUrl}/video/call/livestream/{livestream.CallId}/end?api_key={_apiKey}",
+                    $"{_baseUrl}/call/livestream/{livestream.CallId}/end?api_key={_apiKey}",
+                    $"{_baseUrl}/calls/livestream/{livestream.CallId}/end?api_key={_apiKey}"
                 };
                 
                 foreach (var endpoint in endpoints)
@@ -289,15 +315,16 @@ public class LivestreamService : BaseService<LivestreamService>, ILivestreamServ
     {
         var livestreams = await _unitOfWork.GetRepository<Livestream>()
             .GetListAsync(
-                predicate: l => l.KoiShowId == koiShowId,
+                predicate: l => l.KoiShowId == koiShowId && l.Status == "Active", // Chỉ lấy các stream đang phát sóng
                 include: query => query.Include(l => l.KoiShow),
                 selector: l => new GetLiveStreamResponse
                 {
                     Id = l.Id,
-                    StreamUrl = l.StreamUrl,
+                    CallId = l.CallId,
                     StartTime = l.StartTime,
                     EndTime = l.EndTime,
                     ShowName = l.KoiShow.Name,
+                    Status = l.Status,
                     ViewerCount = LivestreamHub.GetCurrentViewerCount(l.Id.ToString())
                 });
         return livestreams.ToList();
@@ -312,10 +339,11 @@ public class LivestreamService : BaseService<LivestreamService>, ILivestreamServ
                 selector: l => new GetLiveStreamResponse
                 {
                     Id = l.Id,
-                    StreamUrl = l.StreamUrl,
+                    CallId = l.CallId,
                     StartTime = l.StartTime,
                     EndTime = l.EndTime,
                     ShowName = l.KoiShow.Name,
+                    Status = l.Status,
                     ViewerCount = LivestreamHub.GetCurrentViewerCount(l.Id.ToString())
                 });
         return livestream;
@@ -373,12 +401,12 @@ public class LivestreamService : BaseService<LivestreamService>, ILivestreamServ
                 };
                 
                 await _httpClient.PostAsJsonAsync(
-                    $"{_baseUrl}/video/call/livestream/{livestream.StreamUrl}/members?api_key={_apiKey}",
+                    $"{_baseUrl}/video/call/livestream/{livestream.CallId}/members?api_key={_apiKey}",
                     addMemberRequest);
             }
             
             // Tạo JWT token trực tiếp
-            var callCids = new[] { $"livestream:{livestream.StreamUrl}" };
+            var callCids = new[] { $"livestream:{livestream.CallId}" };
             var userToken = GenerateUserToken(userId, 3600, callCids, "user");
             
             return new TokenResponse { Token = userToken };
@@ -431,11 +459,11 @@ public class LivestreamService : BaseService<LivestreamService>, ILivestreamServ
             };
             
             await _httpClient.PostAsJsonAsync(
-                $"{_baseUrl}/video/call/livestream/{livestream.StreamUrl}/members?api_key={_apiKey}",
+                $"{_baseUrl}/video/call/livestream/{livestream.CallId}/members?api_key={_apiKey}",
                 addMemberRequest);
             
             // Tạo JWT token trực tiếp
-            var callCids = new[] { $"livestream:{livestream.StreamUrl}" };
+            var callCids = new[] { $"livestream:{livestream.CallId}" };
             var userToken = GenerateUserToken(userId, 3600, callCids, "host");
             
             return new TokenResponse { Token = userToken };
