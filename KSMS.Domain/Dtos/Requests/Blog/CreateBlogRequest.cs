@@ -4,7 +4,6 @@ namespace KSMS.Domain.Dtos.Requests.Blog;
 
 public class CreateBlogRequest
 {
-    public Guid Id { get; set; }
     [Required]
     public string Title { get; set; } = null!;
     [Required]
@@ -12,5 +11,4 @@ public class CreateBlogRequest
     [Required]
     public Guid BlogCategoryId { get; set; }
     public string? ImgUrl { get; set; }
-    
 }
