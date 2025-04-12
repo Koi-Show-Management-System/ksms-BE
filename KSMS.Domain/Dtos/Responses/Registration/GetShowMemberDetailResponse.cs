@@ -64,7 +64,7 @@ public class CheckOutKoiResponse
 
     public DateTime? CheckOutTime { get; set; }
 
-    public AccountResponse? CheckedOutBy { get; set; }
+    public AccountResponse? CheckedOutByNavigation { get; set; }
 
     public string? Notes { get; set; }
 }
