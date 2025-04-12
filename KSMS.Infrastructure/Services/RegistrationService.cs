@@ -712,7 +712,9 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
                     .Include(r => r.KoiProfile)
                         .ThenInclude(k => k.Variety)
                     .Include(r => r.CompetitionCategory)
-                    .Include(r => r.KoiMedia),
+                    .Include(r => r.KoiMedia)
+                    .Include(r => r.CheckOutLog)
+                        .ThenInclude(r => r.CheckedOutByNavigation),
                 page: page,
                 size: size
             );

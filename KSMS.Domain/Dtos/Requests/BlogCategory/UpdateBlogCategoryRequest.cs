@@ -1,7 +1,11 @@
-﻿namespace KSMS.Domain.Dtos.Requests.BlogCategory;
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace KSMS.Domain.Dtos.Requests.BlogCategory;
 
 public class UpdateBlogCategoryRequest
 {
-    public string? Name { get; set; }
-    public string? Description { get; set; }
+    [Required]
+    public required string Name { get; set; }
+    [Required]
+    public required string Description { get; set; }
 }
