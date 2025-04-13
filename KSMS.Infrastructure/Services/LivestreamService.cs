@@ -390,20 +390,47 @@ public class LivestreamService : BaseService<LivestreamService>, ILivestreamServ
                     _logger.LogWarning($"Warning creating guest user: {userResponse.StatusCode}, Content: {errorContent}");
                     // Tiếp tục thực hiện, có thể guest user đã tồn tại
                 }
-                
-                // Thêm khách vào cuộc gọi livestream với vai trò user
-                var addMemberRequest = new
+            }
+            else
+            {
+                // Đảm bảo người dùng đã xác thực tồn tại trong GetStream
+                var createUserRequest = new
                 {
-                    update_members = new[]
+                    users = new Dictionary<string, object>
                     {
-                        new { user_id = userId, role = "user" }
+                        [userId] = new
+                        {
+                            id = userId,
+                            role = "user",
+                            name = userId
+                        }
                     }
                 };
                 
-                await _httpClient.PostAsJsonAsync(
-                    $"{_baseUrl}/video/call/livestream/{livestream.CallId}/members?api_key={_apiKey}",
-                    addMemberRequest);
+                var userResponse = await _httpClient.PostAsJsonAsync(
+                    $"{_baseUrl}/users?api_key={_apiKey}", 
+                    createUserRequest);
+                
+                if (!userResponse.IsSuccessStatusCode)
+                {
+                    var errorContent = await userResponse.Content.ReadAsStringAsync();
+                    _logger.LogWarning($"Warning creating authenticated user: {userResponse.StatusCode}, Content: {errorContent}");
+                    // Tiếp tục thực hiện, có thể người dùng đã tồn tại
+                }
             }
+            
+            // Thêm người dùng (cả đã xác thực và chưa xác thực) vào cuộc gọi livestream với vai trò user
+            var addMemberRequest = new
+            {
+                update_members = new[]
+                {
+                    new { user_id = userId, role = "user" }
+                }
+            };
+            
+            await _httpClient.PostAsJsonAsync(
+                $"{_baseUrl}/video/call/livestream/{livestream.CallId}/members?api_key={_apiKey}",
+                addMemberRequest);
             
             // Tạo JWT token trực tiếp
             var callCids = new[] { $"livestream:{livestream.CallId}" };
