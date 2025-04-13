@@ -18,6 +18,42 @@ public class EmailService : BaseService<EmailService>, IEmailService
     public EmailService(IUnitOfWork<KoiShowManagementSystemContext> unitOfWork, ILogger<EmailService> logger, IHttpContextAccessor httpContextAccessor) : base(unitOfWork, logger, httpContextAccessor)
     {
     }
+
+    public async Task SendNewAccountNotificationEmail(Guid accountId, string password)
+    {
+        var account = await _unitOfWork.GetRepository<Account>()
+            .SingleOrDefaultAsync(predicate: a => a.Id == accountId);
+            
+        if (account == null)
+        {
+            throw new NotFoundException("Không tìm thấy tài khoản");
+        }
+        
+        bool mailSent;
+        
+        if (account.Role == RoleName.Referee.ToString())
+        {
+            mailSent = MailUtil.SendEmail(
+                account.Email,
+                MailUtil.ContentMailUtil.Title_NewRefereeAccount,
+                MailUtil.ContentMailUtil.NewRefereeAccountNotification(account.FullName, account.Email, password),
+                "");
+        }
+        else // Manager hoặc Staff
+        {
+            mailSent = MailUtil.SendEmail(
+                account.Email,
+                MailUtil.ContentMailUtil.Title_NewStaffAccount,
+                MailUtil.ContentMailUtil.NewStaffAccountNotification(account.FullName, account.Email, password, account.Role),
+                "");
+        }
+        
+        if (!mailSent)
+        {
+            throw new BadRequestException("Không thể gửi email thông báo tạo tài khoản");
+        }
+    }
+
     public async Task SendRegistrationRejectionEmail(Guid registrationId, string rejectedReason)
     {
         var registration = await _unitOfWork.GetRepository<Registration>()

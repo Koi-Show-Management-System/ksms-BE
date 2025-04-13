@@ -5,11 +5,12 @@ namespace KSMS.Domain.Dtos.Requests.Account;
 
 public class UpdateAccountRequest
 {
-    public string? FullName { get; set; } 
-
-    public string? Username { get; set; }
-    
-    public string? Phone { get; set; }
+    [Required]
+    public required string FullName { get; set; } 
+    [Required]
+    public required string Username { get; set; }
+    [Required]
+    public required string Phone { get; set; }
     
     public IFormFile? AvatarUrl { get; set; }
     

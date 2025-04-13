@@ -9,4 +9,5 @@ public interface IAuthenticationService
     Task<LoginResponse> Login(LoginRequest loginRequest);
     Task SendForgotPasswordOTP(string email);
     Task ResetPassword(string email, string otp, string newPassword);
+    Task ChangePassword(ChangePasswordRequest request);
 }

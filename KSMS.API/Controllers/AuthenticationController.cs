@@ -2,6 +2,7 @@ using KSMS.Application.Services;
 using KSMS.Domain.Dtos;
 using KSMS.Domain.Dtos.Requests.Authentication;
 using KSMS.Domain.Dtos.Responses;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -42,6 +43,14 @@ namespace KSMS.API.Controllers
         {
             await _authenticationService.ResetPassword(request.Email, request.OTP, request.NewPassword);
             return Ok(ApiResponse<object>.Success(null, "Đặt lại mật khẩu thành công"));
+        }
+        
+        [HttpPut("change-password")]
+        [Authorize]
+        public async Task<ActionResult<ApiResponse<object>>> ChangePassword([FromBody] ChangePasswordRequest request)
+        {
+            await _authenticationService.ChangePassword(request);
+            return Ok(ApiResponse<object>.Success(null, "Đổi mật khẩu thành công"));
         }
     }
 }
