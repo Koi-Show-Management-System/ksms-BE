@@ -136,4 +136,26 @@ public class AuthenticationService : BaseService<AuthenticationService>, IAuthen
         _unitOfWork.GetRepository<Account>().UpdateAsync(account);
         await _unitOfWork.CommitAsync();
     }
+
+    public async Task ChangePassword(ChangePasswordRequest request)
+    {
+        var accountId = GetIdFromJwt();
+        var account = await _unitOfWork.GetRepository<Account>()
+            .SingleOrDefaultAsync(predicate: a => a.Id == accountId);
+            
+        if (account == null)
+            throw new NotFoundException("Tài khoản không tồn tại");
+
+        var hashedOldPassword = PasswordUtil.HashPassword(request.OldPassword);
+        if (account.HashedPassword != hashedOldPassword)
+            throw new BadRequestException("Mật khẩu hiện tại không chính xác");
+        if (request.OldPassword == request.NewPassword)
+            throw new BadRequestException("Mật khẩu mới không được trùng với mật khẩu cũ");
+        if (request.NewPassword != request.ConfirmNewPassword)
+            throw new BadRequestException("Xác nhận mật khẩu không khớp với mật khẩu mới");
+        account.HashedPassword = PasswordUtil.HashPassword(request.NewPassword);
+        
+        _unitOfWork.GetRepository<Account>().UpdateAsync(account);
+        await _unitOfWork.CommitAsync();
+    }
 }

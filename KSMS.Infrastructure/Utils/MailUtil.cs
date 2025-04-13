@@ -24,11 +24,12 @@ public static class MailUtil
                 Attachment attachment = new(attachFile);
                 msg.Attachments.Add(attachment);
             }
+
             NetworkCredential credential = new(AppConfig.MailSetting.EmailSender, AppConfig.MailSetting.PasswordSender);
             client.UseDefaultCredentials = false;
             client.Credentials = credential;
             client.Send(msg);
-        
+
             return true;
         }
         catch (Exception)
@@ -36,61 +37,39 @@ public static class MailUtil
             return false;
         }
     }
-   
+
     public static class ContentMailUtil
     {
-      public readonly static string Title_ThankingForRegisAccount =
-        "[KOI SHOW SYSTEM] Xác nhận đăng kí tài khoản thành công";
-      public readonly static string Title_ThankingForRegisterSh =
-          "[KOI SHOW SYSTEM] Xác nhận đăng kí tham gia giải cá koi thành công";
-      public readonly static string Title_ApproveForRegisterSh =
-          "[KOI SHOW SYSTEM] Xác nhận duyệt đơn đăng kí cá koi thành công";
-      public readonly static string Title_ForgotPassword =
-          "[KOI SHOW SYSTEM] Mã OTP đặt lại mật khẩu";
-      public readonly static string Title_ShowInternalReviewManager = 
-          "[KOI SHOW SYSTEM] Thông báo quản lí triển lãm";
-      public readonly static string Title_ShowInternalReviewStaff =
-          "[KOI SHOW SYSTEM] Thông báo phân công nhân viên triển lãm";
-      public readonly static string Title_RefereeAssignment =
-          "[KOI SHOW SYSTEM] Thông báo phân công trọng tài";
-        public static string StaffRoleNotification(string staffFullName, string showName, string username, string defaultPassword)
-        {
-            return $@"
-<!DOCTYPE html>
-<html lang='vi'>
-<head>
-    <meta charset='UTF-8'>
-    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
-    <title>KOI SHOW - New Role Assigned</title>
-</head>
-<body style='font-family: Arial, sans-serif; background-color: #f4f4f4;'>
-    <div style='max-width: 600px; margin: 20px auto; padding: 20px; background-color: #fff; border-radius: 8px;'>
-        <h2 style='color: #b21f1f;'>Dear {staffFullName},</h2>
-        <p>We are excited to inform you that you have been assigned as the Show Manager for the event:</p>
-        <h3 style='color: #b21f1f;'>{showName}</h3>
-        <p>Your role will include overseeing the successful execution of this event. We are confident that your contributions will help make this a spectacular show!</p>
-        
-        <h3 style='color: #b21f1f;'>Account Details</h3>
-        <p>Your login credentials are as follows:</p>
-        <ul>
-            <li><strong>Username:</strong> {username}</li>
-            <li><strong>Password:</strong> {defaultPassword}</li>
-        </ul>
+        public readonly static string Title_ThankingForRegisAccount =
+            "[KOI SHOW SYSTEM] Xác nhận đăng kí tài khoản thành công";
 
-        <p>Please <a href='https://www.facebook.com/khoa.phung.12177/' style='font-weight: bold; color: #ffffff; background-color: #b21f1f; padding: 10px 20px; text-decoration: none; border-radius: 5px;'>click here to change your password</a> after your first login.</p>
+        public readonly static string Title_ThankingForRegisterSh =
+            "[KOI SHOW SYSTEM] Xác nhận đăng kí tham gia giải cá koi thành công";
 
-        <p>If you didn't request this, please ignore this email.</p>
-        <p>Best Regards,<br>KOI SHOW TEAM</p>
-    </div>
-</body>
-</html>";
-        }
+        public readonly static string Title_ApproveForRegisterSh =
+            "[KOI SHOW SYSTEM] Xác nhận duyệt đơn đăng kí cá koi thành công";
 
+        public readonly static string Title_ForgotPassword =
+            "[KOI SHOW SYSTEM] Mã OTP đặt lại mật khẩu";
 
+        public readonly static string Title_ShowInternalReviewManager =
+            "[KOI SHOW SYSTEM] Thông báo quản lí triển lãm";
+
+        public readonly static string Title_ShowInternalReviewStaff =
+            "[KOI SHOW SYSTEM] Thông báo phân công nhân viên triển lãm";
+
+        public readonly static string Title_RefereeAssignment =
+            "[KOI SHOW SYSTEM] Thông báo phân công trọng tài";
+
+        public readonly static string Title_NewStaffAccount =
+            "[KOI SHOW SYSTEM] Thông báo tạo tài khoản nhân viên/quản lý";
+
+        public readonly static string Title_NewRefereeAccount =
+            "[KOI SHOW SYSTEM] Thông báo tạo tài khoản trọng tài";
 
         public static string ThankingForRegistration(string fullname, string confirmationLink)
-      {
-          return @"
+        {
+            return @"
 <!DOCTYPE html>
 <html lang='vi'>
 <head>
@@ -114,7 +93,7 @@ public static class MailUtil
                             <p>Thân gửi <span style='font-weight: bold; color: #b21f1f;'>" + fullname + @"</span>,</p>
                             <p>Chúng tôi vô cùng hân hạnh thông báo rằng bạn đã trở thành thành viên chính thức của <span style='font-weight: bold; color: #b21f1f;'>Koi Show</span> - nơi hội tụ những tâm hồn đam mê cá Koi.</p>
                             <a href='" + confirmationLink +
-                 @"' class='confirmation-link' style='font-size: 16px; font-weight: bold; color: #ffffff; background-color: #b21f1f; padding: 10px 20px; text-decoration: none; border-radius: 5px;'>Xác nhận tài khoản của bạn tại đây</a>
+                   @"' class='confirmation-link' style='font-size: 16px; font-weight: bold; color: #ffffff; background-color: #b21f1f; padding: 10px 20px; text-decoration: none; border-radius: 5px;'>Xác nhận tài khoản của bạn tại đây</a>
                             <p>Với tư cách là thành viên, bạn sẽ được trải nghiệm:</p>
                             <ul style='margin: 10px 0; padding-left: 20px;'>
                                 <li style='margin-bottom: 10px;'>Tham gia độc quyền vào các cuộc thi Koi Show đẳng cấp</li>
@@ -138,20 +117,21 @@ public static class MailUtil
     </table>
 </body>
 </html>";
-      }
-   public static string ConfirmingRegistration(Registration registration)
-{
-    var images = registration.KoiMedia
-        .Where(m => m.MediaType.ToLower() == "image")
-        .Select(m => m.MediaUrl)
-        .ToList();
+        }
 
-    var videos = registration.KoiMedia
-        .Where(m => m.MediaType.ToLower() == "video")
-        .Select(m => m.MediaUrl)
-        .ToList();
+        public static string ConfirmingRegistration(Registration registration)
+        {
+            var images = registration.KoiMedia
+                .Where(m => m.MediaType.ToLower() == "image")
+                .Select(m => m.MediaUrl)
+                .ToList();
 
-    return $@"
+            var videos = registration.KoiMedia
+                .Where(m => m.MediaType.ToLower() == "video")
+                .Select(m => m.MediaUrl)
+                .ToList();
+
+            return $@"
 <!DOCTYPE html>
 <html lang='vi'>
 <head>
@@ -195,13 +175,13 @@ public static class MailUtil
 
                             <p><strong>Danh sách hình ảnh:</strong></p>
                             <ul style='margin: 10px 0; padding-left: 20px;'>
-                                {string.Join("\n", images.Select((img, index) => 
+                                {string.Join("\n", images.Select((img, index) =>
                                     $@"<li>Ảnh {index + 1}: <a href='{img}' target='_blank'>Xem ảnh</a></li>"))}
                             </ul>
 
                             <p><strong>Danh sách video:</strong></p>
                             <ul style='margin: 10px 0; padding-left: 20px;'>
-                                {string.Join("\n", videos.Select((video, index) => 
+                                {string.Join("\n", videos.Select((video, index) =>
                                     $@"<li>Video {index + 1}: <a href='{video}' target='_blank'>Xem video</a></li>"))}
                             </ul>
 
@@ -230,20 +210,21 @@ public static class MailUtil
     </table>
 </body>
 </html>";
-}
-public static string ConfirmCategoryAssignment(Registration registration)
-{
-    var images = registration.KoiMedia
-        .Where(m => m.MediaType.ToLower() == "image")
-        .Select(m => m.MediaUrl)
-        .ToList();
+        }
 
-    var videos = registration.KoiMedia
-        .Where(m => m.MediaType.ToLower() == "video")
-        .Select(m => m.MediaUrl)
-        .ToList();
+        public static string ConfirmCategoryAssignment(Registration registration)
+        {
+            var images = registration.KoiMedia
+                .Where(m => m.MediaType.ToLower() == "image")
+                .Select(m => m.MediaUrl)
+                .ToList();
 
-    return $@"
+            var videos = registration.KoiMedia
+                .Where(m => m.MediaType.ToLower() == "video")
+                .Select(m => m.MediaUrl)
+                .ToList();
+
+            return $@"
 <!DOCTYPE html>
 <html lang='vi'>
 <head>
@@ -319,10 +300,11 @@ public static string ConfirmCategoryAssignment(Registration registration)
     </table>
 </body>
 </html>";
-}
-public static string ForgotPasswordOTP(string fullName, string otpCode)
-{
-    return $@"
+        }
+
+        public static string ForgotPasswordOTP(string fullName, string otpCode)
+        {
+            return $@"
 <!DOCTYPE html>
 <html lang='vi'>
 <head>
@@ -368,20 +350,21 @@ public static string ForgotPasswordOTP(string fullName, string otpCode)
     </table>
 </body>
 </html>";
-}
-public static string RejectRegistration(Registration registration, string rejectReason)
-{
-    var images = registration.KoiMedia
-        .Where(m => m.MediaType.ToLower() == "image")
-        .Select(m => m.MediaUrl)
-        .ToList();
+        }
 
-    var videos = registration.KoiMedia
-        .Where(m => m.MediaType.ToLower() == "video")
-        .Select(m => m.MediaUrl)
-        .ToList();
+        public static string RejectRegistration(Registration registration, string rejectReason)
+        {
+            var images = registration.KoiMedia
+                .Where(m => m.MediaType.ToLower() == "image")
+                .Select(m => m.MediaUrl)
+                .ToList();
 
-    return $@"
+            var videos = registration.KoiMedia
+                .Where(m => m.MediaType.ToLower() == "video")
+                .Select(m => m.MediaUrl)
+                .ToList();
+
+            return $@"
 <!DOCTYPE html>
 <html lang='vi'>
 <head>
@@ -429,13 +412,13 @@ public static string RejectRegistration(Registration registration, string reject
 
                             <p><strong>Danh sách hình ảnh:</strong></p>
                             <ul style='margin: 10px 0; padding-left: 20px;'>
-                                {string.Join("\n", images.Select((img, index) => 
+                                {string.Join("\n", images.Select((img, index) =>
                                     $@"<li>Ảnh {index + 1}: <a href='{img}' target='_blank'>Xem ảnh</a></li>"))}
                             </ul>
 
                             <p><strong>Danh sách video:</strong></p>
                             <ul style='margin: 10px 0; padding-left: 20px;'>
-                                {string.Join("\n", videos.Select((video, index) => 
+                                {string.Join("\n", videos.Select((video, index) =>
                                     $@"<li>Video {index + 1}: <a href='{video}' target='_blank'>Xem video</a></li>"))}
                             </ul>
 
@@ -467,13 +450,13 @@ public static string RejectRegistration(Registration registration, string reject
     </table>
 </body>
 </html>";
-}
+        }
 
-public static string ConfirmTicketOrder(TicketOrder order)
-{
-    var koiShow = order.TicketOrderDetails.First().TicketType.KoiShow;
+        public static string ConfirmTicketOrder(TicketOrder order)
+        {
+            var koiShow = order.TicketOrderDetails.First().TicketType.KoiShow;
 
-    return $@"
+            return $@"
 <!DOCTYPE html>
 <html lang='vi'>
 <head>
@@ -579,10 +562,11 @@ public static string ConfirmTicketOrder(TicketOrder order)
     </table>
 </body>
 </html>";
-}
-public static string RefundRegistrationPayment(Registration registration)
-{
-    return $@"
+        }
+
+        public static string RefundRegistrationPayment(Registration registration)
+        {
+            return $@"
 <!DOCTYPE html>
 <html lang='vi'>
 <head>
@@ -647,10 +631,11 @@ public static string RefundRegistrationPayment(Registration registration)
     </table>
 </body>
 </html>";
-}
-public static string ShowInternalReviewNotificationForManager(string managerName, KoiShow show)
-{
-    return $@"
+        }
+
+        public static string ShowInternalReviewNotificationForManager(string managerName, KoiShow show)
+        {
+            return $@"
 <!DOCTYPE html>
 <html lang='vi'>
 <head>
@@ -709,11 +694,11 @@ public static string ShowInternalReviewNotificationForManager(string managerName
     </table>
 </body>
 </html>";
-}
+        }
 
-public static string ShowInternalReviewNotificationForStaff(string staffName, KoiShow show)
-{
-    return $@"
+        public static string ShowInternalReviewNotificationForStaff(string staffName, KoiShow show)
+        {
+            return $@"
 <!DOCTYPE html>
 <html lang='vi'>
 <head>
@@ -771,25 +756,27 @@ public static string ShowInternalReviewNotificationForStaff(string staffName, Ko
     </table>
 </body>
 </html>";
-}
-public static string RefereeAssignmentNotification(string refereeName, KoiShow show, List<RefereeAssignmentInfo> assignments)
-{
-    var groupedAssignments = assignments
-        .GroupBy(a => a.CategoryName)
-        .Select(group => new
-        {
-            CategoryName = group.Key,
-            RoundTypes = string.Join(", ", group.Select(a => a.RoundTypeName))
-        });
+        }
 
-    var categoryList = string.Join("", groupedAssignments.Select(g => $@"
+        public static string RefereeAssignmentNotification(string refereeName, KoiShow show,
+            List<RefereeAssignmentInfo> assignments)
+        {
+            var groupedAssignments = assignments
+                .GroupBy(a => a.CategoryName)
+                .Select(group => new
+                {
+                    CategoryName = group.Key,
+                    RoundTypes = string.Join(", ", group.Select(a => a.RoundTypeName))
+                });
+
+            var categoryList = string.Join("", groupedAssignments.Select(g => $@"
         <tr>
             <td style='padding: 12px; border-bottom: 1px solid #ddd;'>{g.CategoryName}</td>
             <td style='padding: 12px; border-bottom: 1px solid #ddd;'>{g.RoundTypes}</td>
         </tr>
     "));
 
-    return $@"
+            return $@"
 <!DOCTYPE html>
 <html lang='vi'>
 <head>
@@ -853,7 +840,140 @@ public static string RefereeAssignmentNotification(string refereeName, KoiShow s
     </table>
 </body>
 </html>";
-}
+        }
 
+        public static string NewStaffAccountNotification(string fullName, string email, string password, string role)
+        {
+            string roleDisplay = role.ToLower() == "manager" ? "Quản lý" : "Nhân viên";
+
+            return $@"
+<!DOCTYPE html>
+<html lang='vi'>
+<head>
+    <meta charset='UTF-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <title>KOI SHOW - Thông báo tạo tài khoản {roleDisplay}</title>
+</head>
+<body style='margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4;'>
+    <table border='0' cellpadding='0' cellspacing='0' width='100%' style='background-color: #f4f4f4;'>
+        <tr>
+            <td align='center' style='padding: 20px 0;'>
+                <table border='0' cellpadding='0' cellspacing='0' width='600' style='background-color: #ffffff; border-radius: 10px; padding: 20px;'>
+                    <tr>
+                        <td align='center' style='font-family: Arial, sans-serif; color: #1a2a6c;'>
+                            <h1 style='font-size: 36px; margin: 20px 0;'>KOI SHOW</h1>
+                            <hr style='border: none; border-top: 3px solid #b21f1f; width: 60px; margin: 10px auto;'>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style='font-family: Arial, sans-serif; font-size: 16px; line-height: 1.8; padding: 20px; color: #333;'>
+                            <p>Thân gửi <span style='font-weight: bold; color: #b21f1f;'>{fullName}</span>,</p>
+                            
+                            <p>Chúng tôi xin thông báo rằng tài khoản <span style='font-weight: bold; color: #b21f1f;'>{roleDisplay}</span> của bạn đã được tạo thành công trong Hệ thống Quản lý Triển lãm Cá Koi (KSMS).</p>
+                            
+                            <p><strong>Thông tin đăng nhập của bạn:</strong></p>
+                            <div style='background-color: #f9f9f9; border-left: 4px solid #b21f1f; padding: 15px; margin: 15px 0;'>
+                                <p><strong>Email:</strong> {email}</p>
+                                <p><strong>Mật khẩu:</strong> {password}</p>
+                                <p><strong>Vai trò:</strong> {roleDisplay}</p>
+                            </div>
+                            
+                            <p>Với vai trò {roleDisplay}, bạn sẽ có quyền truy cập vào các tính năng quản lý của hệ thống. Vui lòng đăng nhập bằng thông tin trên và đổi mật khẩu của bạn sau khi đăng nhập lần đầu tiên.</p>
+                            
+                            <div style='margin: 25px 0; text-align: center;'>
+                                <a href='{AppConfig.AppSetting.BaseUrl}/login' style='background-color: #b21f1f; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;'>ĐĂNG NHẬP NGAY</a>
+                            </div>
+                            
+                            <p><strong>Lưu ý quan trọng:</strong></p>
+                            <ul style='margin: 10px 0; padding-left: 20px;'>
+                                <li style='margin-bottom: 10px;'>Vui lòng đổi mật khẩu của bạn ngay sau khi đăng nhập lần đầu tiên.</li>
+                                <li style='margin-bottom: 10px;'>Giữ thông tin đăng nhập của bạn bảo mật và không chia sẻ với người khác.</li>
+                                <li>Thông tin chi tiết về các cuộc triển lãm bạn được phân công sẽ được thông báo riêng.</li>
+                            </ul>
+                            
+                            <p>Chúng tôi rất vui được hợp tác với bạn và mong đợi sự đóng góp của bạn cho sự thành công của các triển lãm cá Koi sắp tới.</p>
+                            
+                            <p>Nếu bạn cần hỗ trợ hoặc có bất kỳ câu hỏi nào, vui lòng liên hệ với quản trị viên hệ thống.</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td align='center' style='padding: 20px;'>
+                            <p style='font-size: 14px; color: #666; border-top: 1px solid #ddd; padding-top: 10px;'>Trân trọng,</p>
+                            <p style='font-family: Arial, sans-serif; font-size: 18px; font-weight: bold; color: #1a2a6c;'>Đội ngũ Koi Show</p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>";
+        }
+
+        public static string NewRefereeAccountNotification(string fullName, string email, string password)
+        {
+            return $@"
+<!DOCTYPE html>
+<html lang='vi'>
+<head>
+    <meta charset='UTF-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <title>KOI SHOW - Thông báo tạo tài khoản Trọng tài</title>
+</head>
+<body style='margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4;'>
+    <table border='0' cellpadding='0' cellspacing='0' width='100%' style='background-color: #f4f4f4;'>
+        <tr>
+            <td align='center' style='padding: 20px 0;'>
+                <table border='0' cellpadding='0' cellspacing='0' width='600' style='background-color: #ffffff; border-radius: 10px; padding: 20px;'>
+                    <tr>
+                        <td align='center' style='font-family: Arial, sans-serif; color: #1a2a6c;'>
+                            <h1 style='font-size: 36px; margin: 20px 0;'>KOI SHOW</h1>
+                            <hr style='border: none; border-top: 3px solid #b21f1f; width: 60px; margin: 10px auto;'>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style='font-family: Arial, sans-serif; font-size: 16px; line-height: 1.8; padding: 20px; color: #333;'>
+                            <p>Thân gửi <span style='font-weight: bold; color: #b21f1f;'>{fullName}</span>,</p>
+                            
+                            <p>Chúng tôi vô cùng vinh dự thông báo rằng bạn đã được chọn làm <span style='font-weight: bold; color: #b21f1f;'>Trọng tài</span> cho các cuộc triển lãm cá Koi của chúng tôi. Tài khoản của bạn đã được tạo trong Hệ thống Quản lý Triển lãm Cá Koi (KSMS).</p>
+                            
+                            <p><strong>Thông tin đăng nhập của bạn:</strong></p>
+                            <div style='background-color: #f9f9f9; border-left: 4px solid #b21f1f; padding: 15px; margin: 15px 0;'>
+                                <p><strong>Email:</strong> {email}</p>
+                                <p><strong>Mật khẩu:</strong> {password}</p>
+                                <p><strong>Vai trò:</strong> Trọng tài</p>
+                            </div>
+                            
+                            <p>Với kinh nghiệm và chuyên môn của bạn trong lĩnh vực cá Koi, chúng tôi tin rằng bạn sẽ đóng vai trò quan trọng trong việc đánh giá công bằng và chính xác các cá thể thi đấu.</p>
+                            
+                            <div style='margin: 25px 0; text-align: center;'>
+                                <a href='{AppConfig.AppSetting.BaseUrl}/login' style='background-color: #b21f1f; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;'>ĐĂNG NHẬP NGAY</a>
+                            </div>
+                            
+                            <p><strong>Thông tin quan trọng:</strong></p>
+                            <ul style='margin: 10px 0; padding-left: 20px;'>
+                                <li style='margin-bottom: 10px;'>Vui lòng đổi mật khẩu của bạn ngay sau khi đăng nhập lần đầu tiên.</li>
+                                <li style='margin-bottom: 10px;'>Giữ thông tin đăng nhập của bạn bảo mật và không chia sẻ với người khác.</li>
+                                <li style='margin-bottom: 10px;'>Thông tin chi tiết về các cuộc triển lãm và hạng mục bạn được phân công chấm điểm sẽ được thông báo riêng sau khi cuộc triển lãm được công bố.</li>
+                            </ul>
+                            
+                            <p>Chúng tôi rất vui mừng được hợp tác với bạn và mong đợi sự đóng góp chuyên môn của bạn cho sự thành công của các triển lãm cá Koi sắp tới.</p>
+                            
+                            <p>Nếu bạn cần hỗ trợ hoặc có bất kỳ câu hỏi nào, vui lòng liên hệ với ban tổ chức.</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td align='center' style='padding: 20px;'>
+                            <p style='font-size: 14px; color: #666; border-top: 1px solid #ddd; padding-top: 10px;'>Trân trọng,</p>
+                            <p style='font-family: Arial, sans-serif; font-size: 18px; font-weight: bold; color: #1a2a6c;'>Đội ngũ Koi Show</p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>";
+        }
     }
-}
+}    

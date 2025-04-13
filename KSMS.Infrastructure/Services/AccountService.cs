@@ -18,15 +18,23 @@ using KSMS.Domain.Dtos.Responses.Account;
 using KSMS.Domain.Exceptions;
 using KSMS.Infrastructure.Utils;
 using Microsoft.AspNetCore.Http;
+using Hangfire;
 
 namespace KSMS.Infrastructure.Services;
 
 public class AccountService : BaseService<AccountService>, IAccountService
 {
     private readonly IFirebaseService _firebaseService;
-    public AccountService(IUnitOfWork<KoiShowManagementSystemContext> unitOfWork, ILogger<AccountService> logger, IHttpContextAccessor httpContextAccessor, IFirebaseService firebaseService) : base(unitOfWork, logger, httpContextAccessor)
+    private readonly IBackgroundJobClient _backgroundJobClient;
+    private readonly IEmailService _emailService;
+    
+    public AccountService(IUnitOfWork<KoiShowManagementSystemContext> unitOfWork, ILogger<AccountService> logger, 
+        IHttpContextAccessor httpContextAccessor, IFirebaseService firebaseService, IBackgroundJobClient backgroundJobClient, IEmailService emailService) 
+        : base(unitOfWork, logger, httpContextAccessor)
     {
         _firebaseService = firebaseService;
+        _backgroundJobClient = backgroundJobClient;
+        _emailService = emailService;
     }
     public async Task<Paginate<AccountResponse>> GetPagedUsersAsync(RoleName? roleName, int page, int size)
     {
@@ -61,6 +69,8 @@ public class AccountService : BaseService<AccountService>, IAccountService
         return user.Adapt<AccountResponse>();
     }
 
+
+
     public async Task<AccountResponse> CreateUserAsync(CreateAccountRequest createAccountRequest)
     {
         var userRepository = _unitOfWork.GetRepository<Account>();
@@ -85,10 +95,17 @@ public class AccountService : BaseService<AccountService>, IAccountService
         {
             user.Avatar = await _firebaseService.UploadImageAsync(createAccountRequest.AvatarUrl, "account/");
         }
-        user.HashedPassword = PasswordUtil.HashPassword(createAccountRequest.HashedPassword);
+        
+        // Tạo mật khẩu ngẫu nhiên cho tài khoản
+        string randomPassword = GenerateRandomPassword();
+        user.HashedPassword = PasswordUtil.HashPassword(randomPassword);
+        
         user.IsConfirmed = true;
         var createdUser = await userRepository.InsertAsync(user);
         await _unitOfWork.CommitAsync();
+        _backgroundJobClient.Enqueue(() => 
+            _emailService.SendNewAccountNotificationEmail(createdUser.Id, randomPassword));
+        
         return createdUser.Adapt<AccountResponse>();
     }
 
@@ -118,6 +135,16 @@ public class AccountService : BaseService<AccountService>, IAccountService
     public async Task UpdateAccount(Guid id, UpdateAccountRequest updateAccountRequest)
     {
         var account = await _unitOfWork.GetRepository<Account>().SingleOrDefaultAsync(predicate: a => a.Id == id);
+        if (account == null)
+        {
+            throw new NotFoundException("Không tìm thấy người dùng");
+        }
+        var existingAccount = await _unitOfWork.GetRepository<Account>().SingleOrDefaultAsync(
+            predicate: a => a.Username.ToLower() == updateAccountRequest.Username.ToLower());
+        if (existingAccount != null)
+        {
+            throw new Exception("Tên người dùng này đã tồn tại");
+        } 
         updateAccountRequest.Adapt(account);
         if (account.Avatar is not null)
         {
@@ -131,5 +158,40 @@ public class AccountService : BaseService<AccountService>, IAccountService
         }
         _unitOfWork.GetRepository<Account>().UpdateAsync(account);
         await _unitOfWork.CommitAsync();
+    }
+
+    private string GenerateRandomPassword(int length = 12)
+    {
+        const string upperChars = "ABCDEFGHJKLMNOPQRSTUVWXYZ";
+        const string lowerChars = "abcdefghijkmnopqrstuvwxyz";
+        const string numericChars = "0123456789";
+        const string specialChars = "!@#$%^&*()-_=+[]{}|;:,.<>?";
+        
+        var random = new Random();
+        var password = new List<char>();
+        
+        // Bắt buộc có ít nhất 1 ký tự từ mỗi loại
+        password.Add(upperChars[random.Next(upperChars.Length)]);
+        password.Add(lowerChars[random.Next(lowerChars.Length)]);
+        password.Add(numericChars[random.Next(numericChars.Length)]);
+        password.Add(specialChars[random.Next(specialChars.Length)]);
+        
+        // Tạo các ký tự còn lại ngẫu nhiên
+        var allChars = upperChars + lowerChars + numericChars + specialChars;
+        var remainingLength = length - 4;
+        
+        for (var i = 0; i < remainingLength; i++)
+        {
+            password.Add(allChars[random.Next(allChars.Length)]);
+        }
+        
+        // Xáo trộn mật khẩu
+        for (var i = password.Count - 1; i > 0; i--)
+        {
+            var swapIndex = random.Next(i + 1);
+            (password[i], password[swapIndex]) = (password[swapIndex], password[i]);
+        }
+        
+        return new string(password.ToArray());
     }
 }

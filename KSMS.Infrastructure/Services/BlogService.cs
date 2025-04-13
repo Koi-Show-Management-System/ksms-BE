@@ -49,7 +49,7 @@ public class BlogService : BaseService<BlogService>, IBlogService
         {
             throw new Exception("Tin tức không tồn tại");
         }
-        var blogCategory = _unitOfWork.GetRepository<BlogCategory>().SingleOrDefaultAsync(
+        var blogCategory = await _unitOfWork.GetRepository<BlogCategory>().SingleOrDefaultAsync(
             predicate: x => x.Id == request.BlogCategoryId);
         if (blogCategory == null)
         {
@@ -89,7 +89,10 @@ public class BlogService : BaseService<BlogService>, IBlogService
 
     public async Task<GetPageBlogResponse> GetBlogById(Guid id)
     {
-        var blog = await _unitOfWork.GetRepository<BlogsNews>().SingleOrDefaultAsync(predicate: x => x.Id == id);
+        var blog = await _unitOfWork.GetRepository<BlogsNews>().SingleOrDefaultAsync(predicate: x => x.Id == id,
+            include: query => query
+                .Include(x => x.BlogCategory)
+                .Include(x => x.Account));
         if (blog == null)
         {
             throw new Exception("Tin tức không tồn tại");

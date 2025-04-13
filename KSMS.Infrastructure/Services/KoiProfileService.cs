@@ -119,7 +119,7 @@ public class KoiProfileService : BaseService<KoiProfileService>, IKoiProfileServ
             include: query => query.Include(r => r.KoiShow));
         if (activeRegistrations.Any())
         {
-            throw new BadRequestException("Không thể cập nhật thông tin cá Koi đang tham gia cuộc thi. Vui lòng đợi cuộc thi kết thúc hoặc hủy đơn đăng ký");
+            throw new BadRequestException("Không thể cập nhật thông tin cá Koi đang tham gia cuộc thi. Vui lòng đợi cuộc thi kết thúc");
         }
         if (updateKoiProfileRequest.VarietyId is not null)
         {
@@ -371,5 +371,41 @@ public class KoiProfileService : BaseService<KoiProfileService>, IKoiProfileServ
         return filterQuery;
     }
     
-    
+    public async Task UpdateKoiProfileStatus(Guid id, KoiProfileStatus status)
+    {
+        var accountId = GetIdFromJwt();
+        var koi = await _unitOfWork.GetRepository<KoiProfile>().SingleOrDefaultAsync(
+            predicate: k => k.Id == id);
+            
+        if (koi is null)
+        {
+            throw new NotFoundException("Không tìm thấy cá Koi");
+        }
+
+        if (koi.OwnerId != accountId)
+        {
+            throw new ForbiddenMethodException("Đây không phải cá Koi của bạn!");
+        }
+        var activeRegistrations = await _unitOfWork.GetRepository<Registration>().GetListAsync(
+            predicate: r => r.KoiProfileId == id && 
+                            r.KoiShow.Status != ShowStatus.Finished.ToString().ToLower() &&
+                            r.Status != RegistrationStatus.Cancelled.ToString().ToLower() &&
+                            r.Status != RegistrationStatus.PendingRefund.ToString().ToLower() &&
+                            r.Status != RegistrationStatus.Rejected.ToString().ToLower() &&
+                            r.Status != RegistrationStatus.Refunded.ToString().ToLower(),
+            include: query => query.Include(r => r.KoiShow));
+            
+        if (activeRegistrations.Any() && status ==  KoiProfileStatus.Inactive)
+        {
+            throw new BadRequestException("Không thể vô hiệu hóa cá Koi đang tham gia cuộc thi. Vui lòng đợi cuộc thi kết thúc");
+        }
+        koi.Status = status switch
+        {
+            KoiProfileStatus.Active => KoiProfileStatus.Active.ToString().ToLower(),
+            KoiProfileStatus.Inactive => KoiProfileStatus.Inactive.ToString().ToLower(),
+            _ => koi.Status
+        };
+        _unitOfWork.GetRepository<KoiProfile>().UpdateAsync(koi);
+        await _unitOfWork.CommitAsync();
+    }
 }
