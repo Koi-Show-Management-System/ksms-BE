@@ -50,4 +50,5 @@ public class GetRegistrationResponse // for user
     public KoiProfileResponse? KoiProfile { get; set; }
 
     public GetKoiShowResponse? KoiShow { get; set; } 
+    public CheckOutKoiResponse? CheckOutLog { get; set; }
 }

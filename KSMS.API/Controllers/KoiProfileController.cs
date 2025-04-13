@@ -4,6 +4,7 @@ using KSMS.Domain.Dtos.Responses.KoiProfile;
 using KSMS.Domain.Models;
 using KSMS.Domain.Pagination;
 using KSMS.Domain.Dtos;
+using KSMS.Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -48,6 +49,13 @@ namespace KSMS.API.Controllers
         {
             await _koiProfileService.UpdateKoiProfile(id, updateKoiProfileRequest);
             return Ok(ApiResponse<object>.Success(null, "Cập nhật hồ sơ Koi thành công"));
+        }
+        [HttpPut("status/{id:guid}")]
+        [Authorize(Roles = "Member")]
+        public async Task<ActionResult<ApiResponse<object>>> ChangeStatusKoiProfile(Guid id, [FromQuery]KoiProfileStatus status)
+        {
+            await _koiProfileService.UpdateKoiProfileStatus(id, status);
+            return Ok(ApiResponse<object>.Success(null, "Thay đổi trạng thái hồ sơ Koi thành công"));
         }
     }
 }
