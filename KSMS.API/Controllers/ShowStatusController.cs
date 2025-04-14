@@ -19,16 +19,16 @@ public class ShowStatusController : ControllerBase
     
     [Authorize(Roles = "Admin, Manager, Staff")]
     [HttpPost("create/{showId:guid}")]
-    public async Task<ActionResult<ApiResponse<object>>> CreateStatus(Guid showId, [FromBody]CreateShowStatusRequest request)
+    public async Task<ActionResult<ApiResponse<object>>> CreateStatus(Guid showId, [FromBody]List<CreateShowStatusRequest> request)
     {
         await _showStatusService.CreateShowStatusAsync(showId, request);
         return StatusCode(201, ApiResponse<object>.Created(null, "Tạo tiến trình triển lãm thành công"));
     }
     [Authorize(Roles = "Admin, Manager, Staff")]
-    [HttpPut("{id:guid}")]
-    public async Task<ActionResult<ApiResponse<object>>> UpdateStatus(Guid id,[FromBody] UpdateShowStatusRequestV2 request)
+    [HttpPut("{showId:guid}")]
+    public async Task<ActionResult<ApiResponse<object>>> UpdateStatus(Guid showId,[FromBody] List<UpdateShowStatusRequestV2> request)
     {
-        await _showStatusService.UpdateShowStatusAsync(id, request);
+        await _showStatusService.UpdateShowStatusAsync(showId, request);
         return Ok(ApiResponse<object>.Success(null, "Cập nhật tiến trình triển lãm thành công"));
     }
     [Authorize(Roles = "Admin, Manager, Staff")]

@@ -14,14 +14,22 @@ using KSMS.Domain.Pagination;
 using KSMS.Infrastructure.Utils;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
+using ShowStatus = KSMS.Domain.Enums.ShowStatus;
 
 namespace KSMS.Infrastructure.Services
 {
     public class CategoryService : BaseService<CategoryService>, ICategoryService
     {
+        private readonly INotificationService _notificationService;
         
-        public CategoryService(IUnitOfWork<KoiShowManagementSystemContext> unitOfWork, ILogger<CategoryService> logger, IHttpContextAccessor httpContextAccessor) : base(unitOfWork, logger, httpContextAccessor)
+        public CategoryService(
+            IUnitOfWork<KoiShowManagementSystemContext> unitOfWork, 
+            ILogger<CategoryService> logger, 
+            IHttpContextAccessor httpContextAccessor,
+            INotificationService notificationService) 
+            : base(unitOfWork, logger, httpContextAccessor)
         {
+            _notificationService = notificationService;
         }
 
         public async Task CreateCompetitionCategory(CreateCompetitionCategoryRequest request)
@@ -350,6 +358,149 @@ namespace KSMS.Infrastructure.Services
             return response;
         }
         
-        
+        public async Task DeleteCategoryAsync(Guid id)
+        {
+            var category = await _unitOfWork.GetRepository<CompetitionCategory>().SingleOrDefaultAsync(
+                predicate: x => x.Id == id,
+                include: query => query
+                    .Include(x => x.Awards)
+                    .Include(x => x.CategoryVarieties)
+                    .Include(x => x.CriteriaCompetitionCategories)
+                    .Include(x => x.RefereeAssignments)
+                    .Include(x => x.Rounds)
+                    .Include(x => x.KoiShow));
+                    
+            if (category == null)
+            {
+                throw new NotFoundException("Không tìm thấy hạng mục");
+            }
+            
+            // Kiểm tra trạng thái của show
+            var showStatus = category.KoiShow.Status.ToLower();
+            if (showStatus != ShowStatus.Pending.ToString().ToLower() && 
+                showStatus != ShowStatus.InternalPublished.ToString().ToLower())
+            {
+                throw new BadRequestException("Không thể xóa hạng mục khi triển lãm không ở trạng thái 'Đang chờ duyệt' hoặc 'Đã duyệt nội bộ'");
+            }
+            
+            // Kiểm tra xem các vòng thi đã có đăng ký chưa
+            var roundIds = category.Rounds.Select(x => x.Id).ToList();
+            var registrationRounds = await _unitOfWork.GetRepository<RegistrationRound>()
+                .GetListAsync(predicate: x => roundIds.Contains(x.RoundId));
+                
+            if (registrationRounds.Any())
+            {
+                throw new BadRequestException("Không thể xóa hạng mục đã có đăng ký vòng thi");
+            }
+            
+            await using var transaction = await _unitOfWork.BeginTransactionAsync();
+            
+            try
+            {
+                // Xóa các bảng liên kết
+                if (category.Awards.Any())
+                {
+                    _unitOfWork.GetRepository<Award>().DeleteRangeAsync(category.Awards);
+                }
+                
+                if (category.CategoryVarieties.Any())
+                {
+                    _unitOfWork.GetRepository<CategoryVariety>().DeleteRangeAsync(category.CategoryVarieties);
+                }
+                
+                if (category.CriteriaCompetitionCategories.Any())
+                {
+                    _unitOfWork.GetRepository<CriteriaCompetitionCategory>().DeleteRangeAsync(category.CriteriaCompetitionCategories);
+                }
+                
+                if (category.RefereeAssignments.Any())
+                {
+                    _unitOfWork.GetRepository<RefereeAssignment>().DeleteRangeAsync(category.RefereeAssignments);
+                }
+                
+                if (category.Rounds.Any())
+                {
+                    _unitOfWork.GetRepository<Round>().DeleteRangeAsync(category.Rounds);
+                }
+                
+                // Xóa category
+                _unitOfWork.GetRepository<CompetitionCategory>().DeleteAsync(category);
+                
+                await _unitOfWork.CommitAsync();
+                await transaction.CommitAsync();
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+        }
+
+        public async Task CancelCategoryAsync(Guid id, string reason)
+        {
+            var category = await _unitOfWork.GetRepository<CompetitionCategory>().SingleOrDefaultAsync(
+                predicate: x => x.Id == id,
+                include: query => query
+                    .Include(x => x.Rounds)
+                    .Include(x => x.KoiShow));
+                    
+            if (category == null)
+            {
+                throw new NotFoundException("Không tìm thấy hạng mục");
+            }
+            
+            if (string.IsNullOrWhiteSpace(reason))
+            {
+                throw new BadRequestException("Lý do hủy hạng mục không được để trống");
+            }
+            
+            // Kiểm tra xem cuộc thi đã diễn ra chưa
+            var currentTime = VietNamTimeUtil.GetVietnamTime();
+            if (category.KoiShow.StartDate <= currentTime)
+            {
+                throw new BadRequestException("Không thể hủy hạng mục khi cuộc thi đã bắt đầu");
+            }
+            
+            // Cập nhật trạng thái hạng mục thành cancelled
+            category.Status = CategoryStatus.Cancelled.ToString().ToLower();
+            
+            _unitOfWork.GetRepository<CompetitionCategory>().UpdateAsync(category);
+            await _unitOfWork.CommitAsync();
+            
+            // Lấy danh sách tất cả các đăng ký cho hạng mục này có trạng thái là confirmed hoặc pending
+            var registrations = await _unitOfWork.GetRepository<Registration>()
+                .GetListAsync(
+                    include: query => query
+                        .Include(r => r.Account),
+                    predicate: r => r.CompetitionCategoryId == id && 
+                                   (r.Status == RegistrationStatus.Confirmed.ToString().ToLower() ||
+                                    r.Status == RegistrationStatus.Pending.ToString().ToLower()));
+            
+            // Nhóm các đăng ký theo account
+            var registrationsByAccount = registrations.GroupBy(r => r.AccountId);
+            
+            // Xử lý từng người dùng đã đăng ký
+            foreach (var accountGroup in registrationsByAccount)
+            {
+                var accountId = accountGroup.Key;
+                var accountRegistrations = accountGroup.ToList();
+                
+                foreach (var registration in accountRegistrations)
+                {
+                    // Cập nhật trạng thái đăng ký thành pending refund
+                    registration.Status = RegistrationStatus.PendingRefund.ToString().ToLower();
+                    _unitOfWork.GetRepository<Registration>().UpdateAsync(registration);
+                }
+                
+                // Gửi thông báo cho người dùng về việc hủy hạng mục
+                await _notificationService.SendNotification(
+                    accountId,
+                    $"Hạng mục {category.Name} đã bị hủy - Đang chờ xử lí hoàn tiền",
+                    $"Hạng mục {category.Name} của cuộc thi {category.KoiShow.Name} đã bị hủy vì lý do: {reason}. Phí đăng ký của bạn đang được xử lí hoàn trả trong 3-5 ngày làm việc.",
+                    NotificationType.Registration);
+            }
+            
+            await _unitOfWork.CommitAsync();
+        }
     }
 }

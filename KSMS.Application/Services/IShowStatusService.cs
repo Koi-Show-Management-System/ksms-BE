@@ -4,9 +4,9 @@ namespace KSMS.Application.Services;
 
 public interface IShowStatusService
 {
-    Task CreateShowStatusAsync(Guid koiShowId, CreateShowStatusRequest request);
+    Task CreateShowStatusAsync(Guid koiShowId, List<CreateShowStatusRequest> requests);
     
-    Task UpdateShowStatusAsync(Guid id, UpdateShowStatusRequestV2 request);
+    Task UpdateShowStatusAsync(Guid koiShowId, List<UpdateShowStatusRequestV2> requests);
     
     Task DeleteShowStatusAsync(Guid id);
 }

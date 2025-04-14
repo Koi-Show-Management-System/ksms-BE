@@ -41,8 +41,8 @@ namespace KSMS.Infrastructure.Services
             _notificationMessages = new Dictionary<ShowProgress, string>
             {
                 { ShowProgress.RegistrationOpen, "Đăng ký tham gia triển lãm đã được mở!" },
-                { ShowProgress.RegistrationClosed, "Đăng ký tham gia triển lãm đã đóng." },
-                { ShowProgress.CheckIn, "Chuẩn bị bắt đầu check-in." },
+                { ShowProgress.KoiCheckIn, "Chuẩn bị bắt đầu check-in cá Koi." },
+                { ShowProgress.TicketCheckIn, "Chuẩn bị bắt đầu check-in vé tham quan." },
                 { ShowProgress.Preliminary, "Vòng sơ loại đã bắt đầu!" },
                 { ShowProgress.Evaluation, "Vòng đánh giá đã bắt đầu!" },
                 { ShowProgress.Final, "Vòng chung kết đã bắt đầu!" },
@@ -145,8 +145,8 @@ namespace KSMS.Infrastructure.Services
                     var newStatus = showProgress switch
                     {
                         ShowProgress.RegistrationOpen or 
-                        ShowProgress.RegistrationClosed or 
-                        ShowProgress.CheckIn => "upcoming",
+                        ShowProgress.KoiCheckIn or
+                        ShowProgress.TicketCheckIn => "upcoming",
                         
                         ShowProgress.Preliminary or 
                         ShowProgress.Evaluation or 
@@ -213,13 +213,18 @@ namespace KSMS.Infrastructure.Services
                         await SendToAllUsersExceptStaffAndReferees(notificationService, title, message, staffIds, refereeIds);
                         break;
 
-                    case ShowProgress.CheckIn:
+                    case ShowProgress.KoiCheckIn:
                         await SendToConfirmedRegistrations(notificationService, status.KoiShowId, title, message);
                         break;
-
-                    case ShowProgress.RegistrationClosed:
-                        await SendToRegisteredUsers(notificationService, status.KoiShowId, title, message);
+                        
+                    case ShowProgress.TicketCheckIn:
+                        // Gửi thông báo cho người đã mua vé
+                        await SendToTicketPurchasers(notificationService, status.KoiShowId, title, message);
                         break;
+
+                    // case ShowProgress.RegistrationClosed:
+                    //     await SendToRegisteredUsers(notificationService, status.KoiShowId, title, message);
+                    //     break;
 
                     default:
                         // Gửi thông báo cho từng nhóm với cùng nội dung
@@ -324,6 +329,47 @@ namespace KSMS.Infrastructure.Services
             {
                 await notificationService.SendNotificationToMany(
                     registeredUsers.Select(r => r.AccountId).Distinct().ToList(),
+                    title,
+                    message,
+                    NotificationType.Show
+                );
+            }
+        }
+        
+        private async Task SendToTicketPurchasers(INotificationService notificationService, Guid showId, string title, string message)
+        {
+            using var scope = _scopeFactory.CreateScope();
+            var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork<KoiShowManagementSystemContext>>();
+            
+            // Lấy danh sách loại vé của show
+            var ticketTypes = await unitOfWork.GetRepository<TicketType>()
+                .GetListAsync(predicate: tt => tt.KoiShowId == showId);
+                
+            if (!ticketTypes.Any())
+                return;
+                
+            var ticketTypeIds = ticketTypes.Select(tt => tt.Id).ToList();
+            
+            // Lấy danh sách chi tiết đơn hàng vé liên quan đến show
+            var ticketOrderDetails = await unitOfWork.GetRepository<TicketOrderDetail>()
+                .GetListAsync(
+                    predicate: tod => ticketTypeIds.Contains(tod.TicketTypeId),
+                    include: query => query.Include(tod => tod.TicketOrder)
+                );
+                
+            // Lấy danh sách đơn hàng vé đã thanh toán
+            var paidTicketOrders = ticketOrderDetails
+                .Select(tod => tod.TicketOrder)
+                .Where(to => to.Status?.ToLower() == "paid")
+                .GroupBy(to => to.AccountId) // Nhóm theo ID tài khoản để loại bỏ trùng lặp
+                .Select(g => g.Key) // Lấy ID tài khoản
+                .Where(id => id != null) // Loại bỏ các đơn hàng không có ID tài khoản
+                .ToList();
+                
+            if (paidTicketOrders.Any())
+            {
+                await notificationService.SendNotificationToMany(
+                    paidTicketOrders,
                     title,
                     message,
                     NotificationType.Show
