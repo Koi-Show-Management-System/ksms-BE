@@ -281,7 +281,8 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
     {
         var accountId = GetIdFromJwt();
         var koiShow = await _unitOfWork.GetRepository<KoiShow>()
-            .SingleOrDefaultAsync(predicate: k => k.Id == createRegistrationRequest.KoiShowId);
+            .SingleOrDefaultAsync(predicate: k => k.Id == createRegistrationRequest.KoiShowId,
+                include: query => query.Include(k => k.ShowStatuses));
         var koiProfile = await _unitOfWork.GetRepository<KoiProfile>()
             .SingleOrDefaultAsync(predicate: k => k.Id == createRegistrationRequest.KoiProfileId);
         var category = await _unitOfWork.GetRepository<CompetitionCategory>().SingleOrDefaultAsync(
@@ -304,6 +305,22 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
         if (koiShow.Status == ShowStatus.Cancelled.ToString().ToLower())
         {
             throw new BadRequestException("Triển lãm đã bị hủy. Không thể đăng ký tham gia");
+        }
+        
+        // Kiểm tra xem hiện tại có đang trong giai đoạn đăng ký không
+        var currentTime = VietNamTimeUtil.GetVietnamTime();
+        var registrationOpenStatus = koiShow.ShowStatuses
+            .FirstOrDefault(s => s.StatusName == ShowProgress.RegistrationOpen.ToString());
+            
+        if (registrationOpenStatus == null)
+        {
+            throw new BadRequestException("Triển lãm chưa mở đăng ký");
+        }
+        
+        if (currentTime < registrationOpenStatus.StartDate || 
+            currentTime > registrationOpenStatus.EndDate)
+        {
+            throw new BadRequestException("Hiện tại không trong thời gian đăng ký tham gia triển lãm");
         }
         var existingRegistration = await _unitOfWork.GetRepository<Registration>()
             .SingleOrDefaultAsync(
@@ -382,8 +399,12 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
             
         if (!categoriesForVariety.Any())
             throw new BadRequestException("Không tìm thấy hạng mục phù hợp cho giống cá này");
+        
+        // Lọc các hạng mục phù hợp về kích thước và không có trạng thái là cancelled
         var eligibleCategories = categoriesForVariety
-            .Where(cc => size >= cc.SizeMin && size <= cc.SizeMax)
+            .Where(cc => size >= cc.SizeMin && size <= cc.SizeMax &&
+                       (cc.Status == null || 
+                        cc.Status.ToLower() != CategoryStatus.Cancelled.ToString().ToLower()))
             .ToList();
 
         if (!eligibleCategories.Any())

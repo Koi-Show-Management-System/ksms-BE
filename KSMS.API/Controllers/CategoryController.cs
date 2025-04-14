@@ -46,5 +46,19 @@ namespace KSMS.API.Controllers
             var category = await _categoryService.GetCompetitionCategoryDetailById(id);
             return Ok(ApiResponse<object>.Success(category, "Lấy chi tiết hạng mục thành công"));
         }
+
+        [HttpDelete("{id:guid}")]
+        public async Task<ActionResult<ApiResponse<object>>> DeleteCategory(Guid id)
+        {
+            await _categoryService.DeleteCategoryAsync(id);
+            return Ok(ApiResponse<object>.Success(null, "Xóa hạng mục thành công"));
+        }
+
+        [HttpPut("{id:guid}/cancel")]
+        public async Task<ActionResult<ApiResponse<object>>> CancelCategory(Guid id, [FromQuery] string reason)
+        {
+            await _categoryService.CancelCategoryAsync(id, reason);
+            return Ok(ApiResponse<object>.Success(null, "Hủy hạng mục thành công"));
+        }
     }
 }
