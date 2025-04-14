@@ -3,8 +3,8 @@
 public enum ShowProgress
 {
     RegistrationOpen,   
-    RegistrationClosed,
-    CheckIn,
+    KoiCheckIn,
+    TicketCheckIn,
     Preliminary,
     Evaluation,
     Final,

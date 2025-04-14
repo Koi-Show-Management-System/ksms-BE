@@ -44,6 +44,43 @@ public class TicketOrderService : BaseService<TicketOrder>, ITicketOrderService
         var timestamp = DateTimeOffset.Now.ToString("yyMMddHHmmss");
         var random = new Random().Next(1000, 9999).ToString(); //
         var transactionCode = long.Parse($"{timestamp}{random}");
+        
+        // Lấy thông tin về loại vé đầu tiên để xác định show
+        if (createTicketOrderRequest.ListOrder == null || !createTicketOrderRequest.ListOrder.Any())
+        {
+            throw new BadRequestException("Danh sách vé không được để trống");
+        }
+        
+        var firstTicketTypeId = createTicketOrderRequest.ListOrder.First().TicketTypeId;
+        var firstTicketType = await _unitOfWork.GetRepository<TicketType>()
+            .SingleOrDefaultAsync(
+                predicate: p => p.Id == firstTicketTypeId,
+                include: query => query.Include(t => t.KoiShow)
+                    .ThenInclude(k => k.ShowStatuses)
+            );
+            
+        if (firstTicketType == null)
+        {
+            throw new NotFoundException($"Không tìm thấy loại vé có ID {firstTicketTypeId}");
+        }
+        
+        // Kiểm tra xem show có bị hủy không
+        if (firstTicketType.KoiShow.Status == Domain.Enums.ShowStatus.Cancelled.ToString().ToLower())
+        {
+            throw new BadRequestException("Triển lãm đã bị hủy. Không thể mua vé.");
+        }
+        
+        // Kiểm tra thời gian cho phép mua vé
+        var currentTime = VietNamTimeUtil.GetVietnamTime();
+        var ticketCheckInStatus = firstTicketType.KoiShow.ShowStatuses
+            .FirstOrDefault(s => s.StatusName == ShowProgress.TicketCheckIn.ToString());
+            
+        if (ticketCheckInStatus != null && currentTime >= ticketCheckInStatus.StartDate)
+        {
+            throw new BadRequestException("Đã quá thời gian cho phép mua vé. Triển lãm đã bắt đầu giai đoạn check-in vé.");
+        }
+        
+        // Kiểm tra các loại vé và tính tổng tiền
         foreach (var ticketType in createTicketOrderRequest.ListOrder)
         {
             var ticketTypeDb = await _unitOfWork.GetRepository<TicketType>()
@@ -51,6 +88,12 @@ public class TicketOrderService : BaseService<TicketOrder>, ITicketOrderService
             if (ticketTypeDb == null)
             {
                 throw new NotFoundException($"Không tìm thấy loại vé có ID {ticketType.TicketTypeId}");
+            }
+            
+            // Kiểm tra xem tất cả các vé có thuộc cùng một show không
+            if (ticketTypeDb.KoiShowId != firstTicketType.KoiShowId)
+            {
+                throw new BadRequestException("Không thể mua vé của nhiều triển lãm khác nhau trong cùng một đơn hàng");
             }
 
             if (ticketType.Quantity > ticketTypeDb.AvailableQuantity)

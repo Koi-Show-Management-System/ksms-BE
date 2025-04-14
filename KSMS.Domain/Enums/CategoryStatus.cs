@@ -3,5 +3,6 @@
 public enum CategoryStatus
 {
     Active,
-    InActive
+    InActive,
+    Cancelled
 }
