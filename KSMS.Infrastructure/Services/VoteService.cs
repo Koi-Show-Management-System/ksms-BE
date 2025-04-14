@@ -242,7 +242,7 @@ public class VoteService : BaseService<VoteService>, IVoteService
                 .Where(rr => highestFinalRounds.Select(fr => fr.Id).Contains(rr.RoundId))
                 .Select(rr => new GetRoundInfoResponse
                 {
-                    TankNumber = rr.Tank.Name
+                    TankNumber = rr.Tank?.Name
                 }).FirstOrDefault()
         }).ToList();
     }
