@@ -273,6 +273,10 @@ public class KoiProfileService : BaseService<KoiProfileService>, IKoiProfileServ
 
     private string GetCompetitionResult(Registration registration)
     {
+        // Get category name for display
+        string categoryInfo = !string.IsNullOrEmpty(registration.CompetitionCategory?.Name) 
+            ? $" (hạng mục: {registration.CompetitionCategory.Name})" 
+            : "";
        
         if (registration.KoiShow.Status == ShowStatus.Finished.ToString().ToLower())
         {
@@ -280,12 +284,13 @@ public class KoiProfileService : BaseService<KoiProfileService>, IKoiProfileServ
                 return "Không tham gia thi đấu (không check in)";
             return registration.Rank.Value switch
             {
-                1 => "Giải nhất",
-                2 => "Giải nhì",
-                3 => "Giải ba",
+                1 => $"Giải nhất{categoryInfo}",
+                2 => $"Giải nhì{categoryInfo}",
+                3 => $"Giải ba{categoryInfo}",
+                4 => $"Giải khuyến khích{categoryInfo}",
                 _ => registration.Status == "prizewinner"
-                    ? $"Giải thưởng (Top {registration.Rank.Value}"
-                    : $"Top {registration.Rank.Value}"
+                    ? $"Giải thưởng (Top {registration.Rank.Value}){categoryInfo}"
+                    : $"Thứ hạng: {registration.Rank.Value}{categoryInfo}"
             };
         }
 
@@ -293,23 +298,23 @@ public class KoiProfileService : BaseService<KoiProfileService>, IKoiProfileServ
         {
             return registration.Status switch
             {
-                var s when s == RegistrationStatus.WaitToPaid.ToString().ToLower() => "Chờ thanh toán",
-                var s when s == RegistrationStatus.Pending.ToString().ToLower() => "Chờ duyệt",
-                var s when s == RegistrationStatus.Rejected.ToString().ToLower() => "Bị từ chối",
-                var s when s == RegistrationStatus.Cancelled.ToString().ToLower() => "Đã hủy",
-                var s when s == RegistrationStatus.Confirmed.ToString().ToLower() => "Đã được duyệt - Chờ check in",
-                var s when s == RegistrationStatus.CheckIn.ToString().ToLower() => "Đã check in và đang chờ thi đấu",
-                var s when s == RegistrationStatus.PendingRefund.ToString().ToLower() => "Chờ hoàn tiền",
-                var s when s == "eliminated" => "Đã bị loại",
-                _ => "Đang thi đấu"
+                var s when s == RegistrationStatus.WaitToPaid.ToString().ToLower() => $"Chờ thanh toán{categoryInfo}",
+                var s when s == RegistrationStatus.Pending.ToString().ToLower() => $"Chờ duyệt{categoryInfo}",
+                var s when s == RegistrationStatus.Rejected.ToString().ToLower() => $"Bị từ chối{categoryInfo}",
+                var s when s == RegistrationStatus.Cancelled.ToString().ToLower() => $"Đã hủy{categoryInfo}",
+                var s when s == RegistrationStatus.Confirmed.ToString().ToLower() => $"Đã được duyệt - Chờ check in{categoryInfo}",
+                var s when s == RegistrationStatus.CheckIn.ToString().ToLower() => $"Đã check in và đang chờ thi đấu{categoryInfo}",
+                var s when s == RegistrationStatus.PendingRefund.ToString().ToLower() => $"Chờ hoàn tiền{categoryInfo}",
+                var s when s == "eliminated" => $"Đã bị loại{categoryInfo}",
+                _ => $"Đang thi đấu{categoryInfo}"
             };
         }
         if (registration.Status == "eliminated")
         {
-            return $"Thứ hạng sau cùng: {registration.Rank.Value} - Đã bị loại";
+            return $"Thứ hạng sau cùng: {registration.Rank.Value} - Đã bị loại{categoryInfo}";
         }
 
-        return $"Thứ hạng hiện tại: {registration.Rank.Value}";
+        return $"Thứ hạng hiện tại: {registration.Rank.Value}{categoryInfo}";
     }
 
     private string? GetEliminationRoundInfo(Registration registration)
