@@ -147,28 +147,77 @@ public class VoteService : BaseService<VoteService>, IVoteService
         {
             throw new NotFoundException("Không tìm thấy triển lãm");
         }
+        
+        // Vô hiệu hóa bình chọn
         show.EnableVoting = false;
         _unitOfWork.GetRepository<KoiShow>().UpdateAsync(show);
         await _unitOfWork.CommitAsync();
-        var topVoted = await GetVotingResults(showId);
-        if (topVoted.Any())
+        
+        // Kiểm tra xem có vote nào không trước khi lấy kết quả
+        var hasVotes = await _unitOfWork.GetRepository<Vote>()
+            .GetListAsync(
+                predicate: v => v.Registration.KoiShowId == showId,
+                include: q => q.Include(v => v.Registration));
+        
+        if (!hasVotes.Any())
         {
-            var mostVoted = topVoted.First();
-            var registration = await _unitOfWork.GetRepository<Registration>()
-                .SingleOrDefaultAsync(predicate: r => r.Id == mostVoted.RegistrationId,
-                    include: query => query
-                        .Include(r => r.KoiProfile)
-                        .ThenInclude(k => k.Owner));
-            if (registration != null)
-            {
-                await _notificationService.SendNotification(
-                    registration.KoiProfile.OwnerId,
-                    "Kết quả People's Choice Award",
-                    $"Chúc mừng! Koi {registration.KoiProfile.Name} của bạn đã nhận được {mostVoted.VoteCount} lượt bình chọn từ khán giả và trở thành con cá được yêu thích nhất trong triển lãm {show.Name}",
-                    NotificationType.System);
-            }
+            // Nếu không có vote nào, chỉ vô hiệu hóa bình chọn mà không gửi thông báo
+            return;
         }
         
+        // Có votes, lấy kết quả và gửi thông báo
+        try 
+        {
+            var votingResults = await GetVotingResults(showId);
+            if (votingResults.Any())
+            {
+                // Tìm số vote cao nhất
+                int maxVotes = votingResults.Max(r => r.VoteCount);
+                
+                // Nếu có ít nhất 1 vote
+                if (maxVotes > 0)
+                {
+                    // Lấy tất cả cá có số vote cao nhất
+                    var winners = votingResults.Where(r => r.VoteCount == maxVotes).ToList();
+                    
+                    foreach (var winner in winners)
+                    {
+                        var registration = await _unitOfWork.GetRepository<Registration>()
+                            .SingleOrDefaultAsync(predicate: r => r.Id == winner.RegistrationId,
+                                include: query => query
+                                    .Include(r => r.KoiProfile)
+                                    .ThenInclude(k => k.Owner));
+                                    
+                        if (registration != null)
+                        {
+                            string message;
+                            
+                            if (winners.Count > 1)
+                            {
+                                // Tin nhắn cho trường hợp hòa
+                                message = $"Chúc mừng! Koi {registration.KoiProfile.Name} của bạn đã nhận được {winner.VoteCount} lượt bình chọn từ khán giả và đồng đạt giải People's Choice Award trong triển lãm {show.Name}. Có {winners.Count} cá cùng đạt giải với cùng số lượng bình chọn.";
+                            }
+                            else
+                            {
+                                // Tin nhắn cho trường hợp chiến thắng độc lập
+                                message = $"Chúc mừng! Koi {registration.KoiProfile.Name} của bạn đã nhận được {winner.VoteCount} lượt bình chọn từ khán giả và trở thành con cá được yêu thích nhất trong triển lãm {show.Name}";
+                            }
+                            
+                            await _notificationService.SendNotification(
+                                registration.KoiProfile.OwnerId,
+                                "Kết quả People's Choice Award",
+                                message,
+                                NotificationType.System);
+                        }
+                    }
+                }
+            }
+        }
+        catch (BadRequestException)
+        {
+            // Bắt exception từ GetVotingResults nếu có, nhưng không làm gián đoạn quá trình disable voting
+            // Đã kiểm tra hasVotes.Any() ở trên, nên về lý thuyết không vào đây
+        }
     }
 
     public async Task<List<GetFinalRegistrationResponse>> GetFinalRegistration(Guid showId)
