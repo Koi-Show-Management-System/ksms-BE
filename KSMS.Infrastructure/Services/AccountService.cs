@@ -140,7 +140,7 @@ public class AccountService : BaseService<AccountService>, IAccountService
             throw new NotFoundException("Không tìm thấy người dùng");
         }
         var existingAccount = await _unitOfWork.GetRepository<Account>().SingleOrDefaultAsync(
-            predicate: a => a.Username.ToLower() == updateAccountRequest.Username.ToLower());
+            predicate: a => a.Username.ToLower() == updateAccountRequest.Username.ToLower() && a.Id != id);
         if (existingAccount != null)
         {
             throw new Exception("Tên người dùng này đã tồn tại");
