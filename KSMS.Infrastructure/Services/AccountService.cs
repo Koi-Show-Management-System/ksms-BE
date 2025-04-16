@@ -19,6 +19,8 @@ using KSMS.Domain.Exceptions;
 using KSMS.Infrastructure.Utils;
 using Microsoft.AspNetCore.Http;
 using Hangfire;
+using Microsoft.AspNetCore.SignalR;
+using KSMS.Infrastructure.Hubs;
 
 namespace KSMS.Infrastructure.Services;
 
@@ -27,14 +29,20 @@ public class AccountService : BaseService<AccountService>, IAccountService
     private readonly IFirebaseService _firebaseService;
     private readonly IBackgroundJobClient _backgroundJobClient;
     private readonly IEmailService _emailService;
+    private readonly INotificationService _notificationService;
+    private readonly IHubContext<NotificationHub> _hubContext;
     
     public AccountService(IUnitOfWork<KoiShowManagementSystemContext> unitOfWork, ILogger<AccountService> logger, 
-        IHttpContextAccessor httpContextAccessor, IFirebaseService firebaseService, IBackgroundJobClient backgroundJobClient, IEmailService emailService) 
+        IHttpContextAccessor httpContextAccessor, IFirebaseService firebaseService, 
+        IBackgroundJobClient backgroundJobClient, IEmailService emailService,
+        INotificationService notificationService, IHubContext<NotificationHub> hubContext) 
         : base(unitOfWork, logger, httpContextAccessor)
     {
         _firebaseService = firebaseService;
         _backgroundJobClient = backgroundJobClient;
         _emailService = emailService;
+        _notificationService = notificationService;
+        _hubContext = hubContext;
     }
     public async Task<Paginate<AccountResponse>> GetPagedUsersAsync(RoleName? roleName, int page, int size)
     {
@@ -120,6 +128,7 @@ public class AccountService : BaseService<AccountService>, IAccountService
         if (user == null)
             throw new NotFoundException("Không tìm thấy người dùng");
 
+        var previousStatus = user.Status;
         user.Status = status switch
         {
             AccountStatus.Blocked => AccountStatus.Blocked.ToString().ToLower(),
@@ -127,8 +136,26 @@ public class AccountService : BaseService<AccountService>, IAccountService
             AccountStatus.Active => AccountStatus.Active.ToString().ToLower(),
             _ => user.Status
         };
+        
         userRepository.UpdateAsync(user);
         await _unitOfWork.CommitAsync();
+        
+        // string title = "Thông báo trạng thái tài khoản";
+        // string message = status switch
+        // {
+        //     AccountStatus.Blocked => "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ với quản trị viên để biết thêm chi tiết.",
+        //     AccountStatus.Deleted => "Tài khoản của bạn đã bị xóa.",
+        //     AccountStatus.Active => "Tài khoản của bạn đã được kích hoạt thành công.",
+        //     _ => $"Trạng thái tài khoản của bạn đã được cập nhật thành {status}."
+        // };
+        //await _notificationService.SendNotification(id, title, message, NotificationType.System);
+        if (status == AccountStatus.Blocked || status == AccountStatus.Deleted)
+        {
+            await _hubContext.Clients.Group(id.ToString()).SendAsync("ForceLogout", new { 
+                reason = status == AccountStatus.Blocked ? "Tài khoản đã bị khóa" : "Tài khoản đã bị xóa"
+            });
+        }
+        
         return user.Adapt<AccountResponse>();
     }
 
