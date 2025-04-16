@@ -881,7 +881,7 @@ public static class MailUtil
                             <p>Với vai trò {roleDisplay}, bạn sẽ có quyền truy cập vào các tính năng quản lý của hệ thống. Vui lòng đăng nhập bằng thông tin trên và đổi mật khẩu của bạn sau khi đăng nhập lần đầu tiên.</p>
                             
                             <div style='margin: 25px 0; text-align: center;'>
-                                <a href='{AppConfig.AppSetting.BaseUrl}/login' style='background-color: #b21f1f; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;'>ĐĂNG NHẬP NGAY</a>
+                                <a href='https://ksms.news' style='background-color: #b21f1f; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;'>ĐĂNG NHẬP NGAY</a>
                             </div>
                             
                             <p><strong>Lưu ý quan trọng:</strong></p>
