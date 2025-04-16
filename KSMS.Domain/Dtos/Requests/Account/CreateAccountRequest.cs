@@ -17,11 +17,6 @@ namespace KSMS.Domain.Dtos.Requests.Account
         [StringLength(100, ErrorMessage = "Email cannot exceed 100 characters.")]
         public string Email { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "Password is required.")]
-        [MinLength(8, ErrorMessage = "Password must be at least 8 characters long")]
-        [StringLength(255, ErrorMessage = "Password cannot exceed 255 characters.")]
-        public string HashedPassword { get; set; } = string.Empty;
-
         [Required(ErrorMessage = "Username is required.")]
         [MinLength(5, ErrorMessage = "Username must be at least 5 characters long")]
         [StringLength(50, ErrorMessage = "Username cannot exceed 50 characters.")]
