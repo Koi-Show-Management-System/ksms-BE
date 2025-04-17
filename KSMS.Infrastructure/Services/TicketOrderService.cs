@@ -175,8 +175,21 @@ public class TicketOrderService : BaseService<TicketOrder>, ITicketOrderService
                 }
                 var baseUrl = $"{AppConfig.AppSetting.BaseUrl}/api/v1/ticket-order" + "/call-back";
                 var url = $"{baseUrl}?ticketOrderId={ticketOrder.Id}";
-                var paymentData = new PaymentData(transactionCode, (int)(ticketOrder.TotalAmount), "Buy Ticket", items
-                    , url, url);
+                
+                // Tính thời gian hết hạn dựa trên thiết lập OrderDate + 2 phút
+                var expiryTime = orderDate.AddMinutes(2);
+                // Chuyển đổi sang Unix timestamp (milliseconds từ epoch)
+                var expiredAtTimestamp = new DateTimeOffset(expiryTime).ToUnixTimeSeconds();
+                
+                var paymentData = new PaymentData(
+                    transactionCode, 
+                    (int)(ticketOrder.TotalAmount), 
+                    "Buy Ticket", 
+                    items, 
+                    url, 
+                    url,
+                    expiredAt: expiredAtTimestamp
+                );
                 var createPayment = await _payOs.createPaymentLink(paymentData);
                 return new CheckOutTicketResponse
                 {
@@ -210,8 +223,8 @@ public class TicketOrderService : BaseService<TicketOrder>, ITicketOrderService
                     throw new NotFoundException("Không tìm thấy đơn hàng");
                 }
 
-                // Kiểm tra nếu đơn hàng đã hết hạn (OrderDate + 10 phút)
-                var expiryTime = order.OrderDate.AddMinutes(10);
+                // Kiểm tra nếu đơn hàng đã hết hạn (OrderDate + 2 phút)
+                var expiryTime = order.OrderDate.AddMinutes(2);
                 var currentTime = VietNamTimeUtil.GetVietnamTime();
                 
                 // Nếu đơn hàng đã hết hạn nhưng chưa được xử lý bởi Hangfire
