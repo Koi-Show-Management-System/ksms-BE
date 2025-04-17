@@ -128,6 +128,7 @@ public class TicketOrderService : BaseService<TicketOrder>, ITicketOrderService
                 var orderDate = VietNamTimeUtil.GetVietnamTime();
                 var ticketOrder = new TicketOrder()
                 {
+                    Id = Guid.NewGuid(),
                     FullName = createTicketOrderRequest.FullName,
                     Email = createTicketOrderRequest.Email,
                     AccountId = accountId,
@@ -158,7 +159,7 @@ public class TicketOrderService : BaseService<TicketOrder>, ITicketOrderService
                 // Đặt lịch kiểm tra hết hạn thanh toán (11 phút sau khi tạo đơn)
                 _backgroundJobClient.Schedule(
                     () => HandleExpiredOrder(ticketOrder.Id),
-                    TimeSpan.FromMinutes(11) 
+                    TimeSpan.FromMinutes(3) 
                 );
                 
                 await transaction.CommitAsync();
@@ -401,7 +402,7 @@ public class TicketOrderService : BaseService<TicketOrder>, ITicketOrderService
         }
 
         // Tính thời gian hết hạn: OrderDate + 10 phút
-        var expiryTime = order.OrderDate.AddMinutes(10);
+        var expiryTime = order.OrderDate.AddMinutes(2);
         
         // Chỉ xử lý các đơn hàng còn đang pending và đã quá hạn
         if (order.Status == OrderStatus.Pending.ToString().ToLower() && 
