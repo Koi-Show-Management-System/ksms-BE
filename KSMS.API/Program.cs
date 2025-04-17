@@ -68,7 +68,7 @@ builder.Services.AddHangfire(configuration => configuration
     .UseSqlServerStorage(builder.Configuration.GetConnectionString("DefaultConnection")));
 builder.Services.AddHangfireServer(options =>
 {
-    options.WorkerCount = 1;
+    options.WorkerCount = 5;
     options.Queues = ["default"];
     options.ServerTimeout = TimeSpan.FromMinutes(5);
     options.ShutdownTimeout = TimeSpan.FromMinutes(2);
