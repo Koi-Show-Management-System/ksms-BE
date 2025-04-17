@@ -25,11 +25,11 @@ namespace KSMS.API.Controllers
         // thả hết cá vào hồ theo roundi và đơn đăng kí 
         [HttpPost("assign-to-tank")]
         public async Task<ActionResult<ApiResponse<object>>> AssignMultipleFishesToTankAndRound(
-    [FromBody] AssignFishesRequest request)
+    [FromBody] AssignFishesRequest request, [FromQuery] Guid? currentRoundId)
         {
             try
             {
-                await _registrationRoundService.AssignMultipleFishesToTankAndRound(request.RoundId, request.RegistrationIds);
+                await _registrationRoundService.AssignMultipleFishesToTankAndRound(currentRoundId, request.RoundId, request.RegistrationIds);
                 return Ok(ApiResponse<object>.Success(null, "Gán cá vào vòng thành công"));
             }
             catch (Exception ex)

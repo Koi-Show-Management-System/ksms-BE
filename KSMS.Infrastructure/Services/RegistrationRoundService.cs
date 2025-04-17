@@ -128,7 +128,7 @@ namespace KSMS.Infrastructure.Services
             }
         }
 
-        public async Task AssignMultipleFishesToTankAndRound(Guid roundId, List<Guid> registrationIds)
+        public async Task AssignMultipleFishesToTankAndRound(Guid? currentRoundId, Guid roundId, List<Guid> registrationIds)
         {
             using var transaction = await _unitOfWork.BeginTransactionAsync();
 
@@ -194,7 +194,17 @@ namespace KSMS.Infrastructure.Services
 
                 // 🔥 7️⃣ Chèn bản ghi mới vào bảng
                 await regisRoundRepository.InsertRangeAsync(newRegisRounds);
-
+                if (currentRoundId != null)
+                {
+                    var currentRound = await _unitOfWork.GetRepository<Round>().SingleOrDefaultAsync(
+                        predicate: r => r.Id == currentRoundId);
+                    if (currentRound == null)
+                    {
+                        throw new NotFoundException("Không tìm thấy vòng thi hiện tại.");
+                    }
+                    currentRound.Status = "completed";
+                    roundRepository.UpdateAsync(currentRound);
+                }
                 await _unitOfWork.CommitAsync();
                 await transaction.CommitAsync();
             }
