@@ -12,7 +12,7 @@ namespace KSMS.Application.Services
 {
     public interface IRegistrationRoundService
     {
-        Task AssignMultipleFishesToTankAndRound(Guid roundId, List<Guid> registrationIds);
+        Task AssignMultipleFishesToTankAndRound(Guid? currentRoundId, Guid roundId, List<Guid> registrationIds);
         Task UpdateFishesWithTanks(List<UpdateFishTankRequest> updateRequests);
         Task<RegistrationRoundResponse> CreateRegistrationRoundAsync(CreateRegistrationRoundRequest request);
         Task<Paginate<GetPageRegistrationRoundResponse>> GetPageRegistrationRound(Guid roundId, int page, int size);
