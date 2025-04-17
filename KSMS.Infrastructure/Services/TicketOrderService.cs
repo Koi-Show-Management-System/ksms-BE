@@ -178,8 +178,15 @@ public class TicketOrderService : BaseService<TicketOrder>, ITicketOrderService
                 
                 // Tính thời gian hết hạn dựa trên thiết lập OrderDate + 2 phút
                 var expiryTime = orderDate.AddMinutes(2);
-                // Chuyển đổi sang Unix timestamp (milliseconds từ epoch)
-                var expiredAtTimestamp = new DateTimeOffset(expiryTime).ToUnixTimeSeconds();
+
+                // Chuyển đổi sang Unix timestamp đảm bảo sử dụng múi giờ Việt Nam (UTC+7)
+                // Chỉ định rõ múi giờ UTC+7 khi tạo DateTimeOffset để tránh sai lệch
+                var expiredAtTimestamp = new DateTimeOffset(
+                    expiryTime,
+                    new TimeSpan(7, 0, 0) // Chỉ định múi giờ Việt Nam (UTC+7)
+                ).ToUnixTimeSeconds();
+                
+                _logger.LogInformation($"Order: {ticketOrder.Id}, OrderDate: {orderDate}, ExpiryTime: {expiryTime}, Timestamp: {expiredAtTimestamp}");
                 
                 var paymentData = new PaymentData(
                     transactionCode, 
