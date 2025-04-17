@@ -20,6 +20,7 @@ using Hangfire;
 using KSMS.Domain.Common;
 using KSMS.Domain.Pagination;
 using Mapster;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace KSMS.Infrastructure.Services;
 
@@ -80,148 +81,240 @@ public class TicketOrderService : BaseService<TicketOrder>, ITicketOrderService
             throw new BadRequestException("Đã quá thời gian cho phép mua vé. Triển lãm đã bắt đầu giai đoạn check-in vé.");
         }
         
-        // Kiểm tra các loại vé và tính tổng tiền
-        foreach (var ticketType in createTicketOrderRequest.ListOrder)
+        // Sử dụng transaction để đảm bảo tính nhất quán khi kiểm tra và cập nhật số lượng vé
+        using (var transaction = await _unitOfWork.BeginTransactionAsync())
         {
-            var ticketTypeDb = await _unitOfWork.GetRepository<TicketType>()
-                .SingleOrDefaultAsync(predicate: p => p.Id == ticketType.TicketTypeId);
-            if (ticketTypeDb == null)
+            try
             {
-                throw new NotFoundException($"Không tìm thấy loại vé có ID {ticketType.TicketTypeId}");
-            }
-            
-            // Kiểm tra xem tất cả các vé có thuộc cùng một show không
-            if (ticketTypeDb.KoiShowId != firstTicketType.KoiShowId)
-            {
-                throw new BadRequestException("Không thể mua vé của nhiều triển lãm khác nhau trong cùng một đơn hàng");
-            }
+                // Kiểm tra các loại vé và tính tổng tiền
+                var ticketTypeInfos = new List<(TicketType Type, int Quantity)>();
+                
+                foreach (var ticketType in createTicketOrderRequest.ListOrder)
+                {
+                    // Lấy thông tin loại vé mà không cần tracking
+                    var ticketTypeDb = await _unitOfWork.GetRepository<TicketType>()
+                        .SingleOrDefaultAsync(predicate: p => p.Id == ticketType.TicketTypeId);
+                        
+                    if (ticketTypeDb == null)
+                    {
+                        throw new NotFoundException($"Không tìm thấy loại vé có ID {ticketType.TicketTypeId}");
+                    }
+                    
+                    // Kiểm tra xem tất cả các vé có thuộc cùng một show không
+                    if (ticketTypeDb.KoiShowId != firstTicketType.KoiShowId)
+                    {
+                        throw new BadRequestException("Không thể mua vé của nhiều triển lãm khác nhau trong cùng một đơn hàng");
+                    }
 
-            if (ticketType.Quantity > ticketTypeDb.AvailableQuantity)
-            {
-                throw new BadRequestException($"Loại vé '{ticketTypeDb.Name}' không đủ số lượng");
+                    if (ticketType.Quantity > ticketTypeDb.AvailableQuantity)
+                    {
+                        throw new BadRequestException($"Loại vé '{ticketTypeDb.Name}' không đủ số lượng");
+                    }
+                    
+                    // Lưu lại thông tin để cập nhật sau
+                    ticketTypeInfos.Add((ticketTypeDb, ticketType.Quantity));
+                    
+                    totalAmount += ticketTypeDb.Price * ticketType.Quantity;
+                }
+                
+                // Cập nhật số lượng vé trong database bằng repository
+                foreach (var info in ticketTypeInfos)
+                {
+                    // Sau khi kiểm tra, cập nhật và gọi UpdateAsync
+                    info.Type.AvailableQuantity -= info.Quantity;
+                    _unitOfWork.GetRepository<TicketType>().UpdateAsync(info.Type);
+                }
+                
+                var orderDate = VietNamTimeUtil.GetVietnamTime();
+                var ticketOrder = new TicketOrder()
+                {
+                    FullName = createTicketOrderRequest.FullName,
+                    Email = createTicketOrderRequest.Email,
+                    AccountId = accountId,
+                    OrderDate = orderDate,
+                    TransactionCode = transactionCode.ToString(),
+                    TotalAmount = totalAmount,
+                    PaymentMethod = PaymentMethod.PayOs.ToString(),
+                    Status = OrderStatus.Pending.ToString().ToLower(),
+                };
+                await _unitOfWork.GetRepository<TicketOrder>().InsertAsync(ticketOrder);
+                
+                var ticketOrderDetails = new List<TicketOrderDetail>();
+                foreach (var info in ticketTypeInfos)
+                {
+                    var ticketOrderDetail = new TicketOrderDetail
+                    {
+                        TicketOrderId = ticketOrder.Id,
+                        TicketTypeId = info.Type.Id,
+                        Quantity = info.Quantity,
+                        UnitPrice = info.Type.Price
+                    };
+                    ticketOrderDetails.Add(ticketOrderDetail);
+                }
+
+                await _unitOfWork.GetRepository<TicketOrderDetail>().InsertRangeAsync(ticketOrderDetails);
+                await _unitOfWork.CommitAsync();
+                
+                // Đặt lịch kiểm tra hết hạn thanh toán (11 phút sau khi tạo đơn)
+                _backgroundJobClient.Schedule(
+                    () => HandleExpiredOrder(ticketOrder.Id),
+                    TimeSpan.FromMinutes(11) 
+                );
+                
+                await transaction.CommitAsync();
+                
+                var items = new List<ItemData>();
+                var ticketOrderDetailDbs = await _unitOfWork.GetRepository<TicketOrderDetail>()
+                    .GetListAsync(predicate: t => t.TicketOrderId == ticketOrder.Id,
+                        include: query => query.Include(t => t.TicketType));
+                foreach (var x in ticketOrderDetailDbs)
+                {
+                    var item = new ItemData(x.TicketType.Name, x.Quantity, (int)x.UnitPrice);
+                    items.Add(item);
+                }
+                var baseUrl = $"{AppConfig.AppSetting.BaseUrl}/api/v1/ticket-order" + "/call-back";
+                var url = $"{baseUrl}?ticketOrderId={ticketOrder.Id}";
+                var paymentData = new PaymentData(transactionCode, (int)(ticketOrder.TotalAmount), "Buy Ticket", items
+                    , url, url);
+                var createPayment = await _payOs.createPaymentLink(paymentData);
+                return new CheckOutTicketResponse
+                {
+                    Message = "Thanh toán thành công",
+                    Url = createPayment.checkoutUrl
+                };
             }
-            totalAmount += ticketTypeDb.Price * ticketType.Quantity;
-        }
-
-        var ticketOrder = new TicketOrder()
-        {
-            FullName = createTicketOrderRequest.FullName,
-            Email = createTicketOrderRequest.Email,
-            AccountId = accountId,
-            OrderDate = VietNamTimeUtil.GetVietnamTime(),
-            TransactionCode = transactionCode.ToString(),
-            TotalAmount = totalAmount,
-            PaymentMethod = PaymentMethod.PayOs.ToString(),
-            Status = OrderStatus.Pending.ToString().ToLower(),
-        };
-        await _unitOfWork.GetRepository<TicketOrder>().InsertAsync(ticketOrder);
-        await _unitOfWork.CommitAsync();
-        var ticketOrderDetails = new List<TicketOrderDetail>();
-        foreach (var x in createTicketOrderRequest.ListOrder)
-        {
-            var ticketOrderDetail = new TicketOrderDetail
+            catch (Exception)
             {
-                TicketOrderId = ticketOrder.Id,
-                TicketTypeId = x.TicketTypeId,
-                Quantity = x.Quantity,
-                UnitPrice = (await _unitOfWork.GetRepository<TicketType>()
-                    .SingleOrDefaultAsync(predicate: t => t.Id == x.TicketTypeId)).Price
-            };
-            ticketOrderDetails.Add(ticketOrderDetail);
+                await transaction.RollbackAsync();
+                throw;
+            }
         }
-
-        await _unitOfWork.GetRepository<TicketOrderDetail>().InsertRangeAsync(ticketOrderDetails);
-        await _unitOfWork.CommitAsync();
-        var items = new List<ItemData>();
-        var ticketOrderDetailDbs = await _unitOfWork.GetRepository<TicketOrderDetail>()
-            .GetListAsync(predicate: t => t.TicketOrderId == ticketOrder.Id,
-                include: query => query.Include(t => t.TicketType));
-        foreach (var x in ticketOrderDetailDbs)
-        {
-            var item = new ItemData(x.TicketType.Name, x.Quantity, (int)x.UnitPrice);
-            items.Add(item);
-        }
-        var baseUrl = $"{AppConfig.AppSetting.BaseUrl}/api/v1/ticket-order" + "/call-back";
-        var url = $"{baseUrl}?ticketOrderId={ticketOrder.Id}";
-        var paymentData = new PaymentData(transactionCode, (int)(ticketOrder.TotalAmount), "Buy Ticket", items
-            , url, url);
-        var createPayment = await _payOs.createPaymentLink(paymentData);
-        return new CheckOutTicketResponse
-        {
-            Message = "Thanh toán thành công",
-            Url = createPayment.checkoutUrl
-        };
     }
 
     public async Task UpdateTicketOrder(Guid ticketOrderId, OrderStatus orderStatus)
     {
-        var order = await _unitOfWork.GetRepository<TicketOrder>().SingleOrDefaultAsync(
-            predicate: x => x.Id == ticketOrderId,
-            include: query => query
-                .Include(x => x.TicketOrderDetails)
-                    .ThenInclude(x => x.TicketType)
-        );
-
-        if (order == null)
+        using (var transaction = await _unitOfWork.BeginTransactionAsync())
         {
-            throw new NotFoundException("Không tìm thấy đơn hàng");
-        }
-
-        order.Status = orderStatus switch
-        {
-            OrderStatus.Cancelled => OrderStatus.Cancelled.ToString().ToLower(),
-            OrderStatus.Paid => OrderStatus.Paid.ToString().ToLower(),
-            _ => order.Status
-        };
-
-        if (order.Status == OrderStatus.Paid.ToString().ToLower())
-        {
-            var koiShow = await _unitOfWork.GetRepository<KoiShow>()
-                .SingleOrDefaultAsync(predicate: x => x.Id == order.TicketOrderDetails.First().TicketType.KoiShowId);
-            var ticketTypes = new List<TicketType>();
-            var tickets = new List<Ticket>();
-            var qrCodeUploadTasks = new List<Task<string>>();
-            foreach (var ticketOrderDetail in order.TicketOrderDetails)
+            try
             {
-                var ticketType = ticketOrderDetail.TicketType;
-                ticketType.AvailableQuantity -= ticketOrderDetail.Quantity;
-                ticketTypes.Add(ticketType);
+                var order = await _unitOfWork.GetRepository<TicketOrder>().SingleOrDefaultAsync(
+                    predicate: x => x.Id == ticketOrderId,
+                    include: query => query
+                        .Include(x => x.TicketOrderDetails)
+                            .ThenInclude(x => x.TicketType)
+                );
 
-                for (int i = 0; i < ticketOrderDetail.Quantity; i++)
+                if (order == null)
                 {
-                    var ticketId = Guid.NewGuid();
-                    var ticket = new Ticket
-                    {
-                        Id = ticketId,
-                        TicketOrderDetailId = ticketOrderDetail.Id,
-                        Status = TicketStatus.Sold.ToString().ToLower(),
-                        ExpiredDate = koiShow.EndDate ?? DateTime.Now,
-                    };
-                    tickets.Add(ticket);
-                    var qrCodeTask = _firebaseService.UploadImageAsync(
-                        FileUtils.ConvertBase64ToFile(
-                            QrcodeUtil.GenerateQrCode(ticketId)
-                        ),
-                        "ticketQrCodes/"
-                    );
-                    qrCodeUploadTasks.Add(qrCodeTask);
+                    throw new NotFoundException("Không tìm thấy đơn hàng");
                 }
+
+                // Kiểm tra nếu đơn hàng đã hết hạn (OrderDate + 10 phút)
+                var expiryTime = order.OrderDate.AddMinutes(10);
+                var currentTime = VietNamTimeUtil.GetVietnamTime();
+                
+                // Nếu đơn hàng đã hết hạn nhưng chưa được xử lý bởi Hangfire
+                if (order.Status == OrderStatus.Pending.ToString().ToLower() && 
+                    expiryTime <= currentTime)
+                {
+                    // Xử lý đơn hàng hết hạn ngay lập tức thay vì chờ Hangfire
+                    await HandleExpiredOrderImmediate(order, transaction);
+                    throw new BadRequestException("Đơn hàng đã hết hạn thanh toán");
+                }
+
+                // Kiểm tra nếu đơn hàng đã được xử lý trước đó
+                if (order.Status == OrderStatus.Paid.ToString().ToLower() || 
+                    order.Status == OrderStatus.Cancelled.ToString().ToLower() ||
+                    order.Status == OrderStatus.Expired.ToString().ToLower())
+                {
+                    throw new BadRequestException("Đơn hàng đã được xử lý trước đó");
+                }
+
+                // Cập nhật trạng thái đơn hàng
+                var newStatus = orderStatus switch
+                {
+                    OrderStatus.Cancelled => OrderStatus.Cancelled.ToString().ToLower(),
+                    OrderStatus.Paid => OrderStatus.Paid.ToString().ToLower(),
+                    _ => order.Status
+                };
+
+                // Cập nhật trạng thái đơn hàng
+                order.Status = newStatus;
+                _unitOfWork.GetRepository<TicketOrder>().UpdateAsync(order);
+
+                if (newStatus == OrderStatus.Paid.ToString().ToLower())
+                {
+                    var koiShow = await _unitOfWork.GetRepository<KoiShow>()
+                        .SingleOrDefaultAsync(predicate: x => x.Id == order.TicketOrderDetails.First().TicketType.KoiShowId);
+                    var tickets = new List<Ticket>();
+                    var qrCodeUploadTasks = new List<Task<string>>();
+                    
+                    foreach (var ticketOrderDetail in order.TicketOrderDetails)
+                    {
+                        // Không cần giảm AvailableQuantity vì đã giảm khi tạo đơn hàng
+                        for (int i = 0; i < ticketOrderDetail.Quantity; i++)
+                        {
+                            var ticketId = Guid.NewGuid();
+                            var ticket = new Ticket
+                            {
+                                Id = ticketId,
+                                TicketOrderDetailId = ticketOrderDetail.Id,
+                                Status = TicketStatus.Sold.ToString().ToLower(),
+                                ExpiredDate = koiShow.EndDate ?? DateTime.Now,
+                            };
+                            tickets.Add(ticket);
+                            var qrCodeTask = _firebaseService.UploadImageAsync(
+                                FileUtils.ConvertBase64ToFile(
+                                    QrcodeUtil.GenerateQrCode(ticketId)
+                                ),
+                                "ticketQrCodes/"
+                            );
+                            qrCodeUploadTasks.Add(qrCodeTask);
+                        }
+                    }
+                    var qrCodeUrls = await Task.WhenAll(qrCodeUploadTasks);
+                    for (int i = 0; i < tickets.Count; i++)
+                    {
+                        tickets[i].QrcodeData = qrCodeUrls[i];
+                    }
+                    
+                    await _unitOfWork.GetRepository<Ticket>().InsertRangeAsync(tickets);
+                    await _unitOfWork.CommitAsync();
+                    _backgroundJobClient.Enqueue(() => _emailService.SendConfirmationTicket(ticketOrderId));
+                }
+                else if (newStatus == OrderStatus.Cancelled.ToString().ToLower())
+                {
+                    // Hoàn trả số lượng vé khi hủy đơn hàng
+                    foreach (var detail in order.TicketOrderDetails)
+                    {
+                        var ticketType = detail.TicketType;
+                        ticketType.AvailableQuantity += detail.Quantity;
+                        _unitOfWork.GetRepository<TicketType>().UpdateAsync(ticketType);
+                    }
+                    
+                    await _unitOfWork.CommitAsync();
+                }
+                else
+                {
+                    await _unitOfWork.CommitAsync();
+                }
+                
+                await transaction.CommitAsync();
             }
-            var qrCodeUrls = await Task.WhenAll(qrCodeUploadTasks);
-            for (int i = 0; i < tickets.Count; i++)
+            catch (Exception ex)
             {
-                tickets[i].QrcodeData = qrCodeUrls[i];
+                await transaction.RollbackAsync();
+                
+                // Kiểm tra xem exception có phải là BadRequestException không
+                if (ex is BadRequestException)
+                {
+                    throw; // Ném lại exception nếu là BadRequestException
+                }
+                
+                // Nếu là loại exception khác, log và ném một exception chung
+                _logger.LogError(ex, "Lỗi khi cập nhật đơn hàng");
+                throw new Exception("Đã xảy ra lỗi khi xử lý đơn hàng. Vui lòng thử lại sau.", ex);
             }
-            _unitOfWork.GetRepository<TicketType>().UpdateRange(ticketTypes);
-            await _unitOfWork.GetRepository<Ticket>().InsertRangeAsync(tickets);
-            _unitOfWork.GetRepository<TicketOrder>().UpdateAsync(order);
-            await _unitOfWork.CommitAsync();
-            _backgroundJobClient.Enqueue(() => _emailService.SendConfirmationTicket(ticketOrderId));
-        }
-        else
-        {
-            _unitOfWork.GetRepository<TicketOrder>().UpdateAsync(order);
-            await _unitOfWork.CommitAsync();
         }
     }
 
@@ -292,5 +385,60 @@ public class TicketOrderService : BaseService<TicketOrder>, ITicketOrderService
         return tickets.Adapt<List<GetTicketByOrderDetailResponse>>();
     }
 
-    
+    // Phương thức xử lý đơn hàng hết hạn dùng OrderDate + 10 phút
+    public async Task HandleExpiredOrder(Guid orderId)
+    {
+        var order = await _unitOfWork.GetRepository<TicketOrder>().SingleOrDefaultAsync(
+            predicate: x => x.Id == orderId,
+            include: query => query
+                .Include(x => x.TicketOrderDetails)
+                    .ThenInclude(x => x.TicketType)
+        );
+
+        if (order == null)
+        {
+            return;
+        }
+
+        // Tính thời gian hết hạn: OrderDate + 10 phút
+        var expiryTime = order.OrderDate.AddMinutes(10);
+        
+        // Chỉ xử lý các đơn hàng còn đang pending và đã quá hạn
+        if (order.Status == OrderStatus.Pending.ToString().ToLower() && 
+            expiryTime <= VietNamTimeUtil.GetVietnamTime())
+        {
+            using (var transaction = await _unitOfWork.BeginTransactionAsync())
+            {
+                try
+                {
+                    await HandleExpiredOrderImmediate(order, transaction);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    _logger.LogError(ex, $"Lỗi khi xử lý đơn hàng hết hạn: {orderId}");
+                    throw;
+                }
+            }
+        }
+    }
+
+    // Phương thức mới để xử lý nghiệp vụ đơn hàng hết hạn
+    private async Task HandleExpiredOrderImmediate(TicketOrder order, IDbContextTransaction transaction)
+    {
+        // Cập nhật trạng thái đơn hàng thành "expired"
+        order.Status = OrderStatus.Cancelled.ToString().ToLower();
+        _unitOfWork.GetRepository<TicketOrder>().UpdateAsync(order);
+
+        // Hoàn trả số lượng vé
+        foreach (var detail in order.TicketOrderDetails)
+        {
+            var ticketType = detail.TicketType;
+            ticketType.AvailableQuantity += detail.Quantity;
+            _unitOfWork.GetRepository<TicketType>().UpdateAsync(ticketType);
+        }
+
+        await _unitOfWork.CommitAsync();
+        await transaction.CommitAsync();
+    }
 }

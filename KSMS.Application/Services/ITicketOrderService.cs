@@ -17,4 +17,6 @@ public interface ITicketOrderService
 
     Task<List<GetOrderDetailResponse>> GetOrderDetailByOrderId(Guid orderId);
     Task<List<GetTicketByOrderDetailResponse>> GetTicketByOrderDetailId(Guid orderDetailId);
+    
+    Task HandleExpiredOrder(Guid orderId);
 }
