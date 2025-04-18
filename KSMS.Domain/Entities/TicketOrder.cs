@@ -25,6 +25,8 @@ public partial class TicketOrder
 
     public string? Notes { get; set; }
 
+    public string? PaymentUrl { get; set; }
+
     public virtual Account Account { get; set; } = null!;
 
     public virtual ICollection<TicketOrderDetail> TicketOrderDetails { get; set; } = new List<TicketOrderDetail>();

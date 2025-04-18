@@ -11,4 +11,5 @@ public class RegistrationPaymentGetRegistrationResponse
     public string? TransactionCode { get; set; }
 
     public string? Status { get; set; }
+    public string? PaymentUrl { get; set; }
 }
