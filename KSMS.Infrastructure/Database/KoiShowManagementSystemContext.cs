@@ -559,7 +559,10 @@ public partial class KoiShowManagementSystemContext : DbContext
                 .HasMaxLength(20)
                 .IsUnicode(false);
             entity.Property(e => e.TransactionCode).HasMaxLength(50);
-
+            entity.Property(e => e.PaymentUrl)
+                .HasMaxLength(255)
+                .IsUnicode(false)
+                .HasColumnName("PaymentUrl");
             entity.HasOne(d => d.Registration).WithOne(p => p.RegistrationPayment)
                 .HasForeignKey<RegistrationPayment>(d => d.RegistrationId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
@@ -846,7 +849,10 @@ public partial class KoiShowManagementSystemContext : DbContext
             entity.Property(e => e.Status).HasMaxLength(50);
             entity.Property(e => e.TotalAmount).HasColumnType("decimal(18, 2)");
             entity.Property(e => e.TransactionCode).HasMaxLength(50);
-
+            entity.Property(e => e.PaymentUrl)
+                .HasMaxLength(255)
+                .IsUnicode(false)
+                .HasColumnName("PaymentUrl");
             entity.HasOne(d => d.Account).WithMany(p => p.TicketOrders)
                 .HasForeignKey(d => d.AccountId)
                 .OnDelete(DeleteBehavior.ClientSetNull)

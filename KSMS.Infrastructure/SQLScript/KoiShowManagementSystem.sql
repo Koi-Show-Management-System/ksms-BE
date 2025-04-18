@@ -342,6 +342,7 @@ CREATE TABLE [dbo].[TicketOrder](
     [PaymentMethod] nvarchar(50) NULL,
     [Status] nvarchar(50) NULL,
     [Notes] nvarchar(max) NULL,
+    [PaymentUrl] varchar(255) NULL,
     FOREIGN KEY ([AccountId]) REFERENCES [Account]([Id]),
 )
 GO
@@ -481,8 +482,8 @@ CREATE TABLE [dbo].[RegistrationPayment] (
       [TransactionCode] NVARCHAR(50) NOT NULL UNIQUE ,
       [PaymentMethod] NVARCHAR(50) NOT NULL,
       [Status] VARCHAR(20) NOT NULL,
+      [PaymentUrl] varchar(255) NULL,
       FOREIGN KEY ([RegistrationId]) REFERENCES [Registration]([Id])
-     
 )
 GO
 

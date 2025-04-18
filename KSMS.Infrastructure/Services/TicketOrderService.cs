@@ -198,6 +198,12 @@ public class TicketOrderService : BaseService<TicketOrder>, ITicketOrderService
                     expiredAt: expiredAtTimestamp
                 );
                 var createPayment = await _payOs.createPaymentLink(paymentData);
+                
+                // Lưu URL thanh toán vào đơn hàng
+                ticketOrder.PaymentUrl = createPayment.checkoutUrl;
+                _unitOfWork.GetRepository<TicketOrder>().UpdateAsync(ticketOrder);
+                await _unitOfWork.CommitAsync();
+                
                 return new CheckOutTicketResponse
                 {
                     Message = "Thanh toán thành công",

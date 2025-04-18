@@ -20,6 +20,8 @@ public partial class RegistrationPayment
     public string PaymentMethod { get; set; } = null!;
 
     public string Status { get; set; } = null!;
+    
+    public string? PaymentUrl { get; set; }
 
     public virtual Registration Registration { get; set; } = null!;
 }
