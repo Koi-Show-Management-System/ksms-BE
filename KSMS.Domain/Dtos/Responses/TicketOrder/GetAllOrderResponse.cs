@@ -17,5 +17,7 @@ public class GetAllOrderResponse
     public string? PaymentMethod { get; set; }
 
     public string? Status { get; set; }
+    
+    public string? PaymentUrl { get; set; }
 }
 

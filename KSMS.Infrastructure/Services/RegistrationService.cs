@@ -283,15 +283,54 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
         var koiShow = await _unitOfWork.GetRepository<KoiShow>()
             .SingleOrDefaultAsync(predicate: k => k.Id == createRegistrationRequest.KoiShowId,
                 include: query => query.Include(k => k.ShowStatuses));
-        var koiProfile = await _unitOfWork.GetRepository<KoiProfile>()
-            .SingleOrDefaultAsync(predicate: k => k.Id == createRegistrationRequest.KoiProfileId);
-        var category = await _unitOfWork.GetRepository<CompetitionCategory>().SingleOrDefaultAsync(
-            predicate: x => x.Id == createRegistrationRequest.CompetitionCategoryId);
+                
         if (koiShow is null)
         {
             throw new NotFoundException("Không tìm thấy cuộc thi");
         }
-
+        
+        // Kiểm tra người dùng đã đăng ký show nào diễn ra cùng thời gian chưa
+        var userRegistrations = await _unitOfWork.GetRepository<Registration>()
+            .GetListAsync(
+                predicate: r => r.AccountId == accountId && 
+                              r.Status != RegistrationStatus.Rejected.ToString().ToLower() &&
+                              r.Status != RegistrationStatus.Refunded.ToString().ToLower() &&
+                              r.Status != RegistrationStatus.Cancelled.ToString().ToLower() &&
+                              r.Status != RegistrationStatus.WaitToPaid.ToString().ToLower(),
+                include: query => query.Include(r => r.KoiShow)
+            );
+            
+        if (userRegistrations.Any())
+        {
+            // Kiểm tra nếu có show nào đã đăng ký trùng thời gian với show đang đăng ký
+            foreach (var existRegistration in userRegistrations)
+            {
+                // Bỏ qua nếu là đăng ký cho cùng một show
+                if (existRegistration.KoiShowId == koiShow.Id)
+                    continue;
+                    
+                var existingShow = existRegistration.KoiShow;
+                
+                // Kiểm tra xem các show có trùng thời gian không
+                bool hasTimeOverlap = (koiShow.StartDate <= existingShow.EndDate && 
+                                     koiShow.EndDate >= existingShow.StartDate);
+                                     
+                if (hasTimeOverlap)
+                {
+                    throw new BadRequestException(
+                        $"Bạn đã đăng ký tham gia triển lãm '{existingShow.Name}' diễn ra từ " +
+                        $"{existingShow.StartDate:dd/MM/yyyy} đến {existingShow.EndDate:dd/MM/yyyy}. " +
+                        $"Không thể đăng ký triển lãm '{koiShow.Name}' vì diễn ra trong cùng khoảng thời gian."
+                    );
+                }
+            }
+        }
+        
+        var koiProfile = await _unitOfWork.GetRepository<KoiProfile>()
+            .SingleOrDefaultAsync(predicate: k => k.Id == createRegistrationRequest.KoiProfileId);
+        var category = await _unitOfWork.GetRepository<CompetitionCategory>().SingleOrDefaultAsync(
+            predicate: x => x.Id == createRegistrationRequest.CompetitionCategoryId);
+        
         if (koiProfile is null)
         {
             throw new NotFoundException("Không tìm thấy cá Koi");
@@ -356,8 +395,13 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
         registration.AccountId = accountId;
         registration.CompetitionCategoryId = category.Id;
         registration.Status = RegistrationStatus.WaitToPaid.ToString().ToLower();
+        registration.CreatedAt = VietNamTimeUtil.GetVietnamTime();
         await _unitOfWork.GetRepository<Registration>().InsertAsync(registration);
         await _unitOfWork.CommitAsync();
+        
+        // Đặt lịch kiểm tra hết hạn thanh toán (2 phút sau khi tạo đơn)
+       
+        
         if (createRegistrationRequest.RegistrationImages is not [])
         {
             await _mediaService.UploadRegistrationImage(createRegistrationRequest.RegistrationImages,
@@ -369,10 +413,72 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
             await _mediaService.UploadRegistrationVideo(createRegistrationRequest.RegistrationVideos,
                 registration.Id);
         }
+        _backgroundJobClient.Schedule(
+            () => HandleExpiredRegistration(registration.Id),
+            TimeSpan.FromMinutes(3)
+        );
         return new
         {
             Id = registration.Id
         };
+    }
+
+    // Thêm phương thức xử lý đơn đăng ký hết hạn
+    public async Task HandleExpiredRegistration(Guid registrationId)
+    {
+        _logger.LogInformation($"Đang kiểm tra hết hạn đơn đăng ký: {registrationId}");
+        
+        var registration = await _unitOfWork.GetRepository<Registration>().SingleOrDefaultAsync(
+            predicate: r => r.Id == registrationId,
+            include: query => query.Include(r => r.RegistrationPayment)
+        );
+        
+        if (registration == null)
+        {
+            _logger.LogWarning($"Không tìm thấy đơn đăng ký: {registrationId}");
+            return;
+        }
+        
+        // Chỉ xử lý các đơn đăng ký có trạng thái WaitToPaid
+        if (registration.Status == RegistrationStatus.WaitToPaid.ToString().ToLower())
+        {
+            _logger.LogInformation($"Đơn đăng ký {registrationId} đã quá hạn thanh toán, đang xóa...");
+            
+            using (var transaction = await _unitOfWork.BeginTransactionAsync())
+            {
+                try
+                {
+                    // Xóa các media liên quan đến đơn đăng ký (nếu có)
+                    var registrationMedia = await _unitOfWork.GetRepository<KoiMedium>()
+                        .GetListAsync(predicate: m => m.RegistrationId == registrationId);
+                        
+                    if (registrationMedia.Any())
+                    {
+                        _unitOfWork.GetRepository<KoiMedium>().DeleteRangeAsync(registrationMedia);
+                    }
+                    if (registration.RegistrationPayment != null)
+                    {
+                        _unitOfWork.GetRepository<RegistrationPayment>().DeleteAsync(registration.RegistrationPayment);
+                    }
+                    // Xóa đơn đăng ký
+                    _unitOfWork.GetRepository<Registration>().DeleteAsync(registration);
+                    
+                    await _unitOfWork.CommitAsync();
+                    await transaction.CommitAsync();
+                    
+                    _logger.LogInformation($"Đã xóa đơn đăng ký {registrationId} do quá hạn thanh toán");
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    _logger.LogError(ex, $"Lỗi khi xử lý đơn đăng ký hết hạn: {registrationId}");
+                }
+            }
+        }
+        else
+        {
+            _logger.LogInformation($"Đơn đăng ký {registrationId} có trạng thái {registration.Status}, không cần xử lý hết hạn");
+        }
     }
 
     // New method to find suitable category
@@ -695,19 +801,28 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
 
         var baseUrl = $"{AppConfig.AppSetting.BaseUrl}/api/v1/registration" + "/call-back";
         var url = $"{baseUrl}?registrationPaymentId={registrationPayment.Id}";
+        var expiryTime = registrationPayment.PaymentDate.AddMinutes(2);
 
+        // Chuyển đổi sang Unix timestamp đảm bảo sử dụng múi giờ Việt Nam (UTC+7)
+        // Chỉ định rõ múi giờ UTC+7 khi tạo DateTimeOffset để tránh sai lệch
+        var expiredAtTimestamp = new DateTimeOffset(
+            expiryTime,
+            new TimeSpan(7, 0, 0) // Chỉ định múi giờ Việt Nam (UTC+7)
+        ).ToUnixTimeSeconds();
         var paymentData = new PaymentData(
             registrationCode,
             (int)registration.RegistrationFee,
             $"Registration",
             items,
             url,
-            url
+            url,
+            expiredAt: expiredAtTimestamp
         );
 
         var createPayment = await _payOs.createPaymentLink(paymentData);
-        
-       
+        registrationPayment.PaymentUrl = createPayment.checkoutUrl;
+        _unitOfWork.GetRepository<RegistrationPayment>().UpdateAsync(registrationPayment);
+        await _unitOfWork.CommitAsync();
         return new CheckOutRegistrationResponse()
         {
             Message = "Create payment Successfully",
