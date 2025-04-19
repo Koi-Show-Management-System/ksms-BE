@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore.Storage;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -19,7 +20,7 @@ namespace KSMS.Application.Repositories
     {
         TContext Context { get; }
         Task<IDbContextTransaction> BeginTransactionAsync();
+        Task<IDbContextTransaction> BeginTransactionAsync(IsolationLevel isolationLevel);
         void Detach<T>(T entity) where T : class;
-
     }
 }
