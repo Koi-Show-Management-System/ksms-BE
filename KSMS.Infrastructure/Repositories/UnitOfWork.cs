@@ -10,6 +10,7 @@ using System.Text;
 using System.Threading.Tasks;
 using KSMS.Infrastructure.Utils;
 using Microsoft.EntityFrameworkCore.Storage;
+using System.Data;
 
 namespace KSMS.Infrastructure.Repositories
 {
@@ -112,6 +113,11 @@ namespace KSMS.Infrastructure.Repositories
         public async Task<IDbContextTransaction> BeginTransactionAsync()
         {
             return await Context.Database.BeginTransactionAsync();
+        }
+
+        public async Task<IDbContextTransaction> BeginTransactionAsync(IsolationLevel isolationLevel)
+        {
+            return await Context.Database.BeginTransactionAsync(isolationLevel);
         }
     }
 }

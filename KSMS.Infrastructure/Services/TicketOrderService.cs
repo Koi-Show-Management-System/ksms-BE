@@ -83,8 +83,8 @@ public class TicketOrderService : BaseService<TicketOrder>, ITicketOrderService
             throw new BadRequestException("Đã quá thời gian cho phép mua vé. Triển lãm đã bắt đầu giai đoạn check-in vé.");
         }
         
-        // Sử dụng transaction để đảm bảo tính nhất quán khi kiểm tra và cập nhật số lượng vé
-        using (var transaction = await _unitOfWork.BeginTransactionAsync())
+        // Sử dụng transaction với isolation level Serializable để đảm bảo tính nhất quán
+        using (var transaction = await _unitOfWork.BeginTransactionAsync(System.Data.IsolationLevel.Serializable))
         {
             try
             {
@@ -158,11 +158,9 @@ public class TicketOrderService : BaseService<TicketOrder>, ITicketOrderService
                 await _unitOfWork.CommitAsync();
                 
                 // Đặt lịch kiểm tra hết hạn thanh toán (3 phút + random để tránh xử lý đồng thời)
-                var randomSeconds = new Random().Next(0, 30);
                 _backgroundJobClient.Schedule(
                     () => HandleExpiredOrder(ticketOrder.Id),
-                    TimeSpan.FromMinutes(3).Add(TimeSpan.FromSeconds(randomSeconds))
-                );
+                    TimeSpan.FromMinutes(3));
                 
                 await transaction.CommitAsync();
                 
@@ -227,7 +225,7 @@ public class TicketOrderService : BaseService<TicketOrder>, ITicketOrderService
 
     public async Task UpdateTicketOrder(Guid ticketOrderId, OrderStatus orderStatus)
     {
-        using (var transaction = await _unitOfWork.BeginTransactionAsync())
+        using (var transaction = await _unitOfWork.BeginTransactionAsync(System.Data.IsolationLevel.Serializable))
         {
             try
             {
@@ -461,7 +459,7 @@ public class TicketOrderService : BaseService<TicketOrder>, ITicketOrderService
     // Phương thức xử lý đơn hàng hết hạn
     public async Task HandleExpiredOrder(Guid orderId)
     {
-        using (var transaction = await _unitOfWork.BeginTransactionAsync())
+        using (var transaction = await _unitOfWork.BeginTransactionAsync(System.Data.IsolationLevel.Serializable))
         {
             try {
                 // Lấy thông tin đơn hàng MỚI NHẤT trong transaction với tracking
