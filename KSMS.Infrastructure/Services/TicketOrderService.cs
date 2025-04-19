@@ -190,13 +190,12 @@ public class TicketOrderService : BaseService<TicketOrder>, ITicketOrderService
                 
                 _logger.LogInformation($"Order: {ticketOrder.Id}, OrderDate: {orderDate}, ExpiryTime: {expiryTime}, Timestamp: {expiredAtTimestamp}");
                 
-                // Sử dụng mô tả ngắn gọn
-                var description = $"Vé triển lãm - {firstTicketType.KoiShow.Name}";
+                // Sử dụng mô tả ngắn gọ
                 
                 var paymentData = new PaymentData(
                     transactionCode, 
                     (int)(ticketOrder.TotalAmount), 
-                    description, 
+                    "Mua vé", 
                     items, 
                     url, 
                     url,

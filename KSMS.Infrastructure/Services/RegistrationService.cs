@@ -871,12 +871,11 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
         ).ToUnixTimeSeconds();
         
         // Sử dụng mô tả ngắn gọn
-        var description = $"Đăng ký cá Koi - {registration.KoiShow.Name}";
         
         var paymentData = new PaymentData(
             registrationCode,
             (int)registration.RegistrationFee,
-            description,
+            "Đăng ký cá Koi",
             items,
             url,
             url,
