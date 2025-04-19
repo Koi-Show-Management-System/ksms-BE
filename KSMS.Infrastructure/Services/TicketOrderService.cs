@@ -30,12 +30,14 @@ public class TicketOrderService : BaseService<TicketOrder>, ITicketOrderService
     private readonly IFirebaseService _firebaseService;
     private readonly IBackgroundJobClient _backgroundJobClient;
     private readonly IEmailService _emailService;
-    public TicketOrderService(IUnitOfWork<KoiShowManagementSystemContext> unitOfWork, ILogger<TicketOrder> logger, IHttpContextAccessor httpContextAccessor, PayOS payOs, IFirebaseService firebaseService, IBackgroundJobClient backgroundJobClient, IEmailService emailService) : base(unitOfWork, logger, httpContextAccessor)
+    private readonly INotificationService _notificationService;
+    public TicketOrderService(IUnitOfWork<KoiShowManagementSystemContext> unitOfWork, ILogger<TicketOrder> logger, IHttpContextAccessor httpContextAccessor, PayOS payOs, IFirebaseService firebaseService, IBackgroundJobClient backgroundJobClient, IEmailService emailService, INotificationService notificationService) : base(unitOfWork, logger, httpContextAccessor)
     {
         _payOs = payOs;
         _firebaseService = firebaseService;
         _backgroundJobClient = backgroundJobClient;
         _emailService = emailService;
+        _notificationService = notificationService;
     }
 
     public async Task<CheckOutTicketResponse> CreateTicketOrder(CreateTicketOrderRequest createTicketOrderRequest)
@@ -188,10 +190,13 @@ public class TicketOrderService : BaseService<TicketOrder>, ITicketOrderService
                 
                 _logger.LogInformation($"Order: {ticketOrder.Id}, OrderDate: {orderDate}, ExpiryTime: {expiryTime}, Timestamp: {expiredAtTimestamp}");
                 
+                // Sử dụng mô tả ngắn gọn
+                var description = $"Vé triển lãm - {firstTicketType.KoiShow.Name}";
+                
                 var paymentData = new PaymentData(
                     transactionCode, 
                     (int)(ticketOrder.TotalAmount), 
-                    "Buy Ticket", 
+                    description, 
                     items, 
                     url, 
                     url,
@@ -415,6 +420,7 @@ public class TicketOrderService : BaseService<TicketOrder>, ITicketOrderService
     // Phương thức xử lý đơn hàng hết hạn dùng OrderDate + 10 phút
     public async Task HandleExpiredOrder(Guid orderId)
     {
+        // Lấy thông tin đơn hàng với order details và ticket type
         var order = await _unitOfWork.GetRepository<TicketOrder>().SingleOrDefaultAsync(
             predicate: x => x.Id == orderId,
             include: query => query
@@ -424,6 +430,7 @@ public class TicketOrderService : BaseService<TicketOrder>, ITicketOrderService
 
         if (order == null)
         {
+            _logger.LogWarning($"Không tìm thấy đơn hàng: {orderId}");
             return;
         }
 
@@ -438,7 +445,32 @@ public class TicketOrderService : BaseService<TicketOrder>, ITicketOrderService
             {
                 try
                 {
+                    // Lưu thông tin cần thiết của đơn hàng
+                    var accountId = order.AccountId;
+                    var transactionCode = order.TransactionCode;
+                    var totalAmount = order.TotalAmount;
+                    var firstTicketType = order.TicketOrderDetails.FirstOrDefault()?.TicketType;
+                    string showName = "Không xác định";
+                    
+                    // Truy vấn riêng để lấy thông tin KoiShow
+                    if (firstTicketType != null)
+                    {
+                        var koiShow = await _unitOfWork.GetRepository<KoiShow>()
+                            .SingleOrDefaultAsync(predicate: s => s.Id == firstTicketType.KoiShowId);
+
+                        showName = koiShow.Name;
+                    }
+                    
+                    // Xử lý đơn hàng hết hạn
                     await HandleExpiredOrderImmediate(order, transaction);
+                    
+                    // Gửi thông báo cho người dùng sau khi xử lý thành công
+                    await _notificationService.SendNotification(
+                        accountId,
+                        "Đơn hàng vé đã hết hạn",
+                        $"Đơn hàng vé tham quan triển lãm {showName} với mã giao dịch {transactionCode} trị giá {totalAmount:N0} VNĐ đã bị hủy do quá thời gian thanh toán. Bạn có thể tạo đơn hàng mới nếu muốn.",
+                        NotificationType.Payment
+                    );
                 }
                 catch (Exception ex)
                 {
@@ -450,14 +482,14 @@ public class TicketOrderService : BaseService<TicketOrder>, ITicketOrderService
         }
     }
 
-    // Phương thức mới để xử lý nghiệp vụ đơn hàng hết hạn
+    // Phương thức xử lý nghiệp vụ đơn hàng hết hạn
     private async Task HandleExpiredOrderImmediate(TicketOrder order, IDbContextTransaction transaction)
     {
-        // Cập nhật trạng thái đơn hàng thành "expired"
+        // Cập nhật trạng thái đơn hàng thành "cancelled"
         order.Status = OrderStatus.Cancelled.ToString().ToLower();
         _unitOfWork.GetRepository<TicketOrder>().UpdateAsync(order);
 
-        // Hoàn trả số lượng vé
+        // Hoàn trả số lượng vé - Sử dụng order.TicketOrderDetails đã được include
         foreach (var detail in order.TicketOrderDetails)
         {
             var ticketType = detail.TicketType;
@@ -467,5 +499,7 @@ public class TicketOrderService : BaseService<TicketOrder>, ITicketOrderService
 
         await _unitOfWork.CommitAsync();
         await transaction.CommitAsync();
+        
+        _logger.LogInformation($"Đã hủy đơn hàng vé {order.Id} do quá hạn thanh toán. Số lượng vé đã được hoàn lại.");
     }
 }
