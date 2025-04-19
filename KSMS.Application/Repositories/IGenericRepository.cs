@@ -16,6 +16,11 @@ namespace KSMS.Application.Repositories
             Func<IQueryable<T>, IOrderedQueryable<T>> orderBy = null!,
             Func<IQueryable<T>, IIncludableQueryable<T, object>> include = null!);
 
+        Task<T> GetTrackedEntity(
+            Expression<Func<T, bool>> predicate = null!,
+            Func<IQueryable<T>, IOrderedQueryable<T>> orderBy = null!,
+            Func<IQueryable<T>, IIncludableQueryable<T, object>> include = null!);
+
         Task<TResult> SingleOrDefaultAsync<TResult>(
             Expression<Func<T, TResult>> selector,
             Expression<Func<T, bool>> predicate = null!,
@@ -29,6 +34,11 @@ namespace KSMS.Application.Repositories
 
         Task<ICollection<TResult>> GetListAsync<TResult>(
             Expression<Func<T, TResult>> selector,
+            Expression<Func<T, bool>> predicate = null!,
+            Func<IQueryable<T>, IOrderedQueryable<T>> orderBy = null!,
+            Func<IQueryable<T>, IIncludableQueryable<T, object>> include = null!);
+
+        Task<ICollection<T>> GetTrackedListAsync(
             Expression<Func<T, bool>> predicate = null!,
             Func<IQueryable<T>, IOrderedQueryable<T>> orderBy = null!,
             Func<IQueryable<T>, IIncludableQueryable<T, object>> include = null!);
