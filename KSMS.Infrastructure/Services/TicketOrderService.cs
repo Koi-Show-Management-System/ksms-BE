@@ -88,45 +88,7 @@ public class TicketOrderService : BaseService<TicketOrder>, ITicketOrderService
         {
             try
             {
-                // Kiểm tra các loại vé và tính tổng tiền
-                var ticketTypeInfos = new List<(TicketType Type, int Quantity)>();
-                
-                foreach (var ticketType in createTicketOrderRequest.ListOrder)
-                {
-                    // Lấy thông tin loại vé mà không cần tracking
-                    var ticketTypeDb = await _unitOfWork.GetRepository<TicketType>()
-                        .SingleOrDefaultAsync(predicate: p => p.Id == ticketType.TicketTypeId);
-                        
-                    if (ticketTypeDb == null)
-                    {
-                        throw new NotFoundException($"Không tìm thấy loại vé có ID {ticketType.TicketTypeId}");
-                    }
-                    
-                    // Kiểm tra xem tất cả các vé có thuộc cùng một show không
-                    if (ticketTypeDb.KoiShowId != firstTicketType.KoiShowId)
-                    {
-                        throw new BadRequestException("Không thể mua vé của nhiều triển lãm khác nhau trong cùng một đơn hàng");
-                    }
-
-                    if (ticketType.Quantity > ticketTypeDb.AvailableQuantity)
-                    {
-                        throw new BadRequestException($"Loại vé '{ticketTypeDb.Name}' không đủ số lượng");
-                    }
-                    
-                    // Lưu lại thông tin để cập nhật sau
-                    ticketTypeInfos.Add((ticketTypeDb, ticketType.Quantity));
-                    
-                    totalAmount += ticketTypeDb.Price * ticketType.Quantity;
-                }
-                
-                // Cập nhật số lượng vé trong database bằng repository
-                foreach (var info in ticketTypeInfos)
-                {
-                    // Sau khi kiểm tra, cập nhật và gọi UpdateAsync
-                    info.Type.AvailableQuantity -= info.Quantity;
-                    _unitOfWork.GetRepository<TicketType>().UpdateAsync(info.Type);
-                }
-                
+                // Tạo đơn hàng trước
                 var orderDate = VietNamTimeUtil.GetVietnamTime();
                 var ticketOrder = new TicketOrder()
                 {
@@ -136,45 +98,88 @@ public class TicketOrderService : BaseService<TicketOrder>, ITicketOrderService
                     AccountId = accountId,
                     OrderDate = orderDate,
                     TransactionCode = transactionCode.ToString(),
-                    TotalAmount = totalAmount,
+                    TotalAmount = 0, // Sẽ cập nhật sau
                     PaymentMethod = PaymentMethod.PayOs.ToString(),
                     Status = OrderStatus.Pending.ToString().ToLower(),
                 };
-                await _unitOfWork.GetRepository<TicketOrder>().InsertAsync(ticketOrder);
                 
+                await _unitOfWork.GetRepository<TicketOrder>().InsertAsync(ticketOrder);
+                await _unitOfWork.CommitAsync();
+                
+                // Kiểm tra và cập nhật từng loại vé một, sử dụng entity có tracking
                 var ticketOrderDetails = new List<TicketOrderDetail>();
-                foreach (var info in ticketTypeInfos)
+                foreach (var ticketTypeRequest in createTicketOrderRequest.ListOrder)
                 {
+                    // Sử dụng GetTrackedEntity để lấy entity có tracking, đảm bảo lock
+                    var ticketTypeDb = await _unitOfWork.GetRepository<TicketType>()
+                        .GetTrackedEntity(predicate: p => p.Id == ticketTypeRequest.TicketTypeId);
+                        
+                    if (ticketTypeDb == null)
+                    {
+                        throw new NotFoundException($"Không tìm thấy loại vé có ID {ticketTypeRequest.TicketTypeId}");
+                    }
+                    
+                    // Kiểm tra xem tất cả các vé có thuộc cùng một show không
+                    if (ticketTypeDb.KoiShowId != firstTicketType.KoiShowId)
+                    {
+                        throw new BadRequestException("Không thể mua vé của nhiều triển lãm khác nhau trong cùng một đơn hàng");
+                    }
+
+                    if (ticketTypeRequest.Quantity > ticketTypeDb.AvailableQuantity)
+                    {
+                        throw new BadRequestException($"Loại vé '{ticketTypeDb.Name}' không đủ số lượng. Còn lại {ticketTypeDb.AvailableQuantity} vé.");
+                    }
+                    
+                    // Cập nhật số lượng vé NGAY LẬP TỨC và commit để giải phóng lock
+                    ticketTypeDb.AvailableQuantity -= ticketTypeRequest.Quantity;
+                    _unitOfWork.GetRepository<TicketType>().UpdateAsync(ticketTypeDb);
+                    await _unitOfWork.CommitAsync();
+                    
+                    // Tạo chi tiết đơn hàng
                     var ticketOrderDetail = new TicketOrderDetail
                     {
                         TicketOrderId = ticketOrder.Id,
-                        TicketTypeId = info.Type.Id,
-                        Quantity = info.Quantity,
-                        UnitPrice = info.Type.Price
+                        TicketTypeId = ticketTypeDb.Id,
+                        Quantity = ticketTypeRequest.Quantity,
+                        UnitPrice = ticketTypeDb.Price
                     };
                     ticketOrderDetails.Add(ticketOrderDetail);
+                    
+                    // Cập nhật tổng tiền
+                    totalAmount += ticketTypeDb.Price * ticketTypeRequest.Quantity;
                 }
 
+                // Cập nhật tổng tiền cho đơn hàng
+                ticketOrder.TotalAmount = totalAmount;
+                _unitOfWork.GetRepository<TicketOrder>().UpdateAsync(ticketOrder);
+                
+                // Lưu chi tiết đơn hàng
                 await _unitOfWork.GetRepository<TicketOrderDetail>().InsertRangeAsync(ticketOrderDetails);
                 await _unitOfWork.CommitAsync();
                 
-                // Đặt lịch kiểm tra hết hạn thanh toán (11 phút sau khi tạo đơn)
+                // Đặt lịch kiểm tra hết hạn thanh toán (3 phút + random để tránh xử lý đồng thời)
+                var randomSeconds = new Random().Next(0, 30);
                 _backgroundJobClient.Schedule(
                     () => HandleExpiredOrder(ticketOrder.Id),
-                    TimeSpan.FromMinutes(3) 
+                    TimeSpan.FromMinutes(3).Add(TimeSpan.FromSeconds(randomSeconds))
                 );
                 
                 await transaction.CommitAsync();
                 
+                // Tạo link thanh toán
                 var items = new List<ItemData>();
-                var ticketOrderDetailDbs = await _unitOfWork.GetRepository<TicketOrderDetail>()
-                    .GetListAsync(predicate: t => t.TicketOrderId == ticketOrder.Id,
-                        include: query => query.Include(t => t.TicketType));
-                foreach (var x in ticketOrderDetailDbs)
+                foreach (var detail in ticketOrderDetails)
                 {
-                    var item = new ItemData(x.TicketType.Name, x.Quantity, (int)x.UnitPrice);
-                    items.Add(item);
+                    var ticketTypeInfo = await _unitOfWork.GetRepository<TicketType>()
+                        .SingleOrDefaultAsync(predicate: t => t.Id == detail.TicketTypeId);
+                        
+                    if (ticketTypeInfo != null)
+                    {
+                        var item = new ItemData(ticketTypeInfo.Name, detail.Quantity, (int)detail.UnitPrice);
+                        items.Add(item);
+                    }
                 }
+                
                 var baseUrl = $"{AppConfig.AppSetting.BaseUrl}/api/v1/ticket-order" + "/call-back";
                 var url = $"{baseUrl}?ticketOrderId={ticketOrder.Id}";
                 
@@ -182,15 +187,12 @@ public class TicketOrderService : BaseService<TicketOrder>, ITicketOrderService
                 var expiryTime = orderDate.AddMinutes(2);
 
                 // Chuyển đổi sang Unix timestamp đảm bảo sử dụng múi giờ Việt Nam (UTC+7)
-                // Chỉ định rõ múi giờ UTC+7 khi tạo DateTimeOffset để tránh sai lệch
                 var expiredAtTimestamp = new DateTimeOffset(
                     expiryTime,
                     new TimeSpan(7, 0, 0) // Chỉ định múi giờ Việt Nam (UTC+7)
                 ).ToUnixTimeSeconds();
                 
                 _logger.LogInformation($"Order: {ticketOrder.Id}, OrderDate: {orderDate}, ExpiryTime: {expiryTime}, Timestamp: {expiredAtTimestamp}");
-                
-                // Sử dụng mô tả ngắn gọ
                 
                 var paymentData = new PaymentData(
                     transactionCode, 
@@ -214,9 +216,10 @@ public class TicketOrderService : BaseService<TicketOrder>, ITicketOrderService
                     Url = createPayment.checkoutUrl
                 };
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 await transaction.RollbackAsync();
+                _logger.LogError(ex, "Lỗi khi tạo đơn hàng");
                 throw;
             }
         }
@@ -228,12 +231,14 @@ public class TicketOrderService : BaseService<TicketOrder>, ITicketOrderService
         {
             try
             {
-                var order = await _unitOfWork.GetRepository<TicketOrder>().SingleOrDefaultAsync(
-                    predicate: x => x.Id == ticketOrderId,
-                    include: query => query
-                        .Include(x => x.TicketOrderDetails)
-                            .ThenInclude(x => x.TicketType)
-                );
+                // Sử dụng GetTrackedEntity để lấy đơn hàng có tracking
+                var order = await _unitOfWork.GetRepository<TicketOrder>()
+                    .GetTrackedEntity(
+                        predicate: x => x.Id == ticketOrderId,
+                        include: query => query
+                            .Include(x => x.TicketOrderDetails)
+                                .ThenInclude(x => x.TicketType)
+                    );
 
                 if (order == null)
                 {
@@ -248,8 +253,35 @@ public class TicketOrderService : BaseService<TicketOrder>, ITicketOrderService
                 if (order.Status == OrderStatus.Pending.ToString().ToLower() && 
                     expiryTime <= currentTime)
                 {
-                    // Xử lý đơn hàng hết hạn ngay lập tức thay vì chờ Hangfire
-                    await HandleExpiredOrderImmediate(order, transaction);
+                    // Cập nhật trạng thái đơn hàng trước
+                    order.Status = OrderStatus.Cancelled.ToString().ToLower();
+                    _unitOfWork.GetRepository<TicketOrder>().UpdateAsync(order);
+                    await _unitOfWork.CommitAsync();
+                    
+                    // Xử lý hoàn trả vé
+                    foreach (var detail in order.TicketOrderDetails)
+                    {
+                        var ticketTypeId = detail.TicketTypeId;
+                        var quantity = detail.Quantity;
+                        
+                        // Lấy phiên bản mới nhất của TicketType từ database với tracking
+                        var ticketType = await _unitOfWork.GetRepository<TicketType>()
+                            .GetTrackedEntity(predicate: t => t.Id == ticketTypeId);
+                            
+                        if (ticketType != null)
+                        {
+                            // Cập nhật số lượng
+                            ticketType.AvailableQuantity += quantity;
+                            
+                            // Cập nhật vào database
+                            _unitOfWork.GetRepository<TicketType>().UpdateAsync(ticketType);
+                            
+                            // Commit ngay sau mỗi cập nhật để giải phóng lock
+                            await _unitOfWork.CommitAsync();
+                        }
+                    }
+                    
+                    await transaction.CommitAsync();
                     throw new BadRequestException("Đơn hàng đã hết hạn thanh toán");
                 }
 
@@ -272,6 +304,7 @@ public class TicketOrderService : BaseService<TicketOrder>, ITicketOrderService
                 // Cập nhật trạng thái đơn hàng
                 order.Status = newStatus;
                 _unitOfWork.GetRepository<TicketOrder>().UpdateAsync(order);
+                await _unitOfWork.CommitAsync();
 
                 if (newStatus == OrderStatus.Paid.ToString().ToLower())
                 {
@@ -315,16 +348,15 @@ public class TicketOrderService : BaseService<TicketOrder>, ITicketOrderService
                 }
                 else if (newStatus == OrderStatus.Cancelled.ToString().ToLower())
                 {
-                    // Hoàn trả số lượng vé khi hủy đơn hàng - lấy phiên bản mới nhất từ database
+                    // Hoàn trả số lượng vé khi hủy đơn hàng - xử lý từng loại vé một
                     foreach (var detail in order.TicketOrderDetails)
                     {
-                        // Lấy TicketTypeId từ detail thay vì dùng navigation property
                         var ticketTypeId = detail.TicketTypeId;
                         var quantity = detail.Quantity;
                         
-                        // Lấy phiên bản mới nhất của TicketType từ database
+                        // Lấy phiên bản mới nhất của TicketType từ database với tracking
                         var ticketType = await _unitOfWork.GetRepository<TicketType>()
-                            .SingleOrDefaultAsync(predicate: t => t.Id == ticketTypeId);
+                            .GetTrackedEntity(predicate: t => t.Id == ticketTypeId);
                             
                         if (ticketType != null)
                         {
@@ -333,14 +365,11 @@ public class TicketOrderService : BaseService<TicketOrder>, ITicketOrderService
                             
                             // Cập nhật vào database
                             _unitOfWork.GetRepository<TicketType>().UpdateAsync(ticketType);
+                            
+                            // Commit ngay sau mỗi cập nhật để giải phóng lock
+                            await _unitOfWork.CommitAsync();
                         }
                     }
-                    
-                    await _unitOfWork.CommitAsync();
-                }
-                else
-                {
-                    await _unitOfWork.CommitAsync();
                 }
                 
                 await transaction.CommitAsync();
@@ -348,8 +377,16 @@ public class TicketOrderService : BaseService<TicketOrder>, ITicketOrderService
             catch (Exception ex)
             {
                 await transaction.RollbackAsync();
-
-                throw;
+                
+                // Kiểm tra xem exception có phải là BadRequestException không
+                if (ex is BadRequestException)
+                {
+                    throw; // Ném lại exception nếu là BadRequestException
+                }
+                
+                // Nếu là loại exception khác, log và ném một exception chung
+                _logger.LogError(ex, "Lỗi khi cập nhật đơn hàng");
+                throw new Exception("Đã xảy ra lỗi khi xử lý đơn hàng. Vui lòng thử lại sau.", ex);
             }
         }
     }
@@ -427,13 +464,22 @@ public class TicketOrderService : BaseService<TicketOrder>, ITicketOrderService
         using (var transaction = await _unitOfWork.BeginTransactionAsync())
         {
             try {
-                // Lấy thông tin đơn hàng MỚI NHẤT trong transaction
-                var order = await _unitOfWork.GetRepository<TicketOrder>().SingleOrDefaultAsync(
-                    predicate: x => x.Id == orderId);
+                // Lấy thông tin đơn hàng MỚI NHẤT trong transaction với tracking
+                var order = await _unitOfWork.GetRepository<TicketOrder>()
+                    .GetTrackedEntity(predicate: x => x.Id == orderId);
 
                 if (order == null)
                 {
                     _logger.LogWarning($"Không tìm thấy đơn hàng: {orderId}");
+                    await transaction.CommitAsync();
+                    return;
+                }
+
+                // Kiểm tra trạng thái đơn hàng
+                if (order.Status != OrderStatus.Pending.ToString().ToLower())
+                {
+                    _logger.LogInformation($"Đơn hàng {orderId} có trạng thái {order.Status}, không cần xử lý hết hạn");
+                    await transaction.CommitAsync();
                     return;
                 }
 
@@ -442,13 +488,19 @@ public class TicketOrderService : BaseService<TicketOrder>, ITicketOrderService
                 var currentTime = VietNamTimeUtil.GetVietnamTime();
                 
                 // Chỉ xử lý các đơn hàng còn đang pending và đã quá hạn
-                if (order.Status == OrderStatus.Pending.ToString().ToLower() && 
-                    expiryTime <= currentTime)
+                if (expiryTime <= currentTime)
                 {
-                    // Lưu thông tin cần thiết của đơn hàng
+                    _logger.LogInformation($"Xử lý đơn hàng hết hạn {orderId}: OrderDate={order.OrderDate}, ExpiryTime={expiryTime}, CurrentTime={currentTime}");
+                    
+                    // Lưu thông tin cần thiết của đơn hàng trước khi cập nhật
                     var accountId = order.AccountId;
                     var transactionCode = order.TransactionCode;
                     var totalAmount = order.TotalAmount;
+                    
+                    // Cập nhật trạng thái đơn hàng thành "cancelled" TRƯỚC KHI xử lý hoàn vé
+                    order.Status = OrderStatus.Cancelled.ToString().ToLower();
+                    _unitOfWork.GetRepository<TicketOrder>().UpdateAsync(order);
+                    await _unitOfWork.CommitAsync();
                     
                     // Tìm thông tin show từ orderId
                     string showName = "Không xác định";
@@ -464,47 +516,62 @@ public class TicketOrderService : BaseService<TicketOrder>, ITicketOrderService
                         showName = firstTicketOrderDetail.TicketType.KoiShow.Name;
                     }
                     
-                    // Cập nhật trạng thái đơn hàng thành "cancelled" TRƯỚC KHI xử lý hoàn vé
-                    order.Status = OrderStatus.Cancelled.ToString().ToLower();
-                    _unitOfWork.GetRepository<TicketOrder>().UpdateAsync(order);
-                    await _unitOfWork.CommitAsync();
-                    
                     // Lấy tất cả các chi tiết đơn hàng
                     var orderDetails = await _unitOfWork.GetRepository<TicketOrderDetail>()
                         .GetListAsync(predicate: od => od.TicketOrderId == orderId);
                     
-                    // Hoàn trả số lượng vé - Lấy dữ liệu mới nhất từ database
+                    // Hoàn trả số lượng vé - Xử lý từng loại vé một, luôn lấy dữ liệu mới nhất
                     foreach (var detail in orderDetails)
                     {
                         var ticketTypeId = detail.TicketTypeId;
                         var quantity = detail.Quantity;
                         
-                        // Lấy phiên bản mới nhất của TicketType từ database
+                        _logger.LogInformation($"Hoàn trả {quantity} vé loại {ticketTypeId} cho đơn hàng {orderId}");
+                        
+                        // Lấy phiên bản mới nhất của TicketType từ database với tracking
                         var ticketType = await _unitOfWork.GetRepository<TicketType>()
-                            .SingleOrDefaultAsync(predicate: t => t.Id == ticketTypeId);
+                            .GetTrackedEntity(predicate: t => t.Id == ticketTypeId);
                             
                         if (ticketType != null)
                         {
                             // Cập nhật số lượng
+                            var oldQuantity = ticketType.AvailableQuantity;
                             ticketType.AvailableQuantity += quantity;
+                            
+                            _logger.LogInformation($"Cập nhật TicketType {ticketTypeId}: {oldQuantity} -> {ticketType.AvailableQuantity}");
                             
                             // Cập nhật vào database
                             _unitOfWork.GetRepository<TicketType>().UpdateAsync(ticketType);
+                            
+                            // Commit ngay sau mỗi cập nhật để giải phóng lock
+                            await _unitOfWork.CommitAsync();
+                        }
+                        else
+                        {
+                            _logger.LogWarning($"Không tìm thấy TicketType {ticketTypeId} khi xử lý hoàn vé");
                         }
                     }
-                    
-                    await _unitOfWork.CommitAsync();
                     
                     // Gửi thông báo cho người dùng sau khi xử lý thành công
                     if (accountId != null)
                     {
-                        await _notificationService.SendNotification(
-                            accountId,
-                            "Đơn hàng vé đã hết hạn",
-                            $"Đơn hàng vé tham quan triển lãm {showName} với mã giao dịch {transactionCode} trị giá {totalAmount:N0} VNĐ đã bị hủy do quá thời gian thanh toán. Bạn có thể tạo đơn hàng mới nếu muốn.",
-                            NotificationType.Payment
-                        );
+                        try {
+                            await _notificationService.SendNotification(
+                                accountId,
+                                "Đơn hàng vé đã hết hạn",
+                                $"Đơn hàng vé tham quan triển lãm {showName} với mã giao dịch {transactionCode} trị giá {totalAmount:N0} VNĐ đã bị hủy do quá thời gian thanh toán. Bạn có thể tạo đơn hàng mới nếu muốn.",
+                                NotificationType.Payment
+                            );
+                        }
+                        catch (Exception notifyEx) {
+                            // Log lỗi nhưng không làm ảnh hưởng đến việc xử lý đơn hàng
+                            _logger.LogError(notifyEx, $"Lỗi khi gửi thông báo cho đơn hàng hết hạn: {orderId}");
+                        }
                     }
+                }
+                else
+                {
+                    _logger.LogInformation($"Đơn hàng {orderId} chưa hết hạn: OrderDate={order.OrderDate}, ExpiryTime={expiryTime}, CurrentTime={currentTime}");
                 }
                 
                 await transaction.CommitAsync();
@@ -522,20 +589,37 @@ public class TicketOrderService : BaseService<TicketOrder>, ITicketOrderService
     {
         try
         {
-            // Cập nhật trạng thái đơn hàng thành "cancelled"
+            // Đọc lại trạng thái hiện tại của đơn hàng từ DB để đảm bảo không xử lý đồng thời
+            var currentOrder = await _unitOfWork.GetRepository<TicketOrder>()
+                .GetTrackedEntity(predicate: o => o.Id == order.Id);
+            
+            // Kiểm tra nếu đơn hàng không còn ở trạng thái pending
+            if (currentOrder == null || currentOrder.Status != OrderStatus.Pending.ToString().ToLower())
+            {
+                // Đơn đã được xử lý ở nơi khác, không cần xử lý nữa
+                _logger.LogInformation($"Đơn hàng {order.Id} đã được xử lý trước đó với trạng thái {currentOrder?.Status ?? "không xác định"}");
+                return;
+            }
+
+            // Cập nhật trạng thái đơn hàng thành "cancelled" và commit ngay
             order.Status = OrderStatus.Cancelled.ToString().ToLower();
             _unitOfWork.GetRepository<TicketOrder>().UpdateAsync(order);
+            await _unitOfWork.CommitAsync();
 
-            // Hoàn trả số lượng vé - Lấy dữ liệu mới nhất từ database
-            foreach (var detail in order.TicketOrderDetails)
+            // Lấy danh sách chi tiết đơn hàng sau khi đã cập nhật trạng thái
+            var orderDetails = await _unitOfWork.GetRepository<TicketOrderDetail>()
+                .GetListAsync(predicate: od => od.TicketOrderId == order.Id);
+
+            // Hoàn trả số lượng vé - Lấy dữ liệu mới nhất từ database và xử lý từng loại vé một
+            foreach (var detail in orderDetails)
             {
-                // Lấy TicketTypeId từ detail thay vì dùng navigation property
+                // Lấy TicketTypeId từ detail
                 var ticketTypeId = detail.TicketTypeId;
                 var quantity = detail.Quantity;
                 
-                // Lấy phiên bản mới nhất của TicketType từ database
+                // Lấy phiên bản mới nhất của TicketType từ database với tracking
                 var ticketType = await _unitOfWork.GetRepository<TicketType>()
-                    .SingleOrDefaultAsync(predicate: t => t.Id == ticketTypeId);
+                    .GetTrackedEntity(predicate: t => t.Id == ticketTypeId);
                     
                 if (ticketType != null)
                 {
@@ -544,10 +628,18 @@ public class TicketOrderService : BaseService<TicketOrder>, ITicketOrderService
                     
                     // Cập nhật vào database
                     _unitOfWork.GetRepository<TicketType>().UpdateAsync(ticketType);
+                    
+                    // Commit ngay sau mỗi cập nhật để giải phóng lock
+                    await _unitOfWork.CommitAsync();
+                    
+                    _logger.LogInformation($"Hoàn trả {quantity} vé loại '{ticketType.Name}', số lượng còn lại: {ticketType.AvailableQuantity}");
+                }
+                else
+                {
+                    _logger.LogWarning($"Không tìm thấy loại vé {ticketTypeId} khi hoàn trả vé cho đơn hàng {order.Id}");
                 }
             }
 
-            await _unitOfWork.CommitAsync();
             await transaction.CommitAsync();
         }
         catch (Exception ex)

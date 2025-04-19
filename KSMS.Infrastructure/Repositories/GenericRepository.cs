@@ -42,6 +42,20 @@ namespace KSMS.Infrastructure.Repositories
             return await query.AsNoTracking().FirstOrDefaultAsync();
         }
 
+        public virtual async Task<T> GetTrackedEntity(Expression<Func<T, bool>> predicate = null!,
+            Func<IQueryable<T>, IOrderedQueryable<T>> orderBy = null!,
+            Func<IQueryable<T>, IIncludableQueryable<T, object>> include = null!)
+        {
+            IQueryable<T> query = _dbSet;
+            if (include != null) query = include(query);
+
+            if (predicate != null) query = query.Where(predicate);
+
+            if (orderBy != null) return await orderBy(query).FirstOrDefaultAsync();
+
+            return await query.FirstOrDefaultAsync();
+        }
+
         public virtual async Task<TResult> SingleOrDefaultAsync<TResult>(Expression<Func<T, TResult>> selector,
             Expression<Func<T, bool>> predicate = null, Func<IQueryable<T>, IOrderedQueryable<T>> orderBy = null,
             Func<IQueryable<T>, IIncludableQueryable<T, object>> include = null)
@@ -84,6 +98,21 @@ namespace KSMS.Infrastructure.Repositories
             if (orderBy != null) return await orderBy(query).AsNoTracking().Select(selector).ToListAsync();
 
             return await query.Select(selector).ToListAsync();
+        }
+
+        public virtual async Task<ICollection<T>> GetTrackedListAsync(Expression<Func<T, bool>> predicate = null,
+            Func<IQueryable<T>, IOrderedQueryable<T>> orderBy = null,
+            Func<IQueryable<T>, IIncludableQueryable<T, object>> include = null)
+        {
+            IQueryable<T> query = _dbSet;
+
+            if (include != null) query = include(query);
+
+            if (predicate != null) query = query.Where(predicate);
+
+            if (orderBy != null) return await orderBy(query).ToListAsync();
+
+            return await query.ToListAsync();
         }
 
         public Task<IPaginate<T>> GetPagingListAsync(Expression<Func<T, bool>> predicate = null,
