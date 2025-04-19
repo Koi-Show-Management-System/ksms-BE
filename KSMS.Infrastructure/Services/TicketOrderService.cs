@@ -504,7 +504,7 @@ public class TicketOrderService : BaseService<TicketOrder>, ITicketOrderService
                 
                 // Lấy phiên bản mới nhất của TicketType từ database
                 var ticketType = await _unitOfWork.GetRepository<TicketType>()
-                    .SingleOrDefaultAsync(t => t.Id == ticketTypeId);
+                    .SingleOrDefaultAsync(predicate:t => t.Id == ticketTypeId);
                     
                 if (ticketType != null)
                 {
