@@ -348,16 +348,8 @@ public class TicketOrderService : BaseService<TicketOrder>, ITicketOrderService
             catch (Exception ex)
             {
                 await transaction.RollbackAsync();
-                
-                // Kiểm tra xem exception có phải là BadRequestException không
-                if (ex is BadRequestException)
-                {
-                    throw; // Ném lại exception nếu là BadRequestException
-                }
-                
-                // Nếu là loại exception khác, log và ném một exception chung
-                _logger.LogError(ex, "Lỗi khi cập nhật đơn hàng");
-                throw new Exception("Đã xảy ra lỗi khi xử lý đơn hàng. Vui lòng thử lại sau.", ex);
+
+                throw;
             }
         }
     }
@@ -432,30 +424,26 @@ public class TicketOrderService : BaseService<TicketOrder>, ITicketOrderService
     // Phương thức xử lý đơn hàng hết hạn
     public async Task HandleExpiredOrder(Guid orderId)
     {
-        // Lấy thông tin đơn hàng với order details
-        var order = await _unitOfWork.GetRepository<TicketOrder>().SingleOrDefaultAsync(
-            predicate: x => x.Id == orderId,
-            include: query => query
-                .Include(x => x.TicketOrderDetails)
-        );
-
-        if (order == null)
+        using (var transaction = await _unitOfWork.BeginTransactionAsync())
         {
-            _logger.LogWarning($"Không tìm thấy đơn hàng: {orderId}");
-            return;
-        }
+            try {
+                // Lấy thông tin đơn hàng MỚI NHẤT trong transaction
+                var order = await _unitOfWork.GetRepository<TicketOrder>().SingleOrDefaultAsync(
+                    predicate: x => x.Id == orderId);
 
-        // Tính thời gian hết hạn: OrderDate + 2 phút
-        var expiryTime = order.OrderDate.AddMinutes(2);
-        var currentTime = VietNamTimeUtil.GetVietnamTime();
-        
-        // Chỉ xử lý các đơn hàng còn đang pending và đã quá hạn
-        if (order.Status == OrderStatus.Pending.ToString().ToLower() && 
-            expiryTime <= currentTime)
-        {
-            using (var transaction = await _unitOfWork.BeginTransactionAsync())
-            {
-                try
+                if (order == null)
+                {
+                    _logger.LogWarning($"Không tìm thấy đơn hàng: {orderId}");
+                    return;
+                }
+
+                // Tính thời gian hết hạn: OrderDate + 2 phút
+                var expiryTime = order.OrderDate.AddMinutes(2);
+                var currentTime = VietNamTimeUtil.GetVietnamTime();
+                
+                // Chỉ xử lý các đơn hàng còn đang pending và đã quá hạn
+                if (order.Status == OrderStatus.Pending.ToString().ToLower() && 
+                    expiryTime <= currentTime)
                 {
                     // Lưu thông tin cần thiết của đơn hàng
                     var accountId = order.AccountId;
@@ -476,8 +464,36 @@ public class TicketOrderService : BaseService<TicketOrder>, ITicketOrderService
                         showName = firstTicketOrderDetail.TicketType.KoiShow.Name;
                     }
                     
-                    // Xử lý đơn hàng hết hạn
-                    await HandleExpiredOrderImmediate(order, transaction);
+                    // Cập nhật trạng thái đơn hàng thành "cancelled" TRƯỚC KHI xử lý hoàn vé
+                    order.Status = OrderStatus.Cancelled.ToString().ToLower();
+                    _unitOfWork.GetRepository<TicketOrder>().UpdateAsync(order);
+                    await _unitOfWork.CommitAsync();
+                    
+                    // Lấy tất cả các chi tiết đơn hàng
+                    var orderDetails = await _unitOfWork.GetRepository<TicketOrderDetail>()
+                        .GetListAsync(predicate: od => od.TicketOrderId == orderId);
+                    
+                    // Hoàn trả số lượng vé - Lấy dữ liệu mới nhất từ database
+                    foreach (var detail in orderDetails)
+                    {
+                        var ticketTypeId = detail.TicketTypeId;
+                        var quantity = detail.Quantity;
+                        
+                        // Lấy phiên bản mới nhất của TicketType từ database
+                        var ticketType = await _unitOfWork.GetRepository<TicketType>()
+                            .SingleOrDefaultAsync(predicate: t => t.Id == ticketTypeId);
+                            
+                        if (ticketType != null)
+                        {
+                            // Cập nhật số lượng
+                            ticketType.AvailableQuantity += quantity;
+                            
+                            // Cập nhật vào database
+                            _unitOfWork.GetRepository<TicketType>().UpdateAsync(ticketType);
+                        }
+                    }
+                    
+                    await _unitOfWork.CommitAsync();
                     
                     // Gửi thông báo cho người dùng sau khi xử lý thành công
                     if (accountId != null)
@@ -490,11 +506,13 @@ public class TicketOrderService : BaseService<TicketOrder>, ITicketOrderService
                         );
                     }
                 }
-                catch (Exception ex)
-                {
-                    await transaction.RollbackAsync();
-                    _logger.LogError(ex, $"Lỗi khi xử lý đơn hàng hết hạn: {orderId}");
-                }
+                
+                await transaction.CommitAsync();
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                _logger.LogError(ex, $"Lỗi khi xử lý đơn hàng hết hạn: {orderId}");
             }
         }
     }
