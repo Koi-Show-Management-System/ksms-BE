@@ -315,12 +315,25 @@ public class TicketOrderService : BaseService<TicketOrder>, ITicketOrderService
                 }
                 else if (newStatus == OrderStatus.Cancelled.ToString().ToLower())
                 {
-                    // Hoàn trả số lượng vé khi hủy đơn hàng
+                    // Hoàn trả số lượng vé khi hủy đơn hàng - lấy phiên bản mới nhất từ database
                     foreach (var detail in order.TicketOrderDetails)
                     {
-                        var ticketType = detail.TicketType;
-                        ticketType.AvailableQuantity += detail.Quantity;
-                        _unitOfWork.GetRepository<TicketType>().UpdateAsync(ticketType);
+                        // Lấy TicketTypeId từ detail thay vì dùng navigation property
+                        var ticketTypeId = detail.TicketTypeId;
+                        var quantity = detail.Quantity;
+                        
+                        // Lấy phiên bản mới nhất của TicketType từ database
+                        var ticketType = await _unitOfWork.GetRepository<TicketType>()
+                            .SingleOrDefaultAsync(predicate: t => t.Id == ticketTypeId);
+                            
+                        if (ticketType != null)
+                        {
+                            // Cập nhật số lượng
+                            ticketType.AvailableQuantity += quantity;
+                            
+                            // Cập nhật vào database
+                            _unitOfWork.GetRepository<TicketType>().UpdateAsync(ticketType);
+                        }
                     }
                     
                     await _unitOfWork.CommitAsync();
@@ -504,7 +517,7 @@ public class TicketOrderService : BaseService<TicketOrder>, ITicketOrderService
                 
                 // Lấy phiên bản mới nhất của TicketType từ database
                 var ticketType = await _unitOfWork.GetRepository<TicketType>()
-                    .SingleOrDefaultAsync(predicate:t => t.Id == ticketTypeId);
+                    .SingleOrDefaultAsync(predicate: t => t.Id == ticketTypeId);
                     
                 if (ticketType != null)
                 {
