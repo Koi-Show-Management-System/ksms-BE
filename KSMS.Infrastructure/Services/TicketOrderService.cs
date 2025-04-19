@@ -43,7 +43,6 @@ public class TicketOrderService : BaseService<TicketOrder>, ITicketOrderService
     public async Task<CheckOutTicketResponse> CreateTicketOrder(CreateTicketOrderRequest createTicketOrderRequest)
     {
         var accountId = GetIdFromJwt();
-        var totalAmount = 0.0m;
         var timestamp = DateTimeOffset.Now.ToString("yyMMddHHmmss");
         var random = new Random().Next(1000, 9999).ToString(); //
         var transactionCode = long.Parse($"{timestamp}{random}");
@@ -88,29 +87,13 @@ public class TicketOrderService : BaseService<TicketOrder>, ITicketOrderService
         {
             try
             {
-                // Tạo đơn hàng trước
-                var orderDate = VietNamTimeUtil.GetVietnamTime();
-                var ticketOrder = new TicketOrder()
-                {
-                    Id = Guid.NewGuid(),
-                    FullName = createTicketOrderRequest.FullName,
-                    Email = createTicketOrderRequest.Email,
-                    AccountId = accountId,
-                    OrderDate = orderDate,
-                    TransactionCode = transactionCode.ToString(),
-                    TotalAmount = 0, // Sẽ cập nhật sau
-                    PaymentMethod = PaymentMethod.PayOs.ToString(),
-                    Status = OrderStatus.Pending.ToString().ToLower(),
-                };
+                // BƯỚC 1: Tính toán totalAmount trước
+                decimal totalAmount = 0;
+                List<(TicketType ticketType, int quantity)> validatedTickets = new List<(TicketType, int)>();
                 
-                await _unitOfWork.GetRepository<TicketOrder>().InsertAsync(ticketOrder);
-                await _unitOfWork.CommitAsync();
-                // Kiểm tra và cập nhật từng loại vé một
-                var ticketOrderDetails = new List<TicketOrderDetail>();
-                
+                // Kiểm tra và tính toán tất cả trước khi thực hiện bất kỳ thay đổi nào
                 foreach (var ticketTypeRequest in createTicketOrderRequest.ListOrder)
                 {
-                    // Sử dụng GetTrackedEntity để lấy entity có tracking, đảm bảo lock
                     var ticketTypeDb = await _unitOfWork.GetRepository<TicketType>()
                         .GetTrackedEntity(predicate: p => p.Id == ticketTypeRequest.TicketTypeId);
                         
@@ -119,7 +102,6 @@ public class TicketOrderService : BaseService<TicketOrder>, ITicketOrderService
                         throw new NotFoundException($"Không tìm thấy loại vé có ID {ticketTypeRequest.TicketTypeId}");
                     }
                     
-                    // Kiểm tra xem tất cả các vé có thuộc cùng một show không
                     if (ticketTypeDb.KoiShowId != firstTicketType.KoiShowId)
                     {
                         throw new BadRequestException("Không thể mua vé của nhiều triển lãm khác nhau trong cùng một đơn hàng");
@@ -130,8 +112,37 @@ public class TicketOrderService : BaseService<TicketOrder>, ITicketOrderService
                         throw new BadRequestException($"Loại vé '{ticketTypeDb.Name}' không đủ số lượng. Còn lại {ticketTypeDb.AvailableQuantity} vé.");
                     }
                     
-                    // Cập nhật số lượng vé (không commit)
-                    ticketTypeDb.AvailableQuantity -= ticketTypeRequest.Quantity;
+                    // Tính totalAmount TRƯỚC
+                    totalAmount += ticketTypeDb.Price * ticketTypeRequest.Quantity;
+                    
+                    // Lưu thông tin để xử lý sau
+                    validatedTickets.Add((ticketTypeDb, ticketTypeRequest.Quantity));
+                }
+
+                // BƯỚC 2: Tạo đơn hàng với totalAmount đã tính
+                var orderDate = VietNamTimeUtil.GetVietnamTime();
+                var ticketOrder = new TicketOrder()
+                {
+                    Id = Guid.NewGuid(),
+                    FullName = createTicketOrderRequest.FullName,
+                    Email = createTicketOrderRequest.Email,
+                    AccountId = accountId,
+                    OrderDate = orderDate,
+                    TransactionCode = transactionCode.ToString(),
+                    TotalAmount = totalAmount, // Đã có giá trị ngay từ đầu
+                    PaymentMethod = PaymentMethod.PayOs.ToString(),
+                    Status = OrderStatus.Pending.ToString().ToLower(),
+                };
+                
+                // Insert đơn hàng với TotalAmount đã tính sẵn
+                await _unitOfWork.GetRepository<TicketOrder>().InsertAsync(ticketOrder);
+                
+                // BƯỚC 3: Cập nhật số lượng vé và tạo chi tiết đơn hàng
+                var ticketOrderDetails = new List<TicketOrderDetail>();
+                foreach (var (ticketTypeDb, quantity) in validatedTickets)
+                {
+                    // Cập nhật số lượng vé
+                    ticketTypeDb.AvailableQuantity -= quantity;
                     _unitOfWork.GetRepository<TicketType>().UpdateAsync(ticketTypeDb);
                     
                     // Tạo chi tiết đơn hàng
@@ -139,23 +150,16 @@ public class TicketOrderService : BaseService<TicketOrder>, ITicketOrderService
                     {
                         TicketOrderId = ticketOrder.Id,
                         TicketTypeId = ticketTypeDb.Id,
-                        Quantity = ticketTypeRequest.Quantity,
+                        Quantity = quantity,
                         UnitPrice = ticketTypeDb.Price
                     };
                     ticketOrderDetails.Add(ticketOrderDetail);
-                    
-                    // Cập nhật tổng tiền
-                    totalAmount += ticketTypeDb.Price * ticketTypeRequest.Quantity;
                 }
-
-                // Cập nhật tổng tiền cho đơn hàng
-                ticketOrder.TotalAmount = totalAmount;
-                _unitOfWork.GetRepository<TicketOrder>().UpdateAsync(ticketOrder);
                 
-                // Lưu chi tiết đơn hàng
+                // Insert chi tiết đơn hàng
                 await _unitOfWork.GetRepository<TicketOrderDetail>().InsertRangeAsync(ticketOrderDetails);
                 
-                // Commit một lần duy nhất cho tất cả các thay đổi
+                // BƯỚC 4: Commit một lần duy nhất
                 await _unitOfWork.CommitAsync();
                 
                 // Đặt lịch kiểm tra hết hạn thanh toán (3 phút + random để tránh xử lý đồng thời)
