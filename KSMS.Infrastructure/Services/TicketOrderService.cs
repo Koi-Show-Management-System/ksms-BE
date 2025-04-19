@@ -104,7 +104,7 @@ public class TicketOrderService : BaseService<TicketOrder>, ITicketOrderService
                 };
                 
                 await _unitOfWork.GetRepository<TicketOrder>().InsertAsync(ticketOrder);
-                
+                await _unitOfWork.CommitAsync();
                 // Kiểm tra và cập nhật từng loại vé một
                 var ticketOrderDetails = new List<TicketOrderDetail>();
                 
