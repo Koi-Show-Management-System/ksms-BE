@@ -361,14 +361,27 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
         {
             throw new BadRequestException("Hiện tại không trong thời gian đăng ký tham gia triển lãm");
         }
+        // Kiểm tra xem có đơn đăng ký đang chờ thanh toán không
+        var waitingRegistration = await _unitOfWork.GetRepository<Registration>()
+            .SingleOrDefaultAsync(
+                predicate: r => r.KoiShowId == koiShow.Id &&
+                                r.KoiProfileId == koiProfile.Id &&
+                                r.Status == RegistrationStatus.WaitToPaid.ToString().ToLower(),
+                include: query => query.Include(r => r.CompetitionCategory));
+
+        if (waitingRegistration != null)
+        {
+            throw new BadRequestException($"Cá Koi này đã có đơn đăng ký đang chờ thanh toán trong hạng mục {waitingRegistration.CompetitionCategory.Name}. Bạn có thể tiếp tục thanh toán hoặc chờ khoảng 10 phút sau khi quá trình thanh toán cho đơn đó hết hạn.");
+        }
+
+        // Kiểm tra xem có đơn đăng ký đã được xử lý không
         var existingRegistration = await _unitOfWork.GetRepository<Registration>()
             .SingleOrDefaultAsync(
                 predicate: r => r.KoiShowId == koiShow.Id &&
                                 r.KoiProfileId == koiProfile.Id &&
                                 r.Status != RegistrationStatus.Rejected.ToString().ToLower() &&
                                 r.Status != RegistrationStatus.Refunded.ToString().ToLower() &&
-                                r.Status != RegistrationStatus.Cancelled.ToString().ToLower() &&
-                                r.Status != RegistrationStatus.WaitToPaid.ToString().ToLower(),
+                                r.Status != RegistrationStatus.Cancelled.ToString().ToLower(),
                 include: query => query.Include(r => r.CompetitionCategory));
         if (existingRegistration != null)
         {
@@ -430,7 +443,11 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
         
         var registration = await _unitOfWork.GetRepository<Registration>().SingleOrDefaultAsync(
             predicate: r => r.Id == registrationId,
-            include: query => query.Include(r => r.RegistrationPayment)
+            include: query => query
+                .Include(r => r.RegistrationPayment)
+                .Include(r => r.KoiProfile)
+                .Include(r => r.CompetitionCategory)
+                .Include(r => r.KoiShow)
         );
         
         if (registration == null)
@@ -443,6 +460,12 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
         if (registration.Status == RegistrationStatus.WaitToPaid.ToString().ToLower())
         {
             _logger.LogInformation($"Đơn đăng ký {registrationId} đã quá hạn thanh toán, đang xóa...");
+            
+            // Lưu lại các thông tin cần thiết trước khi xóa
+            var accountId = registration.AccountId;
+            var koiProfileName = registration.KoiProfile?.Name ?? "Không xác định";
+            var categoryName = registration.CompetitionCategory?.Name ?? "Không xác định";
+            var showName = registration.KoiShow?.Name ?? "Không xác định";
             
             using (var transaction = await _unitOfWork.BeginTransactionAsync())
             {
@@ -467,6 +490,14 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
                     await transaction.CommitAsync();
                     
                     _logger.LogInformation($"Đã xóa đơn đăng ký {registrationId} do quá hạn thanh toán");
+                    
+                    // Gửi thông báo cho người dùng
+                    await _notificationService.SendNotification(
+                        accountId,
+                        "Đơn đăng ký cá Koi đã hết hạn",
+                        $"Đơn đăng ký cá Koi {koiProfileName} ở hạng mục {categoryName} tham gia triển lãm {showName} đã bị hủy do quá thời gian thanh toán. Bạn có thể tạo đơn đăng ký mới nếu muốn.",
+                        NotificationType.Registration
+                    );
                 }
                 catch (Exception ex)
                 {
@@ -667,9 +698,17 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
             registration.RejectedReason = rejectedReason;
             _unitOfWork.GetRepository<Registration>().UpdateAsync(registration);
             await _unitOfWork.CommitAsync();
+            
+            // Lấy thông tin KoiProfile và Category riêng khi cần gửi thông báo
+            var koiProfile = await _unitOfWork.GetRepository<KoiProfile>()
+                .SingleOrDefaultAsync(predicate: k => k.Id == registration.KoiProfileId);
+                
+            var category = await _unitOfWork.GetRepository<CompetitionCategory>()
+                .SingleOrDefaultAsync(predicate: c => c.Id == registration.CompetitionCategoryId);
+                
             await _notificationService.SendNotification(registration.AccountId,
-                "Đơn đăng kí của bạn đã bị từ chối",
-                " Đơn đăng kí tham gia triễn lãm " + show.Name + "của bạn đã bị từ chối. Vui lòng xem email để biết thêm chi tiết",
+                "Đơn đăng ký cá Koi bị từ chối",
+                $"Đơn đăng ký cá Koi {koiProfile.Name} ở hạng mục {category.Name} tham gia triển lãm {show.Name} của bạn đã bị từ chối. Vui lòng kiểm tra email để biết thêm chi tiết.",
                 NotificationType.Registration);
             _backgroundJobClient.Enqueue(() => _emailService.SendRegistrationRejectionEmail(registrationId, rejectedReason));
         }
@@ -696,9 +735,14 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
             _unitOfWork.GetRepository<Registration>().UpdateAsync(registration);
             _unitOfWork.GetRepository<RegistrationPayment>().UpdateAsync(registration.RegistrationPayment);
             await _unitOfWork.CommitAsync();
+            
+            // Lấy thông tin KoiProfile riêng khi cần gửi thông báo
+            var koiProfile = await _unitOfWork.GetRepository<KoiProfile>()
+                .SingleOrDefaultAsync(predicate: k => k.Id == registration.KoiProfileId);
+                
             await _notificationService.SendNotification(registration.AccountId,
-                "Đăng kí của bạn đã được chấp nhận",
-                " Đơn đăng kí tham gia triễn lãm " + show.Name + "của bạn đã được chấp nhận",
+                "Đơn đăng ký cá Koi được chấp nhận",
+                $"Đơn đăng ký cá Koi {koiProfile.Name} ở hạng mục {category.Name} tham gia triển lãm {show.Name} của bạn đã được chấp nhận. Mã đăng ký của bạn là {registration.RegistrationNumber}.",
                 NotificationType.Registration);
             _backgroundJobClient.Enqueue(() => _emailService.SendRegistrationConfirmationEmail(registrationId));
         }
@@ -712,9 +756,17 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
                 FileUtils.ConvertBase64ToFile(QrcodeUtil.GenerateQrCode(registration.Id)), "qrCode/");
             _unitOfWork.GetRepository<Registration>().UpdateAsync(registration);
             await _unitOfWork.CommitAsync();
+            
+            // Lấy thông tin KoiProfile và Category riêng khi cần gửi thông báo
+            var koiProfile = await _unitOfWork.GetRepository<KoiProfile>()
+                .SingleOrDefaultAsync(predicate: k => k.Id == registration.KoiProfileId);
+                
+            var category = await _unitOfWork.GetRepository<CompetitionCategory>()
+                .SingleOrDefaultAsync(predicate: c => c.Id == registration.CompetitionCategoryId);
+                
             await _notificationService.SendNotification(registration.AccountId,
-                "Đăng kí của bạn đã được check in",
-                " Đơn đăng kí tham gia triễn lãm " + show.Name + "của bạn đã được check in thành công",
+                "Cá Koi đã được check-in",
+                $"Cá Koi {koiProfile.Name} ở hạng mục {category.Name} của bạn đã được check-in thành công vào triển lãm {show.Name}. Địa điểm check-in: {show.Location}.",
                 NotificationType.Registration);
         }
 
@@ -727,9 +779,17 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
             registration.RefundType = refundType.ToString().ToLower();
             _unitOfWork.GetRepository<Registration>().UpdateAsync(registration);
             await _unitOfWork.CommitAsync();
+            
+            // Lấy thông tin KoiProfile và Category riêng khi cần gửi thông báo
+            var koiProfile = await _unitOfWork.GetRepository<KoiProfile>()
+                .SingleOrDefaultAsync(predicate: k => k.Id == registration.KoiProfileId);
+                
+            var category = await _unitOfWork.GetRepository<CompetitionCategory>()
+                .SingleOrDefaultAsync(predicate: c => c.Id == registration.CompetitionCategoryId);
+                
             await _notificationService.SendNotification(registration.AccountId,
-                "Phí đăng ký của bạn đã được hoàn tiền",
-                "Đơn đăng ký tham gia triển lãm " + show.Name + " đã được hoàn phí đăng ký. Vui lòng kiểm tra tài khoản của bạn trong vòng 3-5 ngày làm việc. Chi tiết đã được gửi qua email.",
+                "Phí đăng ký cá Koi đã được hoàn tiền",
+                $"Phí đăng ký cho cá Koi {koiProfile.Name} ở hạng mục {category.Name} tham gia triển lãm {show.Name} đã được hoàn tiền. Hình thức hoàn tiền: {refundType}. Vui lòng kiểm tra tài khoản của bạn trong vòng 3-5 ngày làm việc. Chi tiết đã được gửi qua email.",
                 NotificationType.Registration);
             _backgroundJobClient.Enqueue(() => _emailService.SendRefundEmail(registrationId));
         }
@@ -809,10 +869,14 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
             expiryTime,
             new TimeSpan(7, 0, 0) // Chỉ định múi giờ Việt Nam (UTC+7)
         ).ToUnixTimeSeconds();
+        
+        // Sử dụng mô tả ngắn gọn
+        var description = $"Đăng ký cá Koi - {registration.KoiShow.Name}";
+        
         var paymentData = new PaymentData(
             registrationCode,
             (int)registration.RegistrationFee,
-            $"Registration",
+            description,
             items,
             url,
             url,
@@ -897,10 +961,10 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
             filterQuery = filterQuery.AndAlso(r =>
                 filter.CategoryIds.Contains(r.CompetitionCategoryId));
         }
-        if (filter.Status.HasValue)
+        if (filter.Status.Any())
         {
-            var statusString = filter.Status.Value.ToString().ToLower();
-            filterQuery = filterQuery.AndAlso(r => r.Status == statusString);
+            var statusStrings = filter.Status.Select(s => s.ToString().ToLower()).ToList();
+            filterQuery = filterQuery.AndAlso(r => statusStrings.Contains(r.Status));
         }
         if(filter.RegistrationNumber != null)
         {
