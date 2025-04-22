@@ -150,6 +150,15 @@ namespace KSMS.Infrastructure.Services
                 {
                     throw new NotFoundException($"Không tìm thấy vòng thi {roundId}. Vui lòng tạo vòng thi trước.");
                 }
+
+                // Kiểm tra xem vòng đấu đã được công khai chưa
+                var publishedRegistrationsCount = await regisRoundRepository.CountAsync(
+                    predicate: rr => rr.RoundId == roundId && rr.Status == "public");
+                if (publishedRegistrationsCount > 0)
+                {
+                    throw new BadRequestException("Không thể thêm cá vào vòng thi đã được công khai.");
+                }
+                
                 var existingInRound = await regisRoundRepository.GetListAsync(
                     predicate: rr => rr.RoundId == roundId && registrationIds.Contains(rr.RegistrationId));
         
