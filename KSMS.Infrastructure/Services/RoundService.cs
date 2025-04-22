@@ -110,6 +110,8 @@ namespace KSMS.Infrastructure.Services
             return new
             {
                 NextRoundId = nextRound.Id,
+                NextRoundName = nextRound.Name + $" ({nextRound.RoundType})",
+                NextRoundNumberRegistrationToAdvance = nextRound.NumberOfRegistrationToAdvance,
             };
         }
     }

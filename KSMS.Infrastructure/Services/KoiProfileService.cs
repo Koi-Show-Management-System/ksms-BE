@@ -372,9 +372,9 @@ public class KoiProfileService : BaseService<KoiProfileService>, IKoiProfileServ
                 
                 return roundType switch
                 {
-                    var type when type.Equals(RoundEnum.Preliminary.ToString(), StringComparison.OrdinalIgnoreCase) => $"Vòng sơ khảo {roundName}",
-                    var type when type.Equals(RoundEnum.Evaluation.ToString(), StringComparison.OrdinalIgnoreCase) => $"Vòng đánh giá {roundName}",
-                    var type when type.Equals(RoundEnum.Final.ToString(), StringComparison.OrdinalIgnoreCase) => $"Vòng chung kết {roundName}",
+                    var type when type.Equals(RoundEnum.Preliminary.ToString(), StringComparison.OrdinalIgnoreCase) => $"Vòng sơ khảo-{roundName}",
+                    var type when type.Equals(RoundEnum.Evaluation.ToString(), StringComparison.OrdinalIgnoreCase) => $"Vòng đánh giá-{roundName}",
+                    var type when type.Equals(RoundEnum.Final.ToString(), StringComparison.OrdinalIgnoreCase) => $"Vòng chung kết-{roundName}",
                     _ => $"Vòng {roundType} {roundName}"
                 };
             }
