@@ -41,10 +41,10 @@ namespace KSMS.Infrastructure.Services
                 throw new NotFoundException("Không tìm thấy triển lãm");
             }
             var existingCategory = await _unitOfWork.GetRepository<CompetitionCategory>().SingleOrDefaultAsync(predicate: k =>
-                k.Name.ToLower() == request.Name.ToLower());
+                k.Name.ToLower() == request.Name.ToLower() && k.KoiShowId == request.KoiShowId);
             if (existingCategory is not null)
             {
-                throw new BadRequestException("Tên hạng mục đã tồn tại. Vui lòng chọn tên khác");
+                throw new BadRequestException("Tên hạng mục đã tồn tại trong triển lãm này. Vui lòng chọn tên khác");
             }
             if (request.CreateCompetionCategoryVarieties.Any())
             {
@@ -160,10 +160,10 @@ namespace KSMS.Infrastructure.Services
                 throw new NotFoundException("Không tìm thấy cuộc thi");
             }
             var existingCategory = await _unitOfWork.GetRepository<CompetitionCategory>().SingleOrDefaultAsync(predicate: k =>
-                k.Name.ToLower() == request.Name.ToLower() && k.Id != id);  
+                k.Name.ToLower() == request.Name.ToLower() && k.Id != id && k.KoiShowId == request.KoiShowId);  
             if (existingCategory is not null)
             {
-                throw new BadRequestException("Tên hạng mục đã tồn tại. Vui lòng chọn tên khác");
+                throw new BadRequestException("Tên hạng mục đã tồn tại trong triển lãm này. Vui lòng chọn tên khác");
             }
             if (request.CreateCompetionCategoryVarieties.Any())
             {
