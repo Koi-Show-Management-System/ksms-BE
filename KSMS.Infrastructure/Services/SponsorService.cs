@@ -25,6 +25,16 @@ public class SponsorService : BaseService<SponsorService>, ISponsorService
         {
             throw new NotFoundException("Không tìm thấy cuộc thi");
         }
+        
+        // Kiểm tra trùng tên sponsor trong cùng một show
+        var existingSponsor = await _unitOfWork.GetRepository<Sponsor>().SingleOrDefaultAsync(
+            predicate: s => s.KoiShowId == koiShowId && s.Name.ToLower() == request.Name.ToLower());
+            
+        if (existingSponsor != null)
+        {
+            throw new BadRequestException("Tên nhà tài trợ đã tồn tại trong triển lãm này. Vui lòng chọn tên khác");
+        }
+        
         var sponsor = request.Adapt<Sponsor>();
         sponsor.KoiShowId = koiShowId;
         await _unitOfWork.GetRepository<Sponsor>().InsertAsync(sponsor);
@@ -38,6 +48,18 @@ public class SponsorService : BaseService<SponsorService>, ISponsorService
         {
             throw new NotFoundException("Không tìm thấy nhà tài trợ");
         }
+        
+        // Kiểm tra trùng tên sponsor trong cùng một show (loại trừ chính sponsor này)
+        var existingSponsor = await _unitOfWork.GetRepository<Sponsor>().SingleOrDefaultAsync(
+            predicate: s => s.KoiShowId == sponsor.KoiShowId && 
+                           s.Id != id && 
+                           s.Name.ToLower() == request.Name.ToLower());
+            
+        if (existingSponsor != null)
+        {
+            throw new BadRequestException("Tên nhà tài trợ đã tồn tại trong triển lãm này. Vui lòng chọn tên khác");
+        }
+        
         request.Adapt(sponsor);
         _unitOfWork.GetRepository<Sponsor>().UpdateAsync(sponsor);
         await _unitOfWork.CommitAsync();

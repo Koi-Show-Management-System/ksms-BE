@@ -609,17 +609,28 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
             await _unitOfWork.CommitAsync();
             var koiShow = await _unitOfWork.GetRepository<KoiShow>().SingleOrDefaultAsync(
                 predicate: x => x.Id == registrationPayment.Registration.KoiShowId);
+            
+            // Lấy thông tin chi tiết về cá Koi và hạng mục thi đấu
+            var koiProfile = await _unitOfWork.GetRepository<KoiProfile>()
+                .SingleOrDefaultAsync(predicate: k => k.Id == registrationPayment.Registration.KoiProfileId);
+                
+            var category = await _unitOfWork.GetRepository<CompetitionCategory>()
+                .SingleOrDefaultAsync(predicate: c => c.Id == registrationPayment.Registration.CompetitionCategoryId);
+                
             var staffList = await _unitOfWork.GetRepository<ShowStaff>()
                 .GetListAsync(predicate: s => s.KoiShowId == registrationPayment.Registration.KoiShowId,
                     include: query => query.Include(s => s.Account));
+            
+            // Cập nhật nội dung thông báo với thông tin chi tiết
             await _notificationService.SendNotificationToMany(staffList.Select(s => s.AccountId).ToList(),
                 "Thông báo đăng ký mới",
-                $"Có một đơn đăng ký mới tham gia triển lãm Koi: {koiShow.Name}. Vui lòng kiểm tra chi tiết.",
+                $"Có một đơn đăng ký mới cho cá Koi {koiProfile.Name} tham gia hạng mục {category.Name} trong triển lãm: {koiShow.Name}. Vui lòng kiểm tra chi tiết.",
                 NotificationType.Registration
             );
+            
             await _notificationService.SendNotification(registrationPayment.Registration.AccountId,
                 "Đăng ký thành công",
-                $"Bạn đã đăng ký thành công tham gia triển lãm {koiShow.Name}. Đơn đăng ký của bạn sẽ được nhân viên duyệt và chi tiết sẽ gửi qua mail.",
+                $"Bạn đã đăng ký thành công cá Koi {koiProfile.Name} tham gia hạng mục {category.Name} trong triển lãm {koiShow.Name}. Đơn đăng ký của bạn sẽ được nhân viên duyệt và chi tiết sẽ gửi qua mail.",
                 NotificationType.Registration);
             _backgroundJobClient.Enqueue(() => _emailService.SendPaymentConfirmationEmail(registrationPaymentId));
         }
