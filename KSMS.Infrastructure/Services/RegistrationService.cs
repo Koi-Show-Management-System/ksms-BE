@@ -734,7 +734,11 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
                 .CountAsync(predicate: x => x.CompetitionCategoryId == category.Id &&
                                             x.KoiShowId == registration.KoiShowId &&
                                             x.Status == RegistrationStatus.Confirmed.ToString().ToLower());
-            registration.RegistrationNumber = $"{GetShowCode(koiShow)}-{GetCategoryPrefix(category)}{confirmedCount:D3}";
+            
+            // Lấy 4 ký tự đầu tiên của Category ID để đảm bảo tính duy nhất cho mã số đăng ký
+            string categoryIdSubstring = category.Id.ToString().Substring(0, 4);
+            registration.RegistrationNumber = $"{GetShowCode(koiShow)}-{GetCategoryPrefix(category)}{categoryIdSubstring}{confirmedCount:D3}";
+            
             // Generate QR code
             var qrCodeData = QrcodeUtil.GenerateQrCode(registration.RegistrationPayment.Id);
             registration.RegistrationPayment.QrcodeData = await _firebaseService.UploadImageAsync(
