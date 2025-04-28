@@ -103,7 +103,7 @@ namespace KSMS.Infrastructure.Services
                     if (tank.FishCount + newFishCount > tank.Tank.Capacity)
                     {
                         throw new Exception(
-                            $"Hồ {tank.Tank.Id} không đủ chỗ trống. Sức chứa: {tank.Tank.Capacity}, Đã có: {tank.FishCount}, Thêm mới: {newFishCount}");
+                            $"Hồ {tank.Tank.Name} không đủ chỗ trống. Sức chứa: {tank.Tank.Capacity}, Đã có: {tank.FishCount}, Thêm mới: {newFishCount}");
                     }
                 }
 

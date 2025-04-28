@@ -274,7 +274,7 @@ public static class MailUtil
                             </div>
                             <ul style='margin: 10px 0; padding-left: 20px;'>
                                 <li><strong>Mã giao dịch:</strong> {registration.RegistrationPayment.TransactionCode}</li>
-                                <li><strong>Hiệu lực:</strong> Mã QR có hiệu lực trong vòng 30 phút kể từ khi check-in</li>
+                                <li><strong>Hiệu lực:</strong> Mã QR chỉ có hiệu lực trong thời gian check-in cá Koi theo lịch trình sự kiện. Sau thời gian này, mã QR sẽ hết hiệu lực và không thể check-in</li>
                                 <li><strong>Lưu ý:</strong> Vui lòng đến đúng giờ để đảm bảo quyền lợi tham gia cuộc thi</li>
                             </ul>
 
@@ -522,8 +522,9 @@ public static class MailUtil
                                     <div style='padding: 20px; display: flex; justify-content: space-between; align-items: center;'>
                                         <div style='flex: 1;'>
                                             <p style='margin: 5px 0; color: #666;'><strong>Sự kiện:</strong> {koiShow.Name}</p>
-                                            <p style='margin: 5px 0; color: #666;'><strong>Thời gian:</strong> {koiShow.StartDate:dd/MM/yyyy HH:mm}</p>
+                                            <p style='margin: 5px 0; color: #666;'><strong>Thời gian bắt đầu sự kiện:</strong> {koiShow.StartDate:dd/MM/yyyy HH:mm}</p>
                                             <p style='margin: 5px 0; color: #666;'><strong>Địa điểm:</strong> {koiShow.Location}</p>
+                                            <p style='margin: 5px 0; color: #666;'><strong>Lưu ý:</strong> Quý khách vui lòng tham khảo lịch trình chính thức của sự kiện để nắm rõ khung giờ check-in khuyến nghị</p>
                                         </div>
                                         <div style='margin-left: 20px; text-align: center;'>
                                             <img src='{ticket.QrcodeData}' alt='QR Code' style='width: 120px; height: 120px; border: 1px solid #ddd; padding: 5px; background-color: white;'>
@@ -541,6 +542,7 @@ public static class MailUtil
                                 <li>Vui lòng xuất trình mã QR khi check-in tại sự kiện</li>
                                 <li>Mỗi mã QR chỉ có thể sử dụng một lần</li>
                                 <li>Không chia sẻ mã QR với người khác</li>
+                                <li>Khung giờ check-in khuyến nghị nằm trong giai đoạn TicketCheckIn theo lịch trình chính thức của sự kiện. Trong thời gian này, quý khách sẽ được phục vụ ưu tiên và có trải nghiệm tốt nhất. Sau thời gian này, quý khách vẫn có thể check-in bình thường để tham dự triển lãm</li>
                             </ul>
 
                             <p>Nếu bạn cần hỗ trợ thêm hoặc có bất kỳ thắc mắc nào, vui lòng liên hệ với chúng tôi qua:</p>
