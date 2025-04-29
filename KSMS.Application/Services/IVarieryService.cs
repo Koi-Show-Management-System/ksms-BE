@@ -7,6 +7,8 @@ namespace KSMS.Application.Services;
 public interface IVarieryService
 {
     Task CreateVariety(CreateVarietyRequest createVarietyRequest);
+    
+    Task UpdateVariety(Guid id, UpdateVarietyRequest updateVarietyRequest);
 
     Task<Paginate<VarietyResponse>> GetPagingVariety(int page, int size);
 }
