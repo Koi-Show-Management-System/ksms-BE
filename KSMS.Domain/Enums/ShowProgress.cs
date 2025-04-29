@@ -2,7 +2,7 @@
 
 public enum ShowProgress
 {
-    RegistrationOpen,   
+    RegistrationOpen,
     KoiCheckIn,
     TicketCheckIn,
     Preliminary,
