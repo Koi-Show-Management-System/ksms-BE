@@ -9,6 +9,7 @@ using Mapster;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using System.Security.Claims;
+using KSMS.Domain.Exceptions;
 
 namespace KSMS.Infrastructure.Services;
 
@@ -19,7 +20,41 @@ public class VarietyService : BaseService<VarietyService>, IVarieryService
     }
     public async Task CreateVariety(CreateVarietyRequest createVarietyRequest)
     {
+        // Kiểm tra trùng tên (không phân biệt chữ hoa/thường)
+        var existingVariety = await _unitOfWork.GetRepository<Variety>()
+            .SingleOrDefaultAsync(predicate: v => v.Name.ToLower() == createVarietyRequest.Name.ToLower());
+            
+        if (existingVariety != null)
+        {
+            throw new BadRequestException("Tên giống cá đã tồn tại. Vui lòng chọn tên khác");
+        }
+        
         await _unitOfWork.GetRepository<Variety>().InsertAsync(createVarietyRequest.Adapt<Variety>());
+        await _unitOfWork.CommitAsync();
+    }
+
+    public async Task UpdateVariety(Guid id, UpdateVarietyRequest updateVarietyRequest)
+    {
+        var variety = await _unitOfWork.GetRepository<Variety>()
+            .SingleOrDefaultAsync(predicate: v => v.Id == id);
+        
+        if (variety == null)
+        {
+            throw new NotFoundException("Không tìm thấy giống cá");
+        }
+        
+        // Kiểm tra trùng tên giống cá (loại trừ chính giống cá này)
+        var existingVariety = await _unitOfWork.GetRepository<Variety>()
+            .SingleOrDefaultAsync(predicate: v => v.Id != id && 
+                                               v.Name.ToLower() == updateVarietyRequest.Name.ToLower());
+        
+        if (existingVariety != null)
+        {
+            throw new BadRequestException("Tên giống cá đã tồn tại");
+        }
+        
+        updateVarietyRequest.Adapt(variety);
+        _unitOfWork.GetRepository<Variety>().UpdateAsync(variety);
         await _unitOfWork.CommitAsync();
     }
 
@@ -28,4 +63,6 @@ public class VarietyService : BaseService<VarietyService>, IVarieryService
         return (await _unitOfWork.GetRepository<Variety>().GetPagingListAsync(page: page, size: size))
             .Adapt<Paginate<VarietyResponse>>();
     }
+    
+    
 }
