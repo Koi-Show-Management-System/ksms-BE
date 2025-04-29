@@ -57,13 +57,13 @@ namespace KSMS.API.Controllers
             var criteria = await _criterionService.GetCriteriaCompetitionCategory(competitionCategoryId, roundId);
             return Ok(ApiResponse<object>.Success(criteria, "Lấy danh sách tiêu chí hạng mục thành công"));
         }
-        //[HttpDelete("{id:guid}")]
-        //public async Task<ActionResult<ApiResponse<object>>> DeleteCriterion(Guid id)
-        //{
-        //    await _criterionService.DeleteCriterionAsync(id);
-        //    return Ok(ApiResponse<object>.Success(null, "Criterion deleted successfully"));
-        //}
+        [HttpDelete("{id:guid}")]
+        public async Task<ActionResult<ApiResponse<object>>> DeleteCriterion(Guid id)
+        {
+            await _criterionService.DeleteCriteriaAsync(id);
+            return Ok(ApiResponse<object>.Success(null, "Xóa tiêu chí thành công"));
+        }
 
-
+        
     }
 }

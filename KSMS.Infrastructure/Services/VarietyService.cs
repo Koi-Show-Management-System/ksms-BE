@@ -64,5 +64,36 @@ public class VarietyService : BaseService<VarietyService>, IVarieryService
             .Adapt<Paginate<VarietyResponse>>();
     }
     
-    
+    public async Task DeleteVariety(Guid id)
+    {
+        var variety = await _unitOfWork.GetRepository<Variety>()
+            .SingleOrDefaultAsync(predicate: v => v.Id == id);
+            
+        if (variety == null)
+        {
+            throw new NotFoundException("Không tìm thấy giống cá");
+        }
+        
+        // Kiểm tra xem có KoiProfile nào đang sử dụng Variety này không
+        var koiProfileCount = await _unitOfWork.GetRepository<KoiProfile>()
+            .CountAsync(predicate: kp => kp.VarietyId == id);
+            
+        if (koiProfileCount > 0)
+        {
+            throw new BadRequestException($"Không thể xóa giống cá này vì có {koiProfileCount} cá Koi thuộc giống này");
+        }
+        
+        // Kiểm tra xem có CategoryVariety nào đang sử dụng Variety này không
+        var categoryVarietyCount = await _unitOfWork.GetRepository<CategoryVariety>()
+            .CountAsync(predicate: cv => cv.VarietyId == id);
+            
+        if (categoryVarietyCount > 0)
+        {
+            throw new BadRequestException($"Không thể xóa giống cá này vì có {categoryVarietyCount} hạng mục đang sử dụng giống này");
+        }
+        
+        // Nếu không có đối tượng nào sử dụng, tiến hành xóa
+        _unitOfWork.GetRepository<Variety>().DeleteAsync(variety);
+        await _unitOfWork.CommitAsync();
+    }
 }
