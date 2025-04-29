@@ -26,4 +26,11 @@ public class VarietyController : ControllerBase
         var variety = await _varietyService.GetPagingVariety(page, size);
         return Ok(ApiResponse<object>.Success(variety, "Lấy danh sách giống cá thành công"));
     }
+
+    [HttpPut("update/{id}")]
+    public async Task<ActionResult<ApiResponse<object>>> UpdateVariety(Guid id, [FromBody]UpdateVarietyRequest updateVarietyRequest)
+    {
+        await _varietyService.UpdateVariety(id, updateVarietyRequest);
+        return Ok(ApiResponse<object>.Success(null, "Cập nhật giống cá thành công"));
+    }
 }

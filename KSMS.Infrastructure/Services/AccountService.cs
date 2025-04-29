@@ -44,7 +44,7 @@ public class AccountService : BaseService<AccountService>, IAccountService
         _notificationService = notificationService;
         _hubContext = hubContext;
     }
-    public async Task<Paginate<AccountResponse>> GetPagedUsersAsync(RoleName? roleName, int page, int size)
+    public async Task<Paginate<AccountResponse>> GetPagedUsersAsync(RoleName? roleName, AccountStatus? accountStatus, int page, int size)
     {
         var userRepository = _unitOfWork.GetRepository<Account>();
 
@@ -53,6 +53,11 @@ public class AccountService : BaseService<AccountService>, IAccountService
         {
             var roleString = roleName.Value.ToString();
             filterQuery = filterQuery.AndAlso(r => r.Role == roleString);
+        }
+        if (accountStatus.HasValue)
+        {
+            var statusString = accountStatus.Value.ToString().ToLower();
+            filterQuery = filterQuery.AndAlso(a => a.Status == statusString);
         }
         var pagedUsers = await userRepository.GetPagingListAsync(
             predicate: filterQuery,
