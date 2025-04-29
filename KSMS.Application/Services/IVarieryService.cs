@@ -11,4 +11,6 @@ public interface IVarieryService
     Task UpdateVariety(Guid id, UpdateVarietyRequest updateVarietyRequest);
 
     Task<Paginate<VarietyResponse>> GetPagingVariety(int page, int size);
+    
+    Task DeleteVariety(Guid id);
 }
