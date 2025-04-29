@@ -33,4 +33,11 @@ public class VarietyController : ControllerBase
         await _varietyService.UpdateVariety(id, updateVarietyRequest);
         return Ok(ApiResponse<object>.Success(null, "Cập nhật giống cá thành công"));
     }
+
+    [HttpDelete("delete/{id}")]
+    public async Task<ActionResult<ApiResponse<object>>> DeleteVariety(Guid id)
+    {
+        await _varietyService.DeleteVariety(id);
+        return Ok(ApiResponse<object>.Success(null, "Xóa giống cá thành công"));
+    }
 }
