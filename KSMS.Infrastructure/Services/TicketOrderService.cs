@@ -53,6 +53,13 @@ public class TicketOrderService : BaseService<TicketOrder>, ITicketOrderService
             throw new BadRequestException("Danh sách vé không được để trống");
         }
         
+        // Kiểm tra tổng số lượng vé không vượt quá 10 vé
+        int totalTicketsInOrder = createTicketOrderRequest.ListOrder.Sum(item => item.Quantity);
+        if (totalTicketsInOrder > 10)
+        {
+            throw new BadRequestException("Bạn chỉ được mua tối đa 10 vé cho 1 triển lãm");
+        }
+        
         var firstTicketTypeId = createTicketOrderRequest.ListOrder.First().TicketTypeId;
         var firstTicketType = await _unitOfWork.GetRepository<TicketType>()
             .SingleOrDefaultAsync(
@@ -64,6 +71,40 @@ public class TicketOrderService : BaseService<TicketOrder>, ITicketOrderService
         if (firstTicketType == null)
         {
             throw new NotFoundException($"Không tìm thấy loại vé có ID {firstTicketTypeId}");
+        }
+        
+        // Kiểm tra tổng số vé mà tài khoản này đã mua cho triển lãm này
+        var koiShowId = firstTicketType.KoiShowId;
+        var ticketAlreadyPurchased = 0;
+        
+        // Lấy tất cả các đơn hàng đã thanh toán của tài khoản cho triển lãm này
+        var paidOrders = await _unitOfWork.GetRepository<TicketOrder>()
+            .GetListAsync(
+                predicate: o => o.AccountId == accountId && 
+                               o.Status == OrderStatus.Paid.ToString().ToLower() &&
+                               o.TicketOrderDetails.Any(d => d.TicketType.KoiShowId == koiShowId),
+                include: query => query.Include(o => o.TicketOrderDetails)
+                                     .ThenInclude(d => d.TicketType)
+            );
+            
+        // Tính tổng số vé đã mua
+        foreach (var order in paidOrders)
+        {
+            foreach (var detail in order.TicketOrderDetails)
+            {
+                // Chỉ đếm vé của triển lãm này
+                if (detail.TicketType.KoiShowId == koiShowId)
+                {
+                    ticketAlreadyPurchased += detail.Quantity;
+                }
+            }
+        }
+        
+        // Kiểm tra nếu tổng số vé (đã mua + đang mua) vượt quá 10
+        var newTicketsQuantity = createTicketOrderRequest.ListOrder.Sum(item => item.Quantity);
+        if (ticketAlreadyPurchased + newTicketsQuantity > 10)
+        {
+            throw new BadRequestException($"Bạn chỉ được mua tối đa 10 vé cho một triển lãm. Bạn đã mua {ticketAlreadyPurchased} vé, chỉ còn có thể mua thêm {10 - ticketAlreadyPurchased} vé.");
         }
         
         // Kiểm tra xem show có bị hủy không
