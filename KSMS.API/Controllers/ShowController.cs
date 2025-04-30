@@ -73,5 +73,21 @@ namespace KSMS.API.Controllers
             await _showService.CancelShowAsync(id, status, cancellationReason);
             return Ok(ApiResponse<object>.Success(null, "Cập nhật trạng thái triển lãm thành công"));
         }
+        
+        [HttpPut("update-status-manually")]
+        //[Authorize(Roles = "Admin, Manager")]
+        public async Task<ActionResult<ApiResponse<object>>> UpdateShowStatusManually(
+            [FromQuery] Guid koiShowId,
+            [FromQuery] string statusName)
+        {
+            var result = await _showService.UpdateShowStatusManually(koiShowId, statusName, true);
+            
+            if (result)
+            {
+                return Ok(ApiResponse<object>.Success(null, $"Kích hoạt trạng thái '{statusName}' thành công"));
+            }
+
+            return Ok(ApiResponse<object>.Success(null, $"Trạng thái '{statusName}' đã ở trạng thái yêu cầu"));
+        }
     }
 }
