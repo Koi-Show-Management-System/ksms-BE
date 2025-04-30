@@ -920,7 +920,7 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
         var registrations = await _unitOfWork.GetRepository<Registration>()
             .GetPagingListAsync(
                 predicate: predicate,
-                orderBy: q => q.OrderByDescending(r => r.CreatedAt),
+                orderBy: q => q.OrderBy(r => r.CreatedAt),
                 include: q => q.AsSplitQuery()
                     .Include(r => r.KoiShow)
                     .Include(r => r.KoiProfile)
