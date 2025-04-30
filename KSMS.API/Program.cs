@@ -27,7 +27,7 @@ builder.Services.AddControllers().AddJsonOptions(options =>
         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddHostedService<ShowStatusBackgroundService>();
+//builder.Services.AddHostedService<ShowStatusBackgroundService>();
 builder.Services.AddSwaggerGen();
 // builder.Services.AddSwaggerGen(options =>
 // {
@@ -73,7 +73,7 @@ builder.Services.AddHangfireServer(options =>
     options.ServerTimeout = TimeSpan.FromMinutes(5);
     options.ShutdownTimeout = TimeSpan.FromMinutes(2);
     options.ServerCheckInterval = TimeSpan.FromMinutes(2);
-    options.SchedulePollingInterval = TimeSpan.FromSeconds(30);
+    options.SchedulePollingInterval = TimeSpan.FromSeconds(2);
 });
 ConfigureFireBase.AddFirebase();
 var app = builder.Build();
