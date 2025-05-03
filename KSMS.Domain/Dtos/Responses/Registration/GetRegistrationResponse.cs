@@ -1,4 +1,5 @@
-﻿using KSMS.Domain.Dtos.Responses.CompetitionCategory;
+﻿using KSMS.Domain.Dtos.Responses.Account;
+using KSMS.Domain.Dtos.Responses.CompetitionCategory;
 using KSMS.Domain.Dtos.Responses.KoiMedium;
 using KSMS.Domain.Dtos.Responses.KoiProfile;
 using KSMS.Domain.Dtos.Responses.KoiShow;
@@ -49,6 +50,7 @@ public class GetRegistrationResponse // for user
 
     public KoiProfileResponse? KoiProfile { get; set; }
 
-    public GetKoiShowResponse? KoiShow { get; set; } 
+    public GetKoiShowResponse? KoiShow { get; set; }
+    public AccountResponse? Account { get; set; }
     public CheckOutKoiResponse? CheckOutLog { get; set; }
 }
