@@ -25,6 +25,7 @@ public class KoiShowRevenueItem
     public decimal TicketRevenue { get; set; }
     public decimal TicketRefundAmount { get; set; }
     public decimal SponsorRevenue { get; set; }
+    public decimal AwardRevenue { get; set; }
     public decimal NetProfit { get; set; }
 }
 
