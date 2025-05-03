@@ -928,7 +928,8 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
                     .Include(r => r.CompetitionCategory)
                     .Include(r => r.KoiMedia)
                     .Include(r => r.CheckOutLog)
-                        .ThenInclude(r => r.CheckedOutByNavigation),
+                        .ThenInclude(r => r.CheckedOutByNavigation)
+                    .Include(r => r.Account),
                 page: page,
                 size: size
             );

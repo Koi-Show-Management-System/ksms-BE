@@ -265,6 +265,8 @@ namespace KSMS.Infrastructure.Services
                     .ThenInclude(x => x.KoiShow)
                     .Include(x => x.Registration)
                     .ThenInclude(x => x.KoiMedia)
+                    .Include(x => x.Registration)
+                    .ThenInclude(x => x.Account)
                     .Include(x => x.RoundResults),
                 orderBy: q =>
                 {
