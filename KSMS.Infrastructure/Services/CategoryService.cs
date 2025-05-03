@@ -454,12 +454,9 @@ namespace KSMS.Infrastructure.Services
                 throw new BadRequestException("Lý do hủy hạng mục không được để trống");
             }
             
-            // Kiểm tra xem cuộc thi đã diễn ra chưa
+            // Kiểm tra thời gian hiện tại so với thời gian bắt đầu của triển lãm
             var currentTime = VietNamTimeUtil.GetVietnamTime();
-            if (category.KoiShow.StartDate <= currentTime)
-            {
-                throw new BadRequestException("Không thể hủy hạng mục khi cuộc thi đã bắt đầu");
-            }
+            bool isShowStarted = category.KoiShow.Status == ShowStatus.InProgress.ToString().ToLower();
             
             // Cập nhật trạng thái hạng mục thành cancelled
             category.Status = CategoryStatus.Cancelled.ToString().ToLower();
@@ -467,37 +464,87 @@ namespace KSMS.Infrastructure.Services
             _unitOfWork.GetRepository<CompetitionCategory>().UpdateAsync(category);
             await _unitOfWork.CommitAsync();
             
-            // Lấy danh sách tất cả các đăng ký cho hạng mục này có trạng thái là confirmed hoặc pending
+            // Lấy danh sách tất cả các đăng ký cho hạng mục này
             var registrations = await _unitOfWork.GetRepository<Registration>()
                 .GetListAsync(
                     include: query => query
                         .Include(r => r.Account),
-                    predicate: r => r.CompetitionCategoryId == id && 
-                                   (r.Status == RegistrationStatus.Confirmed.ToString().ToLower() ||
-                                    r.Status == RegistrationStatus.Pending.ToString().ToLower()));
+                    predicate: r => r.CompetitionCategoryId == id);
             
-            // Nhóm các đăng ký theo account
+            // Nhóm các đăng ký theo account và trạng thái
             var registrationsByAccount = registrations.GroupBy(r => r.AccountId);
             
             // Xử lý từng người dùng đã đăng ký
             foreach (var accountGroup in registrationsByAccount)
             {
                 var accountId = accountGroup.Key;
-                var accountRegistrations = accountGroup.ToList();
+                var registrationsForAccount = accountGroup.ToList();
                 
-                foreach (var registration in accountRegistrations)
+                // Xác định loại thông báo dựa trên trạng thái đăng ký và thời gian triển lãm
+                bool hasCheckedInRegistrations = registrationsForAccount.Any(r => 
+                    r.Status == RegistrationStatus.CheckIn.ToString().ToLower() ||
+                    r.Status == RegistrationStatus.Competition.ToString().ToLower());
+                    
+                bool hasPendingOrConfirmedRegistrations = registrationsForAccount.Any(r => 
+                    r.Status == RegistrationStatus.Confirmed.ToString().ToLower() ||
+                    r.Status == RegistrationStatus.Pending.ToString().ToLower());
+                
+                if (isShowStarted)
                 {
-                    // Cập nhật trạng thái đăng ký thành pending refund
-                    registration.Status = RegistrationStatus.PendingRefund.ToString().ToLower();
-                    _unitOfWork.GetRepository<Registration>().UpdateAsync(registration);
+                    // Triển lãm đã bắt đầu (đã đến giai đoạn check-in)
+                    if (hasCheckedInRegistrations)
+                    {
+                        // Nếu đã check-in, gửi thông báo hoàn tiền
+                        await _notificationService.SendNotification(
+                            accountId,
+                            $"Hạng mục {category.Name} đã bị hủy - Đang chờ xử lí hoàn tiền",
+                            $"Hạng mục {category.Name} của cuộc thi {category.KoiShow.Name} đã bị hủy vì lý do: {reason}. " +
+                            $"Do bạn đã tham gia check-in, phí đăng ký của bạn sẽ được hoàn trả trong 3-5 ngày làm việc.",
+                            NotificationType.Registration);
+                    }
+                    else if (hasPendingOrConfirmedRegistrations)
+                    {
+                        // Nếu chưa check-in nhưng đã đăng ký, KHÔNG hoàn tiền
+                        await _notificationService.SendNotification(
+                            accountId,
+                            $"Hạng mục {category.Name} đã bị hủy",
+                            $"Hạng mục {category.Name} của cuộc thi {category.KoiShow.Name} đã bị hủy vì lý do: {reason}. " +
+                            $"Do bạn không tham gia check-in đúng lịch, phí đăng ký của bạn sẽ không được hoàn trả.",
+                            NotificationType.Registration);
+                    }
+                    else
+                    {
+                        // Các trạng thái khác
+                        await _notificationService.SendNotification(
+                            accountId,
+                            $"Hạng mục {category.Name} đã bị hủy",
+                            $"Hạng mục {category.Name} của cuộc thi {category.KoiShow.Name} đã bị hủy vì lý do: {reason}.",
+                            NotificationType.Registration);
+                    }
                 }
-                
-                // Gửi thông báo cho người dùng về việc hủy hạng mục
-                await _notificationService.SendNotification(
-                    accountId,
-                    $"Hạng mục {category.Name} đã bị hủy - Đang chờ xử lí hoàn tiền",
-                    $"Hạng mục {category.Name} của cuộc thi {category.KoiShow.Name} đã bị hủy vì lý do: {reason}. Phí đăng ký của bạn đang được xử lí hoàn trả trong 3-5 ngày làm việc.",
-                    NotificationType.Registration);
+                else
+                {
+                    // Triển lãm chưa bắt đầu
+                    if (hasPendingOrConfirmedRegistrations)
+                    {
+                        // Hoàn tiền cho tất cả các đăng ký Confirmed/Pending nếu triển lãm chưa bắt đầu
+                        await _notificationService.SendNotification(
+                            accountId,
+                            $"Hạng mục {category.Name} đã bị hủy - Đang chờ xử lí hoàn tiền",
+                            $"Hạng mục {category.Name} của cuộc thi {category.KoiShow.Name} đã bị hủy vì lý do: {reason}. " +
+                            $"Phí đăng ký của bạn đang được xử lí hoàn trả trong 3-5 ngày làm việc.",
+                            NotificationType.Registration);
+                    }
+                    else
+                    {
+                        // Thông báo thông thường cho các trạng thái khác
+                        await _notificationService.SendNotification(
+                            accountId,
+                            $"Hạng mục {category.Name} đã bị hủy",
+                            $"Hạng mục {category.Name} của cuộc thi {category.KoiShow.Name} đã bị hủy vì lý do: {reason}.",
+                            NotificationType.Registration);
+                    }
+                }
             }
             
             await _unitOfWork.CommitAsync();

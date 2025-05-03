@@ -481,16 +481,7 @@ namespace KSMS.Infrastructure.Services
 
                 foreach (var accountGroup in registrationsByAccount)
                 {
-                    foreach (var registration in accountGroup)
-                    {
-                        var reg = await _unitOfWork.GetRepository<Registration>()
-                            .SingleOrDefaultAsync(predicate: r => r.Id == registration.Id);
-                        if (reg != null)
-                        {
-                            reg.Status = RegistrationStatus.PendingRefund.ToString().ToLower();
-                            _unitOfWork.GetRepository<Registration>().UpdateAsync(reg);
-                        }
-                    }
+                    // Đã loại bỏ phần đổi status của registration sang pendingrefund
                     await _notificationService.SendNotification(
                         accountGroup.Key,
                         "Triển lãm đã bị hủy - Đang chờ xử lí hoàn tiền",
