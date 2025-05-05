@@ -9,6 +9,7 @@ using KSMS.Infrastructure.Utils;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using ShowStatus = KSMS.Domain.Enums.ShowStatus;
 
 namespace KSMS.Infrastructure.Services;
 
@@ -45,9 +46,17 @@ public class TicketService : BaseService<TicketService>, ITicketService
         {
             throw new BadRequestException("Vé đã bị hủy");
         }
-        if (ticket.TicketOrderDetail.TicketType.KoiShow.EndDate < VietNamTimeUtil.GetVietnamTime())
+        
+        // Kiểm tra trạng thái của triển lãm thay vì thời gian kết thúc
+        var koiShow = ticket.TicketOrderDetail.TicketType.KoiShow;
+        if (koiShow.Status?.ToLower() != ShowStatus.InProgress.ToString().ToLower())
         {
-            throw new BadRequestException("Triển lãm đã kết thúc");
+            throw new BadRequestException("Triển lãm không trong giai đoạn diễn ra. Không thể check-in.");
+        }
+        
+        if (koiShow.Status?.ToLower() == ShowStatus.Finished.ToString().ToLower())
+        {
+            throw new BadRequestException("Triển lãm đã kết thúc. Không thể check-in.");
         }
 
         return new GetTicketInfoByQrCode
@@ -136,9 +145,17 @@ public class TicketService : BaseService<TicketService>, ITicketService
         {
             throw new BadRequestException("Vé đã bị hủy");
         }
-        if (ticketOrderDetail.TicketType.KoiShow.EndDate < VietNamTimeUtil.GetVietnamTime())
+        
+        // Kiểm tra trạng thái của triển lãm thay vì thời gian kết thúc
+        var koiShow = ticketOrderDetail.TicketType.KoiShow;
+        if (koiShow.Status?.ToLower() != ShowStatus.InProgress.ToString().ToLower())
         {
-            throw new BadRequestException("Triển lãm đã kết thúc");
+            throw new BadRequestException("Triển lãm không trong giai đoạn diễn ra. Không thể check-in.");
+        }
+        
+        if (koiShow.Status?.ToLower() == ShowStatus.Finished.ToString().ToLower())
+        {
+            throw new BadRequestException("Triển lãm đã kết thúc. Không thể check-in.");
         }
         ticket.Status = TicketStatus.Checkin.ToString().ToLower();
         ticket.CheckInTime = VietNamTimeUtil.GetVietnamTime();
@@ -148,8 +165,8 @@ public class TicketService : BaseService<TicketService>, ITicketService
         await _unitOfWork.CommitAsync();
         await _notificationService.SendNotification(
             ticketOrderDetail.TicketOrder.AccountId,
-            $"Vé {ticketOrderDetail.TicketType.Name} đã được checkin",
-            $"Vé {ticketOrderDetail.TicketType.Name} đã được checkin tại {ticketOrderDetail.TicketType.KoiShow.Location}",
+            $"{ticketOrderDetail.TicketType.Name} đã được checkin",
+            $"{ticketOrderDetail.TicketType.Name} đã được checkin tại {ticketOrderDetail.TicketType.KoiShow.Location}",
             NotificationType.System);
         
     }

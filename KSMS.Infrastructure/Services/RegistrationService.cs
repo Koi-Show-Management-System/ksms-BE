@@ -289,6 +289,21 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
             throw new NotFoundException("Không tìm thấy cuộc thi");
         }
         
+        if (koiShow.Status == ShowStatus.Cancelled.ToString().ToLower())
+        {
+            throw new BadRequestException("Triển lãm đã bị hủy. Không thể đăng ký tham gia");
+        }
+        
+        if (koiShow.Status == ShowStatus.InProgress.ToString().ToLower())
+        {
+            throw new BadRequestException("Triển lãm đang diễn ra. Không thể đăng ký tham gia");
+        }
+        
+        if (koiShow.Status == ShowStatus.Finished.ToString().ToLower())
+        {
+            throw new BadRequestException("Triển lãm đã kết thúc. Không thể đăng ký tham gia");
+        }
+        
         // Kiểm tra người dùng đã đăng ký show nào diễn ra cùng thời gian chưa
         var userRegistrations = await _unitOfWork.GetRepository<Registration>()
             .GetListAsync(
@@ -339,11 +354,6 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
         if (category is null)
         {
             throw new NotFoundException("Không tìm thấy hạng mục");
-        }
-
-        if (koiShow.Status == ShowStatus.Cancelled.ToString().ToLower())
-        {
-            throw new BadRequestException("Triển lãm đã bị hủy. Không thể đăng ký tham gia");
         }
         
         // Kiểm tra xem hiện tại có đang trong giai đoạn đăng ký không

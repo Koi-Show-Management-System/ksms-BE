@@ -113,14 +113,10 @@ public class TicketOrderService : BaseService<TicketOrder>, ITicketOrderService
             throw new BadRequestException("Triển lãm đã bị hủy. Không thể mua vé.");
         }
         
-        // Kiểm tra thời gian cho phép mua vé
-        var currentTime = VietNamTimeUtil.GetVietnamTime();
-        var ticketCheckInStatus = firstTicketType.KoiShow.ShowStatuses
-            .FirstOrDefault(s => s.StatusName == ShowProgress.TicketCheckIn.ToString());
-            
-        if (ticketCheckInStatus != null && currentTime >= ticketCheckInStatus.StartDate)
+        // Chỉ kiểm tra trạng thái kết thúc của triển lãm
+        if (firstTicketType.KoiShow.Status?.ToLower() == Domain.Enums.ShowStatus.Finished.ToString().ToLower())
         {
-            throw new BadRequestException("Đã quá thời gian cho phép mua vé. Triển lãm đã bắt đầu giai đoạn check-in vé.");
+            throw new BadRequestException("Triển lãm đã kết thúc. Không thể mua vé.");
         }
         
         // Sử dụng transaction với isolation level Serializable để đảm bảo tính nhất quán
