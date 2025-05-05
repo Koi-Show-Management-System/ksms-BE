@@ -11,6 +11,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using KSMS.Domain.Enums;
+using KSMS.Infrastructure.Utils;
+using ShowStatus = KSMS.Domain.Enums.ShowStatus;
 
 namespace KSMS.Infrastructure.Services
 {
@@ -47,6 +50,26 @@ namespace KSMS.Infrastructure.Services
                 throw new BadRequestException("Mã QR đã được check-in.");
             }
             
+            // Lấy thông tin KoiShow
+            var koiShowRepository = _unitOfWork.GetRepository<KoiShow>();
+            var koiShow = await koiShowRepository.SingleOrDefaultAsync(
+                predicate: ks => ks.Id == payment.Registration.KoiShowId,
+                include: query => query.Include(s => s.ShowStatuses)
+            );
+            
+            if (koiShow != null)
+            {
+                // Kiểm tra trạng thái của triển lãm thay vì thời gian check-in
+                if (koiShow.Status?.ToLower() != ShowStatus.InProgress.ToString().ToLower())
+                {
+                    throw new BadRequestException("Triển lãm không trong giai đoạn diễn ra. Không thể check-in.");
+                }
+                
+                if (koiShow.Status?.ToLower() == ShowStatus.Finished.ToString().ToLower())
+                {
+                    throw new BadRequestException("Triển lãm đã kết thúc. Không thể check-in.");
+                }
+            }
 
             return payment.Adapt<RegistrationPaymentResponse>();
         }

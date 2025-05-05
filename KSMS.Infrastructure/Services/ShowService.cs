@@ -26,6 +26,7 @@ using KSMS.Domain.Enums;
 using ShowStatus = KSMS.Domain.Entities.ShowStatus;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Caching.Memory;
+using KSMS.Infrastructure.Hubs;
 
 namespace KSMS.Infrastructure.Services
 {
@@ -37,10 +38,13 @@ namespace KSMS.Infrastructure.Services
         private readonly IServiceScopeFactory _serviceScopeFactory;
         private readonly IMemoryCache _cache;
         private readonly Dictionary<ShowProgress, string> _notificationMessages;
+        private readonly IShowHubService _showHubService;
 
         public ShowService(IUnitOfWork<KoiShowManagementSystemContext> unitOfWork,
-            ILogger<ShowService> logger, IHttpContextAccessor httpContextAccessor, INotificationService notificationService, IBackgroundJobClient backgroundJobClient, IEmailService emailService,
-            IServiceScopeFactory serviceScopeFactory, IMemoryCache cache)
+            ILogger<ShowService> logger, IHttpContextAccessor httpContextAccessor, 
+            INotificationService notificationService, IBackgroundJobClient backgroundJobClient, 
+            IEmailService emailService, IServiceScopeFactory serviceScopeFactory, 
+            IMemoryCache cache, IShowHubService showHubService)
             : base(unitOfWork, logger, httpContextAccessor)
         {
             _notificationService = notificationService;
@@ -48,6 +52,7 @@ namespace KSMS.Infrastructure.Services
             _emailService = emailService;
             _serviceScopeFactory = serviceScopeFactory;
             _cache = cache;
+            _showHubService = showHubService;
             _notificationMessages = new Dictionary<ShowProgress, string>
             {
                 { ShowProgress.RegistrationOpen, "Đăng ký tham gia triển lãm đã được mở!" },
@@ -444,6 +449,10 @@ namespace KSMS.Infrastructure.Services
             {
                 throw new NotFoundException("Không tìm thấy triển lãm");
             }
+            
+            // Lưu trạng thái cũ để so sánh
+            var oldStatus = show.Status;
+            
             show.Status = status switch
             {
                 Domain.Enums.ShowStatus.Cancelled =>  Domain.Enums.ShowStatus.Cancelled.ToString().ToLower(),
@@ -455,6 +464,9 @@ namespace KSMS.Infrastructure.Services
                 Domain.Enums.ShowStatus.Upcoming =>  Domain.Enums.ShowStatus.Upcoming.ToString().ToLower(),
                 _ => show.Status
             };
+
+            // Gửi thông báo realtime về việc cập nhật trạng thái
+           
 
             if (show.Status == Domain.Enums.ShowStatus.Cancelled.ToString().ToLower())
             {
@@ -468,7 +480,7 @@ namespace KSMS.Infrastructure.Services
                 
                 // Hủy tất cả công việc Hangfire đã lên lịch cho show này
                 // Lưu ý: Bạn cần đảm bảo đã thiết lập mô hình của Hangfire để hỗ trợ việc này
-                _backgroundJobClient.Enqueue(() => CancelScheduledShowJobs(show.Id));
+                //_backgroundJobClient.Enqueue(() => CancelScheduledShowJobs(show.Id));
                 
                 var registrations = await _unitOfWork.GetRepository<Registration>()
                     .GetListAsync(
@@ -573,8 +585,46 @@ namespace KSMS.Infrastructure.Services
                 _backgroundJobClient.Enqueue(() => _emailService.SendRefereeAssignmentNotification(show.Id));
                 
                 // THÊM MỚI: Lên lịch Hangfire cho các trạng thái show khi published
-                await ScheduleShowStatusJobs(show.Id);
+                //await ScheduleShowStatusJobs(show.Id);
             }
+            if (show.Status == Domain.Enums.ShowStatus.InProgress.ToString().ToLower())
+            {
+                _unitOfWork.GetRepository<KoiShow>().UpdateAsync(show);
+                await _unitOfWork.CommitAsync();
+                await SendToStaff(show.Id, $"Thông báo: {show.Name}", 
+                    $"Triển lãm {show.Name} đang chính thức diễn ra. Chuẩn bị đón tiếp người tham dự.");
+                            
+                // Gửi thông báo cho người đã đăng ký
+                await SendToRegisteredUsers(show.Id, $"Thông báo: {show.Name}", 
+                    $"Triển lãm {show.Name} đang diễn ra. Hãy đến check-in cá theo lịch trình sự kiện.");
+                            
+                // Gửi thông báo cho người mua vé
+                await SendToTicketPurchasers(show.Id, $"Thông báo: {show.Name}", 
+                    $"Triển lãm {show.Name} đang diễn ra. Hãy đến check-in vé theo lịch trình sự kiện.");
+                            
+                // Gửi thông báo cho các user còn lại
+                await SendToOtherUsers(show.Id, $"Thông báo: {show.Name}", "Triển lãm đang diễn ra!");
+            }
+            if (show.Status == Domain.Enums.ShowStatus.Finished.ToString().ToLower())
+            {
+                _unitOfWork.GetRepository<KoiShow>().UpdateAsync(show);
+                await _unitOfWork.CommitAsync();
+                await SendToStaff(show.Id, $"Thông báo: {show.Name}",
+                    $"Triển lãm {show.Name} đã kết thúc. Cảm ơn bạn đã tham gia tổ chức sự kiện."
+                );
+                await SendToAllUsersExceptStaff($"Thông báo: {show.Name}", "Triển lãm đã kết thúc!", await GetShowStaffIds(show.Id));
+            }
+
+            if (show.Status == Domain.Enums.ShowStatus.Upcoming.ToString().ToLower())
+            {
+                _unitOfWork.GetRepository<KoiShow>().UpdateAsync(show);
+                await _unitOfWork.CommitAsync();
+                await SendToStaff(show.Id, $"Thông báo: {show.Name}",
+                    $"Triển lãm {show.Name} sắp diễn ra. Hãy chuẩn bị cho sự kiện lớn này!"
+                );
+                await SendToAllUsersExceptStaff($"Thông báo: {show.Name}", "Triển lãm sắp diễn ra! Hãy nhanh tay mua vé hoặc đăng kí tham gia triển lãm. Số lượng có hạn!!!!", await GetShowStaffIds(show.Id));
+            }
+            await _showHubService.SendShowStatusUpdate(id, show.Status);
         }
 
         public async Task<Paginate<PaginatedKoiShowResponse>> GetPagedShowsAsync(int page, int size)

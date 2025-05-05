@@ -4,4 +4,5 @@ public enum RefundType
 {
     NotQualified,
     ShowCancelled,
+    CategoryCancelled,
 }

@@ -76,6 +76,7 @@ builder.Services.AddHangfireServer(options =>
     options.SchedulePollingInterval = TimeSpan.FromSeconds(2);
 });
 ConfigureFireBase.AddFirebase();
+builder.Services.AddSingleton<IShowHubService, ShowHubService>();
 var app = builder.Build();
 
 app.UseSwagger();
@@ -102,6 +103,7 @@ app.MapHub<ScoreHub>("/scoreHub");
 app.MapHub<NotificationHub>("/notificationHub");
 app.MapHub<VoteHub>("/voteHub");
 app.MapHub<LivestreamHub>("/livestreamHub");
+app.MapHub<ShowHub>("/showHub");
 
 await app.RunAsync();
 
