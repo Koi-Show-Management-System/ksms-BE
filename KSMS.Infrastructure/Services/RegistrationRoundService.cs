@@ -137,6 +137,7 @@ namespace KSMS.Infrastructure.Services
                 var regisRoundRepository = _unitOfWork.GetRepository<RegistrationRound>();
                 var registrationRepository = _unitOfWork.GetRepository<Registration>();
                 var roundRepository = _unitOfWork.GetRepository<Round>();
+                var categoryRepository = _unitOfWork.GetRepository<CompetitionCategory>();
 
                 // 1️⃣ Kiểm tra danh sách cá hợp lệ
                 if (registrationIds == null || !registrationIds.Any())
@@ -145,8 +146,10 @@ namespace KSMS.Infrastructure.Services
                 }
 
                 // 2️⃣ Kiểm tra RoundId có tồn tại không
-                var roundExists = (await roundRepository.GetListAsync(predicate: r => r.Id == roundId)).Any();
-                if (!roundExists)
+                var round = await roundRepository.SingleOrDefaultAsync(
+                    predicate: r => r.Id == roundId);
+                
+                if (round == null)
                 {
                     throw new NotFoundException($"Không tìm thấy vòng thi {roundId}. Vui lòng tạo vòng thi trước.");
                 }
@@ -176,6 +179,38 @@ namespace KSMS.Infrastructure.Services
                 if (registrations.Any(r => r.CompetitionCategoryId != categoryId))
                 {
                     throw new BadRequestException("Tất cả các cá phải thuộc cùng một hạng mục.");
+                }
+                
+                // Kiểm tra trạng thái của hạng mục - không cho phép thêm cá vào vòng thi của hạng mục đã bị hủy
+                var category = await categoryRepository.SingleOrDefaultAsync(
+                    predicate: c => c.Id == categoryId,
+                    include: query => query.Include(c => c.KoiShow));
+                
+                if (category == null)
+                {
+                    throw new NotFoundException("Không tìm thấy hạng mục thi đấu.");
+                }
+                
+                if (category.Status?.ToLower() == CategoryStatus.Cancelled.ToString().ToLower())
+                {
+                    throw new BadRequestException("Hạng mục đã bị hủy. Bạn không thể đưa cá vào vòng thi của hạng mục đã bị hủy.");
+                }
+                
+                // Kiểm tra số lượng đăng ký check-in đối với vòng Preliminary
+                if (round.RoundType?.ToLower() == "preliminary")
+                {
+                    // Đếm số lượng đơn đăng ký đã check-in cho hạng mục này
+                    var checkedInCount = await registrationRepository.CountAsync(
+                        predicate: r => r.CompetitionCategoryId == categoryId && 
+                                       r.Status == RegistrationStatus.CheckIn.ToString().ToLower());
+                    
+                    // Kiểm tra so với MinEntries trong category
+                    if (category.MinEntries.HasValue && checkedInCount < category.MinEntries.Value)
+                    {
+                        throw new BadRequestException(
+                            $"Hạng mục chưa đủ người check-in (hiện tại: {checkedInCount}/{category.MinEntries.Value}). " +
+                            $"Cần chờ đủ số lượng hoặc nếu không đủ bạn có thể hủy hạng mục.");
+                    }
                 }
 
                 // 5️⃣ Lấy danh sách cá đã thi đấu trong vòng trước
