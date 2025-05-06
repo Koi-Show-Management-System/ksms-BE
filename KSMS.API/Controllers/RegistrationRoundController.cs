@@ -37,7 +37,20 @@ namespace KSMS.API.Controllers
                 return BadRequest(ApiResponse<object>.Fail(ex.Message));
             }
         }
-
+        [HttpPost("assign-to-first-round")]
+        public async Task<ActionResult<ApiResponse<object>>> AssignTFirstRound(
+            [FromBody] AssignToFirstRound request)
+        {
+            try
+            {
+                await _registrationRoundService.AssignRegistrationsToPreliminaryRound(request.CategoryId, request.RegistrationIds);
+                return Ok(ApiResponse<object>.Success(null, "Gán cá vào vòng thành công"));
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ApiResponse<object>.Fail(ex.Message));
+            }
+        }
         [HttpPut("update-fish-tank")]
         //   [Authorize(Roles = "Staff, Admin, Manager")]
         public async Task<ActionResult<ApiResponse<object>>> UpdateFishesTank(

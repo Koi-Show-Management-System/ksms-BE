@@ -471,5 +471,123 @@ namespace KSMS.Infrastructure.Services
 
             return totalDeduction;
         }
+
+        public async Task AssignRegistrationsToPreliminaryRound(Guid categoryId, List<Guid> registrationIds)
+        {
+            using var transaction = await _unitOfWork.BeginTransactionAsync();
+
+            try
+            {
+                var regisRoundRepository = _unitOfWork.GetRepository<RegistrationRound>();
+                var registrationRepository = _unitOfWork.GetRepository<Registration>();
+                var roundRepository = _unitOfWork.GetRepository<Round>();
+                var categoryRepository = _unitOfWork.GetRepository<CompetitionCategory>();
+
+                // 1️⃣ Kiểm tra hạng mục có tồn tại không
+                var category = await categoryRepository.SingleOrDefaultAsync(
+                    predicate: c => c.Id == categoryId,
+                    include: query => query.Include(c => c.KoiShow));
+                
+                if (category == null)
+                {
+                    throw new NotFoundException("Không tìm thấy hạng mục thi đấu.");
+                }
+                
+                if (category.Status?.ToLower() == CategoryStatus.Cancelled.ToString().ToLower())
+                {
+                    throw new BadRequestException("Hạng mục đã bị hủy. Bạn không thể đưa cá vào vòng thi của hạng mục đã bị hủy.");
+                }
+
+                // 2️⃣ Tìm vòng Preliminary của hạng mục
+                var preliminaryRound = await roundRepository.SingleOrDefaultAsync(
+                    predicate: r => r.CompetitionCategoriesId == categoryId && 
+                                    r.RoundType == RoundEnum.Preliminary.ToString());
+                
+                if (preliminaryRound == null)
+                {
+                    throw new NotFoundException($"Không tìm thấy vòng sơ khảo cho hạng mục này. Vui lòng tạo vòng thi trước.");
+                }
+
+                // 3️⃣ Kiểm tra xem vòng đấu đã được công khai chưa
+                var publishedRegistrationsCount = await regisRoundRepository.CountAsync(
+                    predicate: rr => rr.RoundId == preliminaryRound.Id && rr.Status == "public");
+                if (publishedRegistrationsCount > 0)
+                {
+                    throw new BadRequestException("Không thể thêm cá vào vòng thi đã được công khai.");
+                }
+                
+                // 4️⃣ Kiểm tra danh sách cá hợp lệ
+                if (registrationIds == null || !registrationIds.Any())
+                {
+                    throw new BadRequestException("Danh sách cá không được để trống.");
+                }
+                
+                // 5️⃣ Lấy danh sách đăng ký đã check-in theo IDs được chỉ định
+                var registrations = await registrationRepository.GetListAsync(
+                    predicate: r => r.CompetitionCategoryId == categoryId && 
+                                    registrationIds.Contains(r.Id) &&
+                                    r.Status == RegistrationStatus.CheckIn.ToString().ToLower());
+
+                if (!registrations.Any())
+                {
+                    throw new BadRequestException("Không tìm thấy đơn đăng ký hợp lệ đã check-in trong danh sách đã chỉ định.");
+                }
+                
+                // Kiểm tra xem tất cả các ID có thuộc về hạng mục này không
+                if (registrations.Count < registrationIds.Count)
+                {
+                    var foundIds = registrations.Select(r => r.Id).ToList();
+                    var missingIds = registrationIds.Where(id => !foundIds.Contains(id)).ToList();
+                    throw new BadRequestException($"Một số đơn đăng ký ({missingIds.Count}) không tồn tại hoặc không thuộc về hạng mục này hoặc chưa check-in.");
+                }
+                
+                // 6️⃣ Kiểm tra xem có đơn đăng ký nào đã được gán vào vòng này chưa
+                var existingInRound = await regisRoundRepository.GetListAsync(
+                    predicate: rr => rr.RoundId == preliminaryRound.Id && registrationIds.Contains(rr.RegistrationId));
+        
+                if (existingInRound.Any())
+                {
+                    // Loại bỏ các đơn đăng ký đã được gán khỏi danh sách
+                    var existingIds = existingInRound.Select(r => r.RegistrationId).ToList();
+                    registrations = registrations.Where(r => !existingIds.Contains(r.Id)).ToList();
+                    
+                    if (!registrations.Any())
+                    {
+                        throw new BadRequestException("Tất cả các đơn đăng ký đã được gán vào vòng sơ khảo.");
+                    }
+                    
+                    registrationIds = registrations.Select(r => r.Id).ToList();
+                }
+
+                // 7️⃣ Tạo bản ghi mới cho vòng Preliminary
+                List<RegistrationRound> newRegisRounds = new();
+
+                foreach (var registration in registrations)
+                {
+                    newRegisRounds.Add(new RegistrationRound
+                    {
+                        Id = Guid.NewGuid(),
+                        RegistrationId = registration.Id,
+                        RoundId = preliminaryRound.Id,
+                        CheckInTime = VietNamTimeUtil.GetVietnamTime(),
+                        Status = "unpublic",
+                        CreatedAt = VietNamTimeUtil.GetVietnamTime()
+                    });
+                    
+                    registration.Status = "competition";
+                    registrationRepository.UpdateAsync(registration);
+                }
+
+                // 8️⃣ Chèn bản ghi mới vào bảng
+                await regisRoundRepository.InsertRangeAsync(newRegisRounds);
+                await _unitOfWork.CommitAsync();
+                await transaction.CommitAsync();
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+        }
     }
 }
