@@ -40,6 +40,14 @@ namespace KSMS.Infrastructure.Services
             {
                 throw new NotFoundException("Không tìm thấy triển lãm");
             }
+            
+            // Kiểm tra điều kiện trạng thái của triển lãm
+            if (show.Status.ToLower() != Domain.Enums.ShowStatus.Pending.ToString().ToLower() && 
+                show.Status.ToLower() != Domain.Enums.ShowStatus.InternalPublished.ToString().ToLower())
+            {
+                throw new BadRequestException("Chỉ được phép tạo mới hạng mục khi triển lãm ở trạng thái 'Chờ Duyệt' hoặc 'Công bố nội bộ'");
+            }
+            
             var existingCategory = await _unitOfWork.GetRepository<CompetitionCategory>().SingleOrDefaultAsync(predicate: k =>
                 k.Name.ToLower() == request.Name.ToLower() && k.KoiShowId == request.KoiShowId);
             if (existingCategory is not null)
@@ -159,6 +167,14 @@ namespace KSMS.Infrastructure.Services
             {
                 throw new NotFoundException("Không tìm thấy cuộc thi");
             }
+            
+            // Kiểm tra điều kiện trạng thái của triển lãm
+            if (show.Status.ToLower() != Domain.Enums.ShowStatus.Pending.ToString().ToLower() && 
+                show.Status.ToLower() != Domain.Enums.ShowStatus.InternalPublished.ToString().ToLower())
+            {
+                throw new BadRequestException("Chỉ được phép cập nhật hạng mục khi triển lãm ở trạng thái 'Chờ Duyệt' hoặc 'Công bố nội bộ'");
+            }
+            
             var existingCategory = await _unitOfWork.GetRepository<CompetitionCategory>().SingleOrDefaultAsync(predicate: k =>
                 k.Name.ToLower() == request.Name.ToLower() && k.Id != id && k.KoiShowId == request.KoiShowId);  
             if (existingCategory is not null)
