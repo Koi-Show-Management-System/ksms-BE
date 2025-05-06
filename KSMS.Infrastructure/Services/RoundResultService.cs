@@ -369,6 +369,14 @@ namespace KSMS.Infrastructure.Services
                         _unitOfWork.GetRepository<RegistrationRound>().UpdateAsync(regisRound);
                     }
                 }
+                
+                // Cập nhật trạng thái của round thành "completed" nếu đó là vòng chung kết
+                if (isFinalRound)
+                {
+                    round.Status = "completed";
+                    _unitOfWork.GetRepository<Round>().UpdateAsync(round);
+                }
+                
                 await _unitOfWork.CommitAsync();
                 await transaction.CommitAsync();
             }

@@ -79,6 +79,14 @@ namespace KSMS.Infrastructure.Services
             {
                 throw new NotFoundException("Không tìm thấy triển lãm");
             }
+            
+            // Kiểm tra điều kiện trạng thái của triển lãm
+            if (show.Status.ToLower() != Domain.Enums.ShowStatus.Pending.ToString().ToLower() && 
+                show.Status.ToLower() != Domain.Enums.ShowStatus.InternalPublished.ToString().ToLower())
+            {
+                throw new BadRequestException("Chỉ được phép cập nhật triển lãm khi trạng thái là 'Chờ Duyệt' hoặc 'Công bố nội bộ'");
+            }
+            
             if (request.Name is not null)
             {
                 var existingShow = await _unitOfWork.GetRepository<KoiShow>().SingleOrDefaultAsync(predicate: k =>
