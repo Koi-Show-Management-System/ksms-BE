@@ -18,6 +18,6 @@ namespace KSMS.Application.Services
         Task<Paginate<GetPageRegistrationRoundResponse>> GetPageRegistrationRound(Guid roundId, int page, int size);
         Task<CheckQrRegistrationRoundResponse> GetRegistrationRoundByIdAndRoundAsync(Guid registrationId, Guid roundId);
         Task PublishRound(Guid roundId);
-        
+        Task AssignRegistrationsToPreliminaryRound(Guid categoryId, List<Guid> registrationIds);
     }
 }

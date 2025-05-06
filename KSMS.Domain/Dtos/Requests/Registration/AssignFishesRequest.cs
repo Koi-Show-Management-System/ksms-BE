@@ -18,4 +18,9 @@ namespace KSMS.Domain.Dtos.Requests.Registration
         public Guid TankId { get; set; }  // ID của hồ chứa cá
     }
 
+    public class AssignToFirstRound
+    {
+        public Guid CategoryId { get; set; }
+        public List<Guid> RegistrationIds { get; set; } = new List<Guid>();
+    }
 }
