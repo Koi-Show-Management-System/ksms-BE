@@ -1217,5 +1217,134 @@ namespace KSMS.Infrastructure.Services
                 }
             }
         }
+
+        public async Task DeleteShowAsync(Guid showId)
+        {
+            var show = await _unitOfWork.GetRepository<KoiShow>().SingleOrDefaultAsync(
+                predicate: s => s.Id == showId,
+                include: query => query
+                    .Include(s => s.ShowRules)
+                    .Include(s => s.ShowStatuses)
+                    .Include(s => s.Sponsors)
+                    .Include(s => s.TicketTypes)
+                    .Include(s => s.CompetitionCategories)
+                    .Include(s => s.ShowStaffs)
+                    .Include(s => s.Registrations));
+
+            if (show == null)
+            {
+                throw new NotFoundException("Không tìm thấy triển lãm");
+            }
+
+            // Kiểm tra trạng thái của triển lãm
+            string showStatus = show.Status.ToLower();
+            if (showStatus != Domain.Enums.ShowStatus.Pending.ToString().ToLower() && 
+                showStatus != Domain.Enums.ShowStatus.InternalPublished.ToString().ToLower())
+            {
+                throw new BadRequestException("Chỉ được phép xóa triển lãm khi trạng thái là 'Chờ Duyệt' hoặc 'Công bố nội bộ'");
+            }
+
+            // Kiểm tra xem có đăng ký nào cho triển lãm này chưa
+            if (show.Registrations != null && show.Registrations.Any())
+            {
+                throw new BadRequestException("Không thể xóa triển lãm đã có đăng ký. Hãy hủy triển lãm thay vì xóa.");
+            }
+
+            await using var transaction = await _unitOfWork.BeginTransactionAsync();
+            try
+            {
+                // 1. Xóa các hạng mục và dữ liệu liên quan
+                foreach (var category in show.CompetitionCategories)
+                {
+                    // Xóa các vòng thi của hạng mục
+                    var rounds = await _unitOfWork.GetRepository<Round>().GetListAsync(
+                        predicate: r => r.CompetitionCategoriesId == category.Id);
+                    if (rounds.Any())
+                    {
+                        _unitOfWork.GetRepository<Round>().DeleteRangeAsync(rounds);
+                    }
+
+                    // Xóa các tiêu chí chấm điểm của hạng mục
+                    var criteriaCategories = await _unitOfWork.GetRepository<CriteriaCompetitionCategory>().GetListAsync(
+                        predicate: cc => cc.CompetitionCategoryId == category.Id);
+                    if (criteriaCategories.Any())
+                    {
+                        _unitOfWork.GetRepository<CriteriaCompetitionCategory>().DeleteRangeAsync(criteriaCategories);
+                    }
+
+                    // Xóa các giải thưởng của hạng mục
+                    var awards = await _unitOfWork.GetRepository<Award>().GetListAsync(
+                        predicate: a => a.CompetitionCategoriesId == category.Id);
+                    if (awards.Any())
+                    {
+                        _unitOfWork.GetRepository<Award>().DeleteRangeAsync(awards);
+                    }
+
+                    // Xóa các CategoryVarieties
+                    var categoryVarieties = await _unitOfWork.GetRepository<CategoryVariety>().GetListAsync(
+                        predicate: cv => cv.CompetitionCategoryId == category.Id);
+                    if (categoryVarieties.Any())
+                    {
+                        _unitOfWork.GetRepository<CategoryVariety>().DeleteRangeAsync(categoryVarieties);
+                    }
+
+                    // Xóa các phân công giám khảo
+                    var refereeAssignments = await _unitOfWork.GetRepository<RefereeAssignment>().GetListAsync(
+                        predicate: ra => ra.CompetitionCategoryId == category.Id);
+                    if (refereeAssignments.Any())
+                    {
+                        _unitOfWork.GetRepository<RefereeAssignment>().DeleteRangeAsync(refereeAssignments);
+                    }
+                }
+
+                // 2. Xóa các hạng mục của triển lãm
+                if (show.CompetitionCategories.Any())
+                {
+                    _unitOfWork.GetRepository<CompetitionCategory>().DeleteRangeAsync(show.CompetitionCategories);
+                }
+
+                // 3. Xóa các quy tắc của triển lãm
+                if (show.ShowRules.Any())
+                {
+                    _unitOfWork.GetRepository<ShowRule>().DeleteRangeAsync(show.ShowRules);
+                }
+
+                // 4. Xóa các trạng thái của triển lãm
+                if (show.ShowStatuses.Any())
+                {
+                    _unitOfWork.GetRepository<ShowStatus>().DeleteRangeAsync(show.ShowStatuses);
+                }
+
+                // 5. Xóa các nhà tài trợ của triển lãm
+                if (show.Sponsors.Any())
+                {
+                    _unitOfWork.GetRepository<Sponsor>().DeleteRangeAsync(show.Sponsors);
+                }
+
+                // 6. Xóa các loại vé của triển lãm
+                if (show.TicketTypes.Any())
+                {
+                    _unitOfWork.GetRepository<TicketType>().DeleteRangeAsync(show.TicketTypes);
+                }
+
+                // 7. Xóa các phân công nhân viên cho triển lãm
+                if (show.ShowStaffs.Any())
+                {
+                    _unitOfWork.GetRepository<ShowStaff>().DeleteRangeAsync(show.ShowStaffs);
+                }
+
+                // 8. Xóa triển lãm
+                _unitOfWork.GetRepository<KoiShow>().DeleteAsync(show);
+
+                await _unitOfWork.CommitAsync();
+                await transaction.CommitAsync();
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                _logger.LogError(ex, "Lỗi khi xóa triển lãm ID: {ShowId}", showId);
+                throw new Exception("Đã xảy ra lỗi khi xóa triển lãm. Vui lòng thử lại sau.", ex);
+            }
+        }
     }
 }
