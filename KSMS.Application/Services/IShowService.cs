@@ -19,6 +19,7 @@ namespace KSMS.Application.Services
         Task<Paginate<GetMemberRegisterShowResponse>> GetMemberRegisterShowAsync(ShowStatus? showStatus, int page, int size);
         Task CancelShowAsync(Guid id, Domain.Enums.ShowStatus status, string? reason);
         Task<bool> UpdateShowStatusManually(Guid koiShowId, string statusName, bool setActive);
+        Task DeleteShowAsync(Guid showId);
     }
 
 }

@@ -89,5 +89,13 @@ namespace KSMS.API.Controllers
 
             return Ok(ApiResponse<object>.Success(null, $"Trạng thái '{statusName}' đã ở trạng thái yêu cầu"));
         }
+        [HttpDelete("{id:guid}")]
+        [Authorize(Roles = "Admin, Manager")]
+        public async Task<ActionResult<ApiResponse<object>>> DeleteShow(
+            Guid id)
+        {
+            await _showService.DeleteShowAsync(id);
+            return Ok(ApiResponse<object>.Success(null, "Xóa triển lãm thành công"));
+        }
     }
 }
