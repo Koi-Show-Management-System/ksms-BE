@@ -130,6 +130,12 @@ public class LivestreamService : BaseService<LivestreamService>, ILivestreamServ
             throw new NotFoundException("Không tìm thấy triển lãm");
         }
         
+        // Kiểm tra trạng thái của triển lãm
+        if (show.Status.ToLower() != Domain.Enums.ShowStatus.InProgress.ToString().ToLower())
+        {
+            throw new BadRequestException("Triển lãm không trong giai đoạn đang diễn ra, không thể livestream");
+        }
+        
         // Sử dụng định dạng ID đơn giản hơn
         var callId = Guid.NewGuid().ToString("N");
         var userId = GetIdFromJwt().ToString();
@@ -225,7 +231,9 @@ public class LivestreamService : BaseService<LivestreamService>, ILivestreamServ
     public async Task StartLivestream(Guid id)
     {
         var livestream = await _unitOfWork.GetRepository<Livestream>()
-            .SingleOrDefaultAsync(predicate: l => l.Id == id);
+            .SingleOrDefaultAsync(
+                predicate: l => l.Id == id,
+                include: query => query.Include(l => l.KoiShow));
         if (livestream == null)
         {
             throw new NotFoundException("Không tìm thấy livestream");
@@ -243,6 +251,30 @@ public class LivestreamService : BaseService<LivestreamService>, ILivestreamServ
         await _unitOfWork.CommitAsync();
         
         _logger.LogInformation($"Livestream {id} đã bắt đầu phát sóng");
+        
+        // Gửi thông báo cho tất cả người dùng
+        try 
+        {
+            // Lấy danh sách ID của tất cả người dùng có role là Member
+            var memberIds = await _unitOfWork.GetRepository<Account>()
+                .GetListAsync(
+                    selector: a => a.Id,
+                    predicate: a => a.Role == Domain.Enums.RoleName.Member.ToString().ToLower());
+            
+            // Gửi thông báo đến tất cả member
+            await _notificationService.SendNotificationToMany(
+                memberIds.ToList(),
+                "Phát sóng trực tiếp mới",
+                $"Buổi phát sóng trực tiếp cho triển lãm {livestream.KoiShow.Name} đang được phát sóng. Hãy tham gia ngay!",
+                Domain.Enums.NotificationType.System);
+                
+            _logger.LogInformation($"Đã gửi thông báo về buổi phát sóng cho triển lãm {livestream.KoiShow.Name} đến {memberIds.Count} người dùng");
+        }
+        catch (Exception ex)
+        {
+            // Ghi log lỗi nhưng không dừng tiến trình
+            _logger.LogError(ex, "Lỗi khi gửi thông báo về buổi phát sóng trực tiếp");
+        }
     }
 
     public async Task EndLivestream(Guid id)

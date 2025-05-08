@@ -387,10 +387,24 @@ namespace KSMS.Infrastructure.Services
                     .ThenInclude(r => r.KoiProfile)
                     .ThenInclude(r => r.Variety)
                     .Include(r => r.Registration)
-                    .ThenInclude(r => r.KoiMedia));
+                    .ThenInclude(r => r.KoiMedia)
+                    .Include(r => r.Registration)
+                    .ThenInclude(r => r.KoiShow));
             if (registrationRound == null)
             {
                 throw new NotFoundException("Không tìm thấy thông tin đăng ký vòng thi.");
+            }
+
+            // Kiểm tra trạng thái của triển lãm
+            if (registrationRound.Registration.KoiShow.Status.ToLower() != Domain.Enums.ShowStatus.InProgress.ToString().ToLower())
+            {
+                throw new BadRequestException("Triển lãm không trong giai đoạn đang diễn ra. Không thể xem thông tin vòng thi.");
+            }
+
+            // Kiểm tra xem vòng thi đã được công khai chưa
+            if (registrationRound.Status.ToLower() != "public")
+            {
+                throw new BadRequestException("Vòng thi chưa được công khai. Xin hãy đợi vòng thi công khai sau đó thử quét lại.");
             }
 
             return registrationRound.Adapt<CheckQrRegistrationRoundResponse>();
@@ -418,6 +432,36 @@ namespace KSMS.Infrastructure.Services
                 if (!registrationRounds.Any())
                 {
                     throw new BadRequestException("Không tìm thấy đăng ký nào trong vòng này.");
+                }
+
+                // Kiểm tra xem có đơn đăng ký nào ở trạng thái check-in thuộc hạng mục này
+                // mà chưa được thêm vào vòng thi hiện tại không
+                if (round.RoundType?.ToLower() == "preliminary")
+                {
+                    var categoryId = round.CompetitionCategoriesId;
+                    
+                    // Lấy danh sách các đơn đăng ký đã check-in của hạng mục này
+                    var checkedInRegistrations = await _unitOfWork.GetRepository<Registration>().GetListAsync(
+                        predicate: r => r.CompetitionCategoryId == categoryId && 
+                                      r.Status == RegistrationStatus.CheckIn.ToString().ToLower());
+                    
+                    // Lấy danh sách các đơn đăng ký đã được thêm vào vòng thi này
+                    var registrationIdsInRound = registrationRounds
+                        .Select(rr => rr.RegistrationId)
+                        .ToList();
+                    
+                    // Tìm những đơn đăng ký đã check-in nhưng chưa được thêm vào vòng thi
+                    var notInRound = checkedInRegistrations
+                        .Where(r => !registrationIdsInRound.Contains(r.Id))
+                        .ToList();
+                    
+                    if (notInRound.Any())
+                    {
+                        var missingCount = notInRound.Count;
+                        throw new BadRequestException(
+                            $"Còn {missingCount} đơn đăng ký đã check-in của hạng mục này chưa được thêm vào vòng thi. " +
+                            "Hãy kiểm tra kỹ lại trước khi công khai vòng.");
+                    }
                 }
 
                 if (round.CompetitionCategories.HasTank)

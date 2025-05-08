@@ -438,7 +438,7 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
         }
         _backgroundJobClient.Schedule(
             () => HandleExpiredRegistration(registration.Id),
-            TimeSpan.FromMinutes(3)
+            TimeSpan.FromMinutes(10)
         );
         return new
         {
@@ -886,7 +886,7 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
 
         var baseUrl = $"{AppConfig.AppSetting.BaseUrl}/api/v1/registration" + "/call-back";
         var url = $"{baseUrl}?registrationPaymentId={registrationPayment.Id}";
-        var expiryTime = registrationPayment.PaymentDate.AddMinutes(2);
+        var expiryTime = registrationPayment.PaymentDate.AddMinutes(10);
 
         // Chuyển đổi sang Unix timestamp đảm bảo sử dụng múi giờ Việt Nam (UTC+7)
         // Chỉ định rõ múi giờ UTC+7 khi tạo DateTimeOffset để tránh sai lệch

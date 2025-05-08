@@ -120,7 +120,7 @@ public class VoteService : BaseService<VoteService>, IVoteService
         {
             throw new BadRequestException("Chưa có vòng chung kết nào");
         }
-
+        
         var unfinishedRegistrationRounds = await _unitOfWork.GetRepository<RegistrationRound>()
             .GetListAsync(
                 predicate: rr =>
@@ -137,6 +137,17 @@ public class VoteService : BaseService<VoteService>, IVoteService
         show.EnableVoting = true;
         _unitOfWork.GetRepository<KoiShow>().UpdateAsync(show);
         await _unitOfWork.CommitAsync();
+        var memberIds = await _unitOfWork.GetRepository<Account>()
+            .GetListAsync(
+                selector: a => a.Id,
+                predicate: a => a.Role == RoleName.Member.ToString().ToLower());
+            
+        // Gửi thông báo đến tất cả member
+        await _notificationService.SendNotificationToMany(
+            memberIds.ToList(),
+            "Bình chọn cá yêu thích đã mở",
+            $"Tính năng bình chọn cá yêu thích cho triển lãm {show.Name} đã được kích hoạt. Hãy tham gia bình chọn ngay! Lưu ý: Bạn cần check-in vé để có thể tham gia bình chọn.",
+            Domain.Enums.NotificationType.System);
     }
 
     public async Task DisableVoting(Guid showId)
