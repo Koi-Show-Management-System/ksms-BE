@@ -677,9 +677,6 @@ public static class MailUtil
                             
                             <p>Hiện triển lãm đang ở trạng thái nội bộ, chỉ quản lý và nhân viên được phân công mới có thể xem. Vui lòng truy cập hệ thống để cập nhật thông tin và bắt đầu phân công nhiệm vụ cho nhân viên.</p>
                             
-                            <div style='margin: 25px 0; text-align: center;'>
-                                <a href='{AppConfig.AppSetting.BaseUrl}/admin/shows/{show.Id}' style='background-color: #b21f1f; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;'>QUẢN LÝ TRIỂN LÃM</a>
-                            </div>
                             
                             <p>Nếu bạn có bất kỳ câu hỏi hoặc cần hỗ trợ, vui lòng liên hệ với quản trị viên hệ thống.</p>
                         </td>
@@ -739,9 +736,6 @@ public static class MailUtil
                             
                             <p>Hiện triển lãm đang ở trạng thái nội bộ, chỉ quản lý và nhân viên được phân công mới có thể xem. Vui lòng theo dõi hệ thống để nhận nhiệm vụ cụ thể từ quản lý.</p>
                             
-                            <div style='margin: 25px 0; text-align: center;'>
-                                <a href='{AppConfig.AppSetting.BaseUrl}/admin/shows/{show.Id}' style='background-color: #b21f1f; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;'>XEM TRIỂN LÃM</a>
-                            </div>
                             
                             <p>Nếu bạn có bất kỳ câu hỏi hoặc cần hỗ trợ, vui lòng liên hệ với quản lý hoặc quản trị viên hệ thống.</p>
                         </td>
@@ -823,9 +817,6 @@ public static class MailUtil
                             
                             <p>Vui lòng đăng nhập vào hệ thống để xem chi tiết và chuẩn bị cho việc chấm điểm. Chúng tôi rất mong được làm việc cùng bạn để đảm bảo sự kiện diễn ra công bằng và thành công.</p>
                             
-                            <div style='margin: 25px 0; text-align: center;'>
-                                <a href='{AppConfig.AppSetting.BaseUrl}/referee/shows/{show.Id}' style='background-color: #b21f1f; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;'>XEM CHI TIẾT PHÂN CÔNG</a>
-                            </div>
                             
                             <p>Nếu bạn có bất kỳ câu hỏi hoặc cần hỗ trợ, vui lòng liên hệ ban tổ chức.</p>
                         </td>
@@ -948,9 +939,6 @@ public static class MailUtil
                             
                             <p>Với kinh nghiệm và chuyên môn của bạn trong lĩnh vực cá Koi, chúng tôi tin rằng bạn sẽ đóng vai trò quan trọng trong việc đánh giá công bằng và chính xác các cá thể thi đấu.</p>
                             
-                            <div style='margin: 25px 0; text-align: center;'>
-                                <a href='{AppConfig.AppSetting.BaseUrl}/login' style='background-color: #b21f1f; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;'>ĐĂNG NHẬP NGAY</a>
-                            </div>
                             
                             <p><strong>Thông tin quan trọng:</strong></p>
                             <ul style='margin: 10px 0; padding-left: 20px;'>

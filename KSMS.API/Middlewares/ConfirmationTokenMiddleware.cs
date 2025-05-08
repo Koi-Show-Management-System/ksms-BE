@@ -61,13 +61,6 @@ public class ConfirmationTokenMiddleware
                                 <h2 style='color: #b21f1f; margin: 10px 0;'>Email Confirmed Successfully!</h2>
                             </div>
                             <p style='text-align: center;'>Your email has been successfully verified. You can now access all features of the Koi Show platform.</p>
-                            <div style='text-align: center; margin: 30px 0;'>
-                                <a href='http://localhost:5173/login' 
-                                   style='font-size: 16px; font-weight: bold; color: #ffffff; background-color: #b21f1f; 
-                                          padding: 15px 30px; text-decoration: none; border-radius: 5px;'>
-                                    Go to Login
-                                </a>
-                            </div>
                             <p style='text-align: center; color: #666; font-size: 14px;'>
                                 If you have any questions or need assistance, please don't hesitate to contact our support team.
                             </p>
@@ -117,13 +110,6 @@ public class ConfirmationTokenMiddleware
                                 <h2 style='color: #b21f1f; margin: 10px 0;'>Invalid or Expired Token</h2>
                             </div>
                             <p style='text-align: center;'>The confirmation token is invalid or your account has already been confirmed.</p>
-                            <div style='text-align: center; margin: 30px 0;'>
-                                <a href='http://localhost:5173/login' 
-                                   style='font-size: 16px; font-weight: bold; color: #ffffff; background-color: #b21f1f; 
-                                          padding: 15px 30px; text-decoration: none; border-radius: 5px;'>
-                                    Return to Login
-                                </a>
-                            </div>
                         </td>
                     </tr>
                     <tr>
