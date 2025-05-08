@@ -397,12 +397,12 @@ public class RegistrationService : BaseService<RegistrationService>, IRegistrati
         {
             throw new BadRequestException($"Cá Koi này đã được đăng ký trong hạng mục {existingRegistration.CompetitionCategory.Name} của cuộc thi này");
         }
-        var registrations = await _unitOfWork.GetRepository<Registration>()
-            .GetListAsync(predicate: x => x.KoiShowId == koiShow.Id && x.Status == RegistrationStatus.Confirmed.ToString().ToLower());
-        if (registrations.Count > koiShow.MaxParticipants)
-        {
-            throw new NotFoundException("Số lượng người tham gia cuộc thi đã vượt quá giới hạn");
-        }
+        // var registrations = await _unitOfWork.GetRepository<Registration>()
+        //     .GetListAsync(predicate: x => x.KoiShowId == koiShow.Id && x.Status == RegistrationStatus.Confirmed.ToString().ToLower());
+        // if (registrations.Count > koiShow.MaxParticipants)
+        // {
+        //     throw new NotFoundException("Số lượng người tham gia cuộc thi đã vượt quá giới hạn");
+        // }
         var registrationCount = await _unitOfWork.GetRepository<Registration>()
             .GetListAsync(predicate: x =>
                 x.CompetitionCategoryId == category.Id &&
