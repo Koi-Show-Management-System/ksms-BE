@@ -203,7 +203,7 @@ public class TicketOrderService : BaseService<TicketOrder>, ITicketOrderService
                 var randomSeconds = new Random().Next(0, 30);
                 _backgroundJobClient.Schedule(
                     () => HandleExpiredOrder(ticketOrder.Id),
-                    TimeSpan.FromMinutes(3).Add(TimeSpan.FromSeconds(randomSeconds))
+                    TimeSpan.FromMinutes(6).Add(TimeSpan.FromSeconds(randomSeconds))
                 );
                 
                 await transaction.CommitAsync();
@@ -226,7 +226,7 @@ public class TicketOrderService : BaseService<TicketOrder>, ITicketOrderService
                 var url = $"{baseUrl}?ticketOrderId={ticketOrder.Id}";
                 
                 // Tính thời gian hết hạn dựa trên thiết lập OrderDate + 2 phút
-                var expiryTime = orderDate.AddMinutes(2);
+                var expiryTime = orderDate.AddMinutes(5);
 
                 // Chuyển đổi sang Unix timestamp đảm bảo sử dụng múi giờ Việt Nam (UTC+7)
                 var expiredAtTimestamp = new DateTimeOffset(
@@ -532,7 +532,7 @@ public class TicketOrderService : BaseService<TicketOrder>, ITicketOrderService
                 }
 
                 // Tính thời gian hết hạn: OrderDate + 2 phút
-                var expiryTime = order.OrderDate.AddMinutes(2);
+                var expiryTime = order.OrderDate.AddMinutes(5);
                 var currentTime = VietNamTimeUtil.GetVietnamTime();
                 
                 // Chỉ xử lý các đơn hàng còn đang pending và đã quá hạn
