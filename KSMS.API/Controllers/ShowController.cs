@@ -46,9 +46,9 @@ namespace KSMS.API.Controllers
         }
 
         [HttpGet("paged")]
-        public async Task<ActionResult<ApiResponse<object>>> GetPagedShows( [FromQuery] int page = 1, [FromQuery] int size = 10)
+        public async Task<ActionResult<ApiResponse<object>>> GetPagedShows([FromQuery] ShowStatus? showStatus, [FromQuery] int page = 1, [FromQuery] int size = 10 )
         {
-            var shows = await _showService.GetPagedShowsAsync(page, size);
+            var shows = await _showService.GetPagedShowsAsync(page, size, showStatus);
             return Ok(ApiResponse<Paginate<PaginatedKoiShowResponse>>.Success(shows, "Lấy danh sách triển lãm thành công"));
         }
         

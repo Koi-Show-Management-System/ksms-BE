@@ -7,6 +7,7 @@ using KSMS.Infrastructure.Database;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using ShowStatus = KSMS.Domain.Enums.ShowStatus;
 
 namespace KSMS.Infrastructure.Services;
 
@@ -23,21 +24,50 @@ public class DashboardService : BaseService<DashboardService>, IDashboardService
     {
         var response = new DashboardResponse();
 
-        // 1. Tính tổng số cuộc thi
+        // 1. Tính tổng số cuộc thi có status là "finished"
+        // if (koiShowId.HasValue)
+        // {
+        //     var koiShow = await _unitOfWork.GetRepository<KoiShow>()
+        //         .SingleOrDefaultAsync(predicate: k => k.Id == koiShowId.Value);
+        //     
+        //     // Chỉ đếm nếu cuộc thi có status là "finished"
+        //     response.TotalKoiShows = (koiShow != null && 
+        //         koiShow.Status?.ToLower() == ShowStatus.Finished.ToString().ToLower()) ? 1 : 0;
+        // }
+        // else
+        // {
+        //     response.TotalKoiShows = await _unitOfWork.GetRepository<KoiShow>()
+        //         .CountAsync(predicate: k => k.Status.ToLower() == ShowStatus.Finished.ToString().ToLower());
+        // }
+        response.TotalKoiShows = await _unitOfWork.GetRepository<KoiShow>()
+            .CountAsync(predicate: k => k.Status.ToLower() == ShowStatus.Finished.ToString().ToLower());
+        // 2. Tính tổng số người dùng có role là Member
+        response.TotalUsers = await _unitOfWork.GetRepository<Account>()
+            .CountAsync(predicate: a => a.Role.ToLower() == RoleName.Member.ToString().ToLower());
+        
+        // 3. Tính tổng số đơn đăng ký với trạng thái cụ thể từ các cuộc thi đã hoàn thành
+        var validStatuses = new[] {
+            RegistrationStatus.CheckIn.ToString().ToLower(),
+            RegistrationStatus.PrizeWinner.ToString().ToLower(),
+            RegistrationStatus.Eliminated.ToString().ToLower(),
+            RegistrationStatus.Competition.ToString().ToLower()
+        };
+        
         if (koiShowId.HasValue)
         {
-            response.TotalKoiShows = 1; // Nếu chỉ truy vấn một cuộc thi
+            // Nếu chỉ định một cuộc thi cụ thể, đếm số đơn đăng ký có trạng thái hợp lệ của cuộc thi đó
+            response.TotalKoi = await _unitOfWork.GetRepository<Registration>()
+                .CountAsync(predicate: r => r.KoiShowId == koiShowId.Value &&
+                           r.KoiShow.Status.ToLower() == ShowStatus.Finished.ToString().ToLower() &&
+                           validStatuses.Contains(r.Status.ToLower()));
         }
         else
         {
-            response.TotalKoiShows = await _unitOfWork.GetRepository<KoiShow>().CountAsync();
+            // Đếm tổng số đơn đăng ký có trạng thái hợp lệ từ tất cả các cuộc thi đã hoàn thành
+            response.TotalKoi = await _unitOfWork.GetRepository<Registration>()
+                .CountAsync(predicate: r => r.KoiShow.Status.ToLower() == ShowStatus.Finished.ToString().ToLower() &&
+                           validStatuses.Contains(r.Status.ToLower()));
         }
-
-        // 2. Tính tổng số người dùng
-        response.TotalUsers = await _unitOfWork.GetRepository<Account>().CountAsync();
-        
-        // 3. Tính tổng số Koi
-        response.TotalKoi = await _unitOfWork.GetRepository<KoiProfile>().CountAsync();
 
         // 4. Tính doanh thu, hoàn trả và lợi nhuận
         var showRevenues = await CalculateRevenueData(koiShowId);
@@ -51,10 +81,10 @@ public class DashboardService : BaseService<DashboardService>, IDashboardService
         response.TotalRefund = showRevenues.Sum(r => r.RegistrationRefundAmount + r.TicketRefundAmount);
         
         
-        // Lợi nhuận ròng = doanh thu ròng (trong trường hợp này không có chi phí)
+        // Lợi nhuận ròng = doanh thu ròng - tiền giải thưởng đã chi trả
         response.NetProfit = showRevenues.Sum(r => (r.RegistrationRevenue - r.RegistrationRefundAmount) + 
                                                    (r.TicketRevenue - r.TicketRefundAmount) + 
-                                                   r.SponsorRevenue);
+                                                   r.SponsorRevenue - r.AwardRevenue);
 
         // 6. Tính phân bổ lợi nhuận
         var totalNetProfit = response.NetProfit;
@@ -77,13 +107,17 @@ public class DashboardService : BaseService<DashboardService>, IDashboardService
     {
         var revenueItems = new List<KoiShowRevenueItem>();
         
-        // Lấy danh sách cuộc thi
+        // Lấy danh sách cuộc thi có status là "finished"
         var koiShows = await _unitOfWork.GetRepository<KoiShow>()
             .GetListAsync(
-                predicate: koiShowId.HasValue ? k => k.Id == koiShowId.Value : null,
+                predicate: koiShowId.HasValue 
+                    ? k => k.Id == koiShowId.Value && k.Status.ToLower() == ShowStatus.Finished.ToString().ToLower()
+                    : k => k.Status.ToLower() == ShowStatus.Finished.ToString().ToLower(),
                 include: query => query.Include(k => k.Registrations)
                     .Include(k => k.Sponsors)
                     .Include(k => k.TicketTypes)
+                    .Include(k => k.CompetitionCategories)
+                        .ThenInclude(cc => cc.Awards)
             );
 
         foreach (var show in koiShows)
@@ -122,8 +156,13 @@ public class DashboardService : BaseService<DashboardService>, IDashboardService
 
             // 3. Tính doanh thu từ tài trợ
             revenueItem.SponsorRevenue = show.Sponsors.Sum(s => s.InvestMoney);
+            
+            // 4. Tính chi phí giải thưởng đã chi trả
+            revenueItem.AwardRevenue = show.CompetitionCategories
+                .SelectMany(cc => cc.Awards)
+                .Sum(a => a.PrizeValue.GetValueOrDefault(0));
 
-            // 4. Tính doanh thu và hoàn trả từ vé
+            // 5. Tính doanh thu và hoàn trả từ vé
             // Lấy danh sách TicketTypes của cuộc thi
             var ticketTypeIds = show.TicketTypes.Select(tt => tt.Id).ToList();
 
@@ -166,12 +205,10 @@ public class DashboardService : BaseService<DashboardService>, IDashboardService
             // Tính tổng tiền hoàn trả từ vé (dùng TotalAmount từ TicketOrder)
             revenueItem.TicketRefundAmount = refundedOrders.Sum(to => to.TotalAmount);
 
-            // Tính lợi nhuận ròng (doanh thu thực tế đã trừ hoàn trả)
-                                   
-            // Hiện tại, lợi nhuận ròng bằng doanh thu ròng vì chưa tính các chi phí khác
+            // Tính lợi nhuận ròng (doanh thu thực tế đã trừ hoàn trả và trừ tiền giải thưởng)
             revenueItem.NetProfit = (revenueItem.RegistrationRevenue - revenueItem.RegistrationRefundAmount) + 
                                     (revenueItem.TicketRevenue - revenueItem.TicketRefundAmount) + 
-                                    revenueItem.SponsorRevenue;
+                                    (revenueItem.SponsorRevenue - revenueItem.AwardRevenue);
 
             revenueItems.Add(revenueItem);
         }
