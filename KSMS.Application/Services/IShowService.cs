@@ -12,7 +12,7 @@ namespace KSMS.Application.Services
 {
     public interface IShowService
     {
-        Task<Paginate<PaginatedKoiShowResponse>> GetPagedShowsAsync(int page, int size);
+        Task<Paginate<PaginatedKoiShowResponse>> GetPagedShowsAsync(int page, int size, ShowStatus? showStatus);
         Task UpdateShowV2(Guid id, UpdateShowRequestV2 request);
         Task<GetKoiShowDetailResponse> GetShowDetailByIdAsync(Guid id);
         Task CreateShowAsync(CreateShowRequest request);

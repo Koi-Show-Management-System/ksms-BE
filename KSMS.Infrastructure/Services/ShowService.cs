@@ -635,12 +635,17 @@ namespace KSMS.Infrastructure.Services
             await _showHubService.SendShowStatusUpdate(id, show.Status);
         }
 
-        public async Task<Paginate<PaginatedKoiShowResponse>> GetPagedShowsAsync(int page, int size)
+        public async Task<Paginate<PaginatedKoiShowResponse>> GetPagedShowsAsync(int page, int size, Domain.Enums.ShowStatus? showStatus)
         {
             var showRepository = _unitOfWork.GetRepository<KoiShow>();
             
             var role = GetRoleFromJwt(); 
             Expression<Func<KoiShow, bool>> filterQuery = show => true;
+            if (showStatus.HasValue)
+            {
+                var status = showStatus.Value.ToString().ToLower();
+                filterQuery = filterQuery.AndAlso(show => show.Status == status);
+            }
             if (role is "Guest" or "Member")
             {
                 filterQuery = filterQuery.AndAlso(show => show.Status != Domain.Enums.ShowStatus.Pending.ToString().ToLower()
@@ -658,7 +663,9 @@ namespace KSMS.Infrastructure.Services
                 var accountId = GetIdFromJwt();
                 filterQuery = filterQuery.AndAlso(show =>
                     show.CompetitionCategories.Any(
-                        c => c.RefereeAssignments.Any(ra => ra.RefereeAccountId == accountId)));
+                        c => c.RefereeAssignments.Any(ra => ra.RefereeAccountId == accountId)) &&
+                    show.Status != Domain.Enums.ShowStatus.Pending.ToString().ToLower() &&
+                    show.Status != Domain.Enums.ShowStatus.InternalPublished.ToString().ToLower());
             }
             var pagedShows = await showRepository.GetPagingListAsync(
                 predicate: filterQuery,
