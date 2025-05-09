@@ -285,7 +285,7 @@ namespace KSMS.Infrastructure.Services
             }
             var registrationRounds = await _unitOfWork.GetRepository<RegistrationRound>().GetPagingListAsync(
                 predicate: predicate,
-                include: query => query.AsSplitQuery()
+                include: query => query
                     .Include(x => x.RoundResults)
                     .Include(x => x.ScoreDetails)
                     .ThenInclude(sd => sd.ScoreDetailErrors)
